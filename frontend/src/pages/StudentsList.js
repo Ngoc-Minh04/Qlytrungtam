@@ -69,6 +69,10 @@ export async function renderStudentsList(container, role) {
               Giáo viên
             </button>
           </div>
+          <!-- Nút Refresh đồng bộ kích thước -->
+          <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+          </button>
         </div>
 
         <!-- Filter & Search Bar -->
@@ -259,6 +263,11 @@ export async function renderStudentsList(container, role) {
     // Chuyển sang giáo viên
     document.getElementById('switch-to-teachers')?.addEventListener('click', () => {
       window._navigatePage && window._navigatePage('teachers-list');
+    });
+
+    // Sự kiện refresh học viên
+    document.getElementById('btn-refresh-students')?.addEventListener('click', () => {
+      renderStudentsList(container, role);
     });
 
     // Mở modal thêm hồ sơ

@@ -14,6 +14,10 @@ export async function renderRevenueReport(container) {
           <button id="filter-btn-yesterday" class="filter-btn px-4 py-1.5 rounded-lg transition font-medium text-slate-500 hover:text-apple-ink" data-filter="yesterday">Hôm qua</button>
           <button id="filter-btn-month" class="filter-btn px-4 py-1.5 rounded-lg bg-white shadow-sm border border-apple-divider/20 font-bold text-apple-ink" data-filter="month">Tháng này</button>
         </div>
+        <!-- Nút Refresh đồng bộ kích thước -->
+        <button id="btn-refresh-revenue" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+          <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+        </button>
       </div>
 
       <!-- Bento Grid: Metric Cards -->
@@ -243,6 +247,10 @@ export async function renderRevenueReport(container) {
 
         loadRevenueData(filter);
       });
+    });
+
+    document.getElementById('btn-refresh-revenue')?.addEventListener('click', () => {
+      renderRevenueReport(container);
     });
   }, 100);
 }

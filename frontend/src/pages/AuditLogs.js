@@ -40,8 +40,11 @@ export async function renderAuditLogs(container) {
     container.innerHTML = `
       <div class="space-y-4">
         <div class="bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col">
-          <div class="p-5 border-b border-apple-divider">
+          <div class="p-5 border-b border-apple-divider flex justify-between items-center flex-wrap gap-2">
             <h3 class="font-bold text-apple-ink text-sm uppercase tracking-wider">Nhật ký hệ thống giám sát thao tác (Audit Logs)</h3>
+            <button id="btn-refresh-audit" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -63,6 +66,10 @@ export async function renderAuditLogs(container) {
         </div>
       </div>
     `;
+
+    document.getElementById('btn-refresh-audit')?.addEventListener('click', () => {
+      renderAuditLogs(container);
+    });
 
     const tableBody = document.getElementById('audit-table-body');
     setupSwipePagination(logs, tableBody, (pageLogs) => {

@@ -7,6 +7,9 @@ export async function renderCourseRegistrations(container) {
       <div class="bg-white rounded-xl border border-apple-divider overflow-hidden flex flex-col lg:flex-row max-w-3xl mx-auto shadow-sm">
         <!-- Left Column -->
         <div class="w-full lg:w-1/3 p-4 bg-apple-parchment flex flex-col items-center justify-start border-b lg:border-b-0 lg:border-r border-apple-divider/40">
+          <button id="btn-refresh-course-registrations" class="self-start mb-2 flex items-center justify-center gap-1 px-2 py-0.5 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[10px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[26px]" type="button">
+            <span class="material-symbols-outlined text-[14px]">refresh</span>Tải lại
+          </button>
           <div class="w-20 h-20 rounded-xl bg-white flex flex-col items-center justify-center mb-3 shadow-sm border border-apple-divider/60">
             <span class="material-symbols-outlined text-2xl text-apple-blue opacity-85">payments</span>
           </div>
@@ -86,6 +89,10 @@ export async function renderCourseRegistrations(container) {
       </div>
     </div>
   `;
+
+  document.getElementById('btn-refresh-course-registrations')?.addEventListener('click', () => {
+    renderCourseRegistrations(container);
+  });
 
   document.getElementById('reg-course-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
