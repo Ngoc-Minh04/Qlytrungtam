@@ -61,6 +61,9 @@ Hệ thống kế thừa và chuyển đổi từ Paradise Gym SQLite sang Postg
 ### 3.4. API Hỗ trợ UI Frontend
 - **GET `/api/students`**: Lấy danh sách học viên từ View `v_trang_thai_hoi_vien`.
 - **GET `/api/schedule/today`**: Lấy danh sách lịch học hôm nay từ bảng `lich_hoc` kèm thông tin học viên liên quan.
+- **POST `/api/checkin-logs`**: Tạo lượt chấm công/quét vân tay thủ công cho giáo viên và nhân sự.
+- **POST `/api/reports`**: Giáo viên tạo nhận xét sổ liên lạc / nhật ký cho học sinh.
+- **GET `/api/reports/student/:studentId`**: Lấy lịch sử sổ liên lạc của học sinh theo thứ tự thời gian mới nhất.
 
 ---
 

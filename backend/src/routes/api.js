@@ -829,6 +829,48 @@ router.get('/checkin-logs', async (req, res) => {
   }
 });
 
+// POST /api/checkin-logs: Thêm lượt quét check-in chấm công thủ công (Admin & Lễ tân)
+router.post('/checkin-logs', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { ho_so_id, chi_nhanh_thuc_hien, thoi_diem, phuong_thuc } = req.body;
+
+  if (!ho_so_id || !thoi_diem) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
+  }
+
+  try {
+    const hsRes = await pool.query('SELECT ho_ten, ma_ho_so FROM ho_so WHERE id = $1', [ho_so_id]);
+    if (hsRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ tương ứng' });
+    }
+    const targetUser = hsRes.rows[0];
+
+    const queryStr = `
+      INSERT INTO luot_vao_ra (ho_so_id, thoi_diem, loai, phuong_thuc, chi_nhanh_thuc_hien)
+      VALUES ($1, $2, 'vao', $3, $4)
+      RETURNING *
+    `;
+    const result = await pool.query(queryStr, [
+      ho_so_id, 
+      thoi_diem, 
+      phuong_thuc || 'van_tay', 
+      chi_nhanh_thuc_hien || 'Trung tâm chính'
+    ]);
+
+    await createNotification(
+      'cham_cong_thu_cong',
+      'Chấm công thủ công',
+      `Đã ghi nhận lượt chấm công thủ công cho "${targetUser.ho_ten}" vào lúc ${new Date(thoi_diem).toLocaleTimeString('vi-VN')} ngày ${new Date(thoi_diem).toLocaleDateString('vi-VN')}.`,
+      result.rows[0].id,
+      'luot_vao_ra',
+      'nhan_vien'
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============================================================
 // 1. LUỒNG ĐIỂM DANH & XÁC NHẬN BUỔI HỌC (Bảng `lich_hoc`)
 // ============================================================
