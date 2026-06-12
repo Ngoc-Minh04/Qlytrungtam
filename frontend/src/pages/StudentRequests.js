@@ -222,9 +222,28 @@ export async function renderStudentRequests(container) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span> Đang xử lý...`;
 
+      const refundAmount = parseFloat(document.getElementById('cancel-refund-amount').value);
+      const reason = document.getElementById('cancel-reason').value.trim();
+
+      // Validate
+      if (isNaN(refundAmount) || refundAmount < 0) {
+        showToast('Số tiền hoàn trả không hợp lệ', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-[15px]">delete_forever</span> Xác nhận hủy`;
+        return;
+      }
+      if (!reason) {
+        document.getElementById('cancel-reason').classList.add('border-red-500', 'bg-red-50');
+        showToast('Vui lòng nhập lý do hủy khóa học', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-[15px]">delete_forever</span> Xác nhận hủy`;
+        return;
+      }
+      document.getElementById('cancel-reason').classList.remove('border-red-500', 'bg-red-50');
+
       const payload = {
-        so_tien_hoan: parseFloat(document.getElementById('cancel-refund-amount').value) || 0,
-        ly_do_huy: document.getElementById('cancel-reason').value.trim() || 'Hủy theo yêu cầu của học viên'
+        so_tien_hoan: refundAmount,
+        ly_do_huy: reason
       };
 
       try {

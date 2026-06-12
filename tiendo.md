@@ -1,4 +1,45 @@
+### [12/06/2026 21:30] — Modal Hồ sơ 2 Tab, Sửa/Đổi gói học, Nâng cấp Infinity Scroll & Bộ lọc, Fix ClassManagement
+- **Loại**: Sửa bug + Tính năng mới + Cải tiến giao diện
+- **File**:
+  - `backend/src/routes/api.js` (Thêm API PUT cho registrations và tutoring registrations, nâng giới hạn xếp lịch lên 50 HS, JOIN ngày/giờ vào lớp nhóm)
+  - `frontend/src/pages/StudentsList.js` (Modal chia 2 Tab, tự tính ngày/giá khi chọn gói, sửa/đổi gói đang hoạt động, bộ lọc nâng cao theo gói, giáo viên, giới tính, Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/TeachersList.js` (Đồng bộ Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/StaffList.js` (Đồng bộ Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/ClassManagement.js` (Mặc định ngày hôm nay, validate bắt buộc gói học cho lớp nhóm, hiển thị ngày giờ lớp nhóm trong lịch sử đặt lịch)
+- **Kết quả**: Thành công
+
+### [12/06/2026 17:00] — Infinity scroll, Đăng ký gói học từ hồ sơ HV, ClassManagement redesign, Schedules zoom calendar
+- **Loại**: Sửa bug + Tính năng mới
+- **File**: 
+  - `backend/src/routes/api.js` (fix GET /students trả đủ trường, max_hoc_vien lớp nhóm = 50)
+  - `frontend/src/pages/StudentsList.js` (đổi sang infinity scroll, thêm form đăng ký/hủy gói học trong modal)
+  - `frontend/src/pages/ClassManagement.js` (viết lại: max 50 HS, chọn tất cả, giờ grid 8h-22h, thời lượng auto, ngày không quá khứ)
+  - `frontend/src/pages/Schedules.js` (viết lại: Calendar 3 cấp Năm→Tháng→Tuần zoom in/out, T2 T3 viết hoa)
+- **Kết quả**: Thành công
+
+### [12/06/2026 15:00] — Validate form, Tab Nhân viên, Fix bug hiển thị
+- **Loại**: Sửa bug + Tính năng mới
+- **File**: 
+  - `frontend/src/pages/StudentsList.js` (viết lại)
+  - `frontend/src/pages/TeachersList.js` (cập nhật)
+  - `frontend/src/pages/StudentRequests.js` (sửa validation cancel)
+  - `frontend/src/pages/StaffList.js` (tạo mới)
+  - `frontend/src/pages/Dashboard.js` (đăng ký route staff-list)
+  - `backend/src/routes/api.js` (thêm API /staff)
+- **Mô tả**:
+  - **Validate email**: Regex `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/` — phải có domain.tld, áp dụng cả học viên lẫn giáo viên/nhân viên
+  - **Validate SĐT 10 số**: Regex `/^0\d{9}$/` bắt buộc, áp dụng toàn bộ form thêm/sửa
+  - **Fix bug trình độ đầu vào**: Thêm đủ 6 cấp (A1→C2), dropdown select đúng value từ DB
+  - **Fix bug cancel hoàn tiền 0đ**: Bắt buộc nhập lý do hủy, nút submit reset sau validation fail
+  - **Bỏ cột Chi nhánh**: Bảng học viên còn 5 cột (bỏ Chi nhánh)
+  - **Tab 3 nút**: Học viên / Giáo viên / Nhân viên hiển thị ở cả 3 trang (StudentsList, TeachersList, StaffList)
+  - **StaffList.js**: Trang nhân viên mới với bảng có phân trang, CRUD, validate
+  - **Dashboard.js**: Thêm tab "Hồ sơ Nhân viên" vào sidebar nhóm Nhân sự, đăng ký route staff-list
+  - **API /staff**: GET/POST /api/staff/create, DELETE /api/staff/:id (dùng bảng ho_so, loai_ho_so='nhan_vien')
+- **Kết quả**: Thành công
+
 ### [12/06/2026 14:31] — Cấu hình bảo mật Git (.gitignore) tránh lộ API key
+
 - **Loại**: Cấu hình bảo mật hệ thống / Git
 - **File**: `.gitignore`
 - **Mô tả**:

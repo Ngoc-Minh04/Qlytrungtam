@@ -565,10 +565,17 @@ router.get('/classes', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT l.*, h.ho_ten as ten_giao_vien, g.ten_goi as ten_goi_hoc_phi,
-             (SELECT COUNT(*) FROM lop_hoc_hoc_vien WHERE lop_hoc_id = l.id) as si_so
+             (SELECT COUNT(*) FROM lop_hoc_hoc_vien WHERE lop_hoc_id = l.id) as si_so,
+             lhn.ngay_hoc, lhn.gio_bat_dau, lhn.gio_ket_thuc
       FROM lop_hoc l
       LEFT JOIN ho_so h ON l.giao_vien_id = h.id
       LEFT JOIN goi_hoc_phi g ON l.goi_hoc_phi_id = g.id
+      LEFT JOIN (
+        SELECT DISTINCT ON (lop_hoc_id) lop_hoc_id, ngay_hoc, gio_bat_dau, gio_ket_thuc
+        FROM lich_hoc_nhom
+        WHERE trang_thai != 'da_huy'
+        ORDER BY lop_hoc_id, ngay_hoc ASC, gio_bat_dau ASC
+      ) lhn ON l.id = lhn.lop_hoc_id
       WHERE l.is_deleted = 0
       ORDER BY l.ngay_tao DESC
     `);
@@ -631,17 +638,17 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
       throw new Error('Giáo viên đã trùng lịch giảng dạy một ca khác trong cùng khung giờ này!');
     }
 
-    // 2. Tạo lớp học
+    // 2. Tạo lớp học (tối đa 50 học viên)
     const classRes = await client.query(
       `INSERT INTO lop_hoc (ten_lop, giao_vien_id, loai_lop, goi_hoc_phi_id, max_hoc_vien, trang_thai, is_deleted)
-       VALUES ($1, $2, 'nhom', $3, 10, 'dang_hoat_dong', 0) RETURNING *`,
+       VALUES ($1, $2, 'nhom', $3, 50, 'dang_hoat_dong', 0) RETURNING *`,
       [ten_lop, giao_vien_id, goi_hoc_phi_id || null]
     );
     const lopHoc = classRes.rows[0];
 
-    // 3. Liên kết học viên vào lớp (nếu có, tối đa 10 học viên)
+    // 3. Liên kết học viên vào lớp (nếu có, tối đa 50 học viên)
     if (hoc_vien_ids && Array.isArray(hoc_vien_ids)) {
-      const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 10);
+      const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 50);
       for (const hvId of uniqueHvs) {
         await client.query(
           'INSERT INTO lop_hoc_hoc_vien (lop_hoc_id, hoc_vien_id) VALUES ($1, $2)',
@@ -676,6 +683,61 @@ router.get('/teachers', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// ============================================================
+// API NHÂN VIÊN (dùng bảng ho_so, loai_ho_so = 'nhan_vien')
+// ============================================================
+
+// GET /api/staff: Lấy danh sách nhân viên
+router.get('/staff', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM ho_so WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0 ORDER BY ho_ten ASC");
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/staff/create: Thêm nhân viên mới
+router.post('/staff/create', verifyAccess(['admin']), async (req, res) => {
+  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh } = req.body;
+  if (!ho_ten || !so_dien_thoai) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc: họ tên và số điện thoại' });
+  }
+  try {
+    const countRes = await pool.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'nhan_vien'");
+    const nextNum = parseInt(countRes.rows[0].count) + 1;
+    const ma_ho_so = `NV${String(nextNum).padStart(3, '0')}`;
+    const result = await pool.query(
+      `INSERT INTO ho_so (ma_ho_so, ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh, loai_ho_so, is_deleted)
+       VALUES ($1, $2, $3, $4, $5, $6, 'nhan_vien', 0) RETURNING *`,
+      [ma_ho_so, ho_ten.trim(), so_dien_thoai.trim(), email || null, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính']
+    );
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// DELETE /api/staff/:id: Xóa mềm nhân viên
+router.delete('/staff/:id', verifyAccess(['admin']), async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "UPDATE ho_so SET is_deleted = 1 WHERE id = $1 AND loai_ho_so = 'nhan_vien' RETURNING *",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ nhân viên' });
+    }
+    res.json({ success: true, message: 'Đã xóa nhân viên thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 
 // GET /api/rules: Lấy nội quy
 router.get('/rules', async (req, res) => {
@@ -926,6 +988,96 @@ router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async
   }
 });
 
+// API PUT /api/registrations/:id: Cập nhật / đổi gói khóa học đại trà
+router.put('/registrations/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  const { goi_hoc_phi_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt } = req.body;
+
+  if (so_tien_da_thu < 0 || so_tien_da_thu > gia_thuc_te) {
+    return res.status(400).json({ success: false, error: 'Số tiền thực thu không hợp lệ' });
+  }
+
+  try {
+    const query = `
+      UPDATE dang_ky_khoa_hoc
+      SET 
+        goi_hoc_phi_id = COALESCE($1, goi_hoc_phi_id),
+        tu_ngay = COALESCE($2, tu_ngay),
+        den_ngay = COALESCE($3, den_ngay),
+        gia_thuc_te = COALESCE($4, gia_thuc_te),
+        so_tien_da_thu = COALESCE($5, so_tien_da_thu),
+        phuong_thuc_tt = COALESCE($6, phuong_thuc_tt),
+        ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $7 AND trang_thai = 'dang_hoat_dong'
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      goi_hoc_phi_id ? parseInt(goi_hoc_phi_id) : null,
+      tu_ngay || null,
+      den_ngay || null,
+      gia_thuc_te !== undefined ? parseFloat(gia_thuc_te) : null,
+      so_tien_da_thu !== undefined ? parseFloat(so_tien_da_thu) : null,
+      phuong_thuc_tt || null,
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy gói học đang hoạt động để chỉnh sửa' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API PUT /api/registrations/tutoring/:id: Cập nhật / đổi gói dạy học kèm 1-1
+router.put('/registrations/tutoring/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  const { giao_vien_id, goi_hoc_kem_id, so_buoi_dang_ky, so_buoi_da_hoc, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt } = req.body;
+
+  if (so_tien_da_thu < 0 || so_tien_da_thu > gia_thuc_te) {
+    return res.status(400).json({ success: false, error: 'Số tiền thực thu không hợp lệ' });
+  }
+
+  try {
+    const query = `
+      UPDATE dang_ky_hoc_kem
+      SET 
+        giao_vien_id = COALESCE($1, giao_vien_id),
+        goi_hoc_kem_id = COALESCE($2, goi_hoc_kem_id),
+        so_buoi_dang_ky = COALESCE($3, so_buoi_dang_ky),
+        so_buoi_da_hoc = COALESCE($4, so_buoi_da_hoc),
+        tu_ngay = COALESCE($5, tu_ngay),
+        den_ngay = COALESCE($6, den_ngay),
+        gia_thuc_te = COALESCE($7, gia_thuc_te),
+        so_tien_da_thu = COALESCE($8, so_tien_da_thu),
+        phuong_thuc_tt = COALESCE($9, phuong_thuc_tt),
+        ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $10 AND trang_thai = 'dang_hoat_dong'
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      giao_vien_id ? parseInt(giao_vien_id) : null,
+      goi_hoc_kem_id ? parseInt(goi_hoc_kem_id) : null,
+      so_buoi_dang_ky !== undefined ? parseInt(so_buoi_dang_ky) : null,
+      so_buoi_da_hoc !== undefined ? parseInt(so_buoi_da_hoc) : null,
+      tu_ngay || null,
+      den_ngay || null,
+      gia_thuc_te !== undefined ? parseFloat(gia_thuc_te) : null,
+      so_tien_da_thu !== undefined ? parseFloat(so_tien_da_thu) : null,
+      phuong_thuc_tt || null,
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy gói học kèm đang hoạt động để chỉnh sửa' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/students/:id/registrations: Lấy chi tiết các gói đăng ký của học viên
 router.get('/students/:id/registrations', async (req, res) => {
   const { id } = req.params;
@@ -1106,10 +1258,36 @@ router.post('/teachers/create', verifyAccess(['admin', 'le_tan']), async (req, r
   }
 });
 
-// Lấy danh sách học viên từ View v_trang_thai_hoi_vien (dành cho Lễ tân)
+// Lấy danh sách học viên (trả đầy đủ trường: ngay_sinh, email, ten_phu_huynh, trinh_do_dau_vao)
 router.get('/students', async (req, res) => {
   try {
-    const queryStr = 'SELECT * FROM v_trang_thai_hoi_vien ORDER BY ho_ten ASC';
+    const queryStr = `
+      SELECT 
+        h.id, h.ma_ho_so, h.ho_ten, h.ngay_sinh, h.gioi_tinh,
+        h.ten_phu_huynh, h.so_dien_thoai, h.email,
+        h.trinh_do_dau_vao, h.chi_nhanh, h.loai_ho_so,
+        h.ngay_tao, h.ngay_cap_nhat,
+        COALESCE(v.trang_thai_mau, 'chua_dang_ky') as trang_thai_mau,
+        (
+          SELECT COALESCE(json_agg(goi_hoc_phi_id), '[]'::json) 
+          FROM dang_ky_khoa_hoc 
+          WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+        ) as active_course_pkg_ids,
+        (
+          SELECT COALESCE(json_agg(goi_hoc_kem_id), '[]'::json) 
+          FROM dang_ky_hoc_kem 
+          WHERE hoc_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+        ) as active_tutor_pkg_ids,
+        (
+          SELECT COALESCE(json_agg(giao_vien_id), '[]'::json) 
+          FROM dang_ky_hoc_kem 
+          WHERE hoc_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+        ) as active_teacher_ids
+      FROM ho_so h
+      LEFT JOIN v_trang_thai_hoi_vien v ON h.id = v.id
+      WHERE h.loai_ho_so = 'hoc_vien' AND h.is_deleted = 0
+      ORDER BY h.ho_ten ASC
+    `;
     const result = await pool.query(queryStr);
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -1117,6 +1295,7 @@ router.get('/students', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 // Lấy danh sách lịch dạy hôm nay từ bảng lich_hoc (dành cho Giáo viên)
 router.get('/schedule/today', async (req, res) => {

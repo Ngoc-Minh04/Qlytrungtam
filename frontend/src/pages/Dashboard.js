@@ -10,6 +10,7 @@ import { renderClassManagement } from './ClassManagement.js';
 import { renderStudentsList } from './StudentsList.js';
 import { renderAddStudentForm } from './AddStudentForm.js';
 import { renderTeachersList } from './TeachersList.js';
+import { renderStaffList } from './StaffList.js';
 import { renderAttendanceStaff } from './AttendanceStaff.js';
 import { renderLessonDiary } from './LessonDiary.js';
 import { renderTeacherFeedbacks } from './TeacherFeedbacks.js';
@@ -59,6 +60,7 @@ const GROUP_PAGES = {
     label: 'Nhân sự & Chấm công', icon: 'badge', roles: ['admin', 'le_tan'],
     tabs: [
       { page: 'teachers-list', label: 'Hồ sơ Giáo viên' },
+      { page: 'staff-list', label: 'Hồ sơ Nhân viên' },
       { page: 'attendance-staff', label: 'Bảng Chấm công' }
     ]
   },
@@ -122,6 +124,7 @@ function getPageRenderer(page, role) {
     'students-list': (c) => renderStudentsList(c, role),
     'add-student-form': (c) => renderAddStudentForm(c),
     'teachers-list': (c) => renderTeachersList(c, role),
+    'staff-list': (c) => renderStaffList(c, role),
     'attendance-staff': (c) => renderAttendanceStaff(c),
     'lesson-diary': (c) => renderLessonDiary(c, role),
     'teacher-feedbacks': (c) => renderTeacherFeedbacks(c),

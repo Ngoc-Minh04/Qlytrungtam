@@ -1,5 +1,15 @@
 // TeachersList.js - Hồ sơ Giáo viên hỗ trợ Bộ lọc chuyên môn, Modal Thêm giáo viên mới và In-place Edit
-import { API_BASE, showToast, setupSwipePagination } from './_shared.js';
+import { API_BASE, showToast } from './_shared.js';
+
+// Hàm validate email hợp lệ (phải có domain.tld)
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
+
+// Hàm validate SĐT 10 số
+function isValidPhone(phone) {
+  return /^0\d{9}$/.test(phone.replace(/\s/g, ''));
+}
 
 export async function renderTeachersList(container, role) {
   container.innerHTML = `
@@ -53,12 +63,15 @@ export async function renderTeachersList(container, role) {
       <div class="space-y-6">
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-lg border border-[#e2e2e4] select-none">
-            <button id="switch-to-students" class="px-5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
-              Học viên
+          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none">
+            <button id="tab-students" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
             </button>
-            <button class="px-5 py-1.5 rounded-md bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
-              Giáo viên
+            <button id="tab-teachers-active" class="px-5 py-1.5 rounded-lg bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
+            </button>
+            <button id="tab-staff" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
         </div>
@@ -103,9 +116,16 @@ export async function renderTeachersList(container, role) {
                 </tr>
               </thead>
               <tbody id="teachers-table-body">
-                <!-- Sẽ chèn bằng setupSwipePagination -->
+                <!-- Sẽ chèn bằng Infinity Scroll -->
               </tbody>
             </table>
+          </div>
+          <!-- Nút Tải thêm giáo viên kiểm soát được -->
+          <div id="load-more-container" class="py-3 px-6 text-center border-t border-[#f3f3f5] bg-slate-50/50 hidden">
+            <button id="btn-load-more" class="px-5 py-2 bg-white hover:bg-slate-50 border border-[#e2e2e4] text-slate-600 rounded-full text-xs font-bold transition active:scale-95 inline-flex items-center gap-1">
+              <span>Tải thêm giáo viên</span>
+              <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
+            </button>
           </div>
         </div>
       </div>
@@ -129,12 +149,14 @@ export async function renderTeachersList(container, role) {
                 <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Số điện thoại liên hệ <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-teacher-phone" placeholder="09xxxxxxx" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-teacher-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Địa chỉ Email <span class="text-rose-500 font-bold">*</span></label>
+                <label class="block font-semibold text-slate-600 mb-1.5">Địa chỉ Email</label>
                 <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
@@ -162,13 +184,55 @@ export async function renderTeachersList(container, role) {
     const tableBody = document.getElementById('teachers-table-body');
     const searchInput = document.getElementById('search-teachers-input');
     const filterExpertise = document.getElementById('filter-expertise');
+    const loadMoreContainer = document.getElementById('load-more-container');
+    const btnLoadMore = document.getElementById('btn-load-more');
+    const spinnerLoadMore = document.getElementById('load-more-spinner');
 
-    function updateTableWithPagination(filteredList) {
-      setupSwipePagination(filteredList, tableBody, (pageData) => {
-        tableBody.innerHTML = renderTableRows(pageData);
-        attachRowEvents(pageData);
-      }, 10);
+    let displayCount = 20;
+    let filteredList = [...allTeachers];
+
+    function renderInfinityRows(list) {
+      const rowsHtml = renderTableRows(list.slice(0, displayCount));
+      tableBody.innerHTML = rowsHtml;
+      attachRowEvents(list.slice(0, displayCount));
+
+      if (displayCount < list.length) {
+        loadMoreContainer.classList.remove('hidden');
+      } else {
+        loadMoreContainer.classList.add('hidden');
+      }
     }
+
+    function updateTableInfinity(list) {
+      filteredList = list;
+      displayCount = 20;
+      renderInfinityRows(filteredList);
+    }
+
+    btnLoadMore?.addEventListener('click', () => {
+      spinnerLoadMore.classList.remove('hidden');
+      btnLoadMore.setAttribute('disabled', 'true');
+      setTimeout(() => {
+        displayCount = Math.min(displayCount + 20, filteredList.length);
+        renderInfinityRows(filteredList);
+        spinnerLoadMore.classList.add('hidden');
+        btnLoadMore.removeAttribute('disabled');
+      }, 400);
+    });
+
+    const scrollContainer = tableBody.closest('.overflow-x-auto') || tableBody.closest('.overflow-y-auto');
+    const onScroll = () => {
+      if (displayCount >= filteredList.length) return;
+      const scrollEl = scrollContainer || document.documentElement;
+      const scrolled = scrollContainer ? scrollEl.scrollTop + scrollEl.clientHeight : window.scrollY + window.innerHeight;
+      const total = scrollContainer ? scrollEl.scrollHeight : document.documentElement.scrollHeight;
+      
+      if (scrolled >= total - 50 && !btnLoadMore.hasAttribute('disabled')) {
+        btnLoadMore.click();
+      }
+    };
+    if (scrollContainer) scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+    else window.addEventListener('scroll', onScroll, { passive: true });
 
     // Sự kiện lọc giáo viên
     function applyFilters() {
@@ -184,7 +248,7 @@ export async function renderTeachersList(container, role) {
         return matchesSearch && matchesExpertise;
       });
 
-      updateTableWithPagination(filtered);
+      updateTableInfinity(filtered);
     }
 
     searchInput.addEventListener('input', applyFilters);
@@ -225,12 +289,14 @@ export async function renderTeachersList(container, role) {
       }
     }
 
-    // Khởi tạo trang đầu tiên
-    updateTableWithPagination(allTeachers);
+    updateTableInfinity(allTeachers);
 
-    // Chuyển sang danh sách học viên
-    document.getElementById('switch-to-students')?.addEventListener('click', () => {
+    // Chuyển tab
+    document.getElementById('tab-students')?.addEventListener('click', () => {
       window._navigatePage && window._navigatePage('students-list');
+    });
+    document.getElementById('tab-staff')?.addEventListener('click', () => {
+      window._navigatePage && window._navigatePage('staff-list');
     });
 
     // Mở modal thêm giáo viên
@@ -250,7 +316,6 @@ export async function renderTeachersList(container, role) {
       const fields = [
         { id: 'modal-teacher-fullName', label: 'Họ và tên giáo viên' },
         { id: 'modal-teacher-phone', label: 'Số điện thoại liên hệ' },
-        { id: 'modal-teacher-email', label: 'Địa chỉ Email' },
         { id: 'modal-teacher-expertise', label: 'Chuyên môn giảng dạy' },
         { id: 'modal-teacher-exp', label: 'Kinh nghiệm (năm)' }
       ];
@@ -274,10 +339,26 @@ export async function renderTeachersList(container, role) {
 
       if (hasError) return;
 
+      // Validate SĐT 10 số bắt buộc
+      const phoneVal = document.getElementById('modal-teacher-phone').value.trim();
+      if (!isValidPhone(phoneVal)) {
+        document.getElementById('modal-teacher-phone').classList.add('border-red-500', 'bg-red-50');
+        showToast('Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0 (ví dụ: 0912345678)', 'error');
+        return;
+      }
+
+      // Validate Email (nếu có điền)
+      const emailVal = document.getElementById('modal-teacher-email').value.trim();
+      if (emailVal && !isValidEmail(emailVal)) {
+        document.getElementById('modal-teacher-email').classList.add('border-red-500', 'bg-red-50');
+        showToast('Email không hợp lệ. Phải có định dạng abc@domain.com', 'error');
+        return;
+      }
+
       const payload = {
         ho_ten: document.getElementById('modal-teacher-fullName').value.trim(),
-        so_dien_thoai: document.getElementById('modal-teacher-phone').value.trim(),
-        email: document.getElementById('modal-teacher-email').value.trim(),
+        so_dien_thoai: phoneVal,
+        email: emailVal || null,
         chuyen_mon: document.getElementById('modal-teacher-expertise').value,
         kinh_nghiem: parseInt(document.getElementById('modal-teacher-exp').value) || 0
       };
@@ -460,13 +541,11 @@ function showTeacherDetailModal(t, container, role) {
 
   modal.style.display = 'flex';
 
-  // Đóng modal
   const closeModal = () => { modal.style.display = 'none'; };
   modal.querySelector('#close-teacher-detail-modal').addEventListener('click', closeModal);
   modal.querySelector('#close-teacher-detail-modal-footer').addEventListener('click', closeModal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-  // Cập nhật avatar khi đổi tên
   modal.querySelector('#t-edit-name').addEventListener('input', (e) => {
     const val = e.target.value.trim();
     if (val) {
@@ -475,10 +554,21 @@ function showTeacherDetailModal(t, container, role) {
     }
   });
 
-  // Submit In-place Edit
   modal.querySelector('#teacher-edit-inplace-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const saveBtn = modal.querySelector('#btn-save-teacher-edit');
+    
+    const phoneVal = modal.querySelector('#t-edit-phone').value.trim();
+    if (!isValidPhone(phoneVal)) {
+      showToast('Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0', 'error');
+      return;
+    }
+    const emailVal = modal.querySelector('#t-edit-email').value.trim();
+    if (emailVal && !isValidEmail(emailVal)) {
+      showToast('Email không hợp lệ. Phải có định dạng abc@domain.com', 'error');
+      return;
+    }
+
     saveBtn.disabled = true;
     saveBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span> Đang lưu...`;
 
@@ -486,8 +576,8 @@ function showTeacherDetailModal(t, container, role) {
       ho_ten: modal.querySelector('#t-edit-name').value.trim(),
       chuyen_mon: modal.querySelector('#t-edit-expertise').value,
       kinh_nghiem: parseInt(modal.querySelector('#t-edit-exp').value) || 0,
-      so_dien_thoai: modal.querySelector('#t-edit-phone').value.trim(),
-      email: modal.querySelector('#t-edit-email').value.trim(),
+      so_dien_thoai: phoneVal,
+      email: emailVal || null,
       chi_nhanh: modal.querySelector('#t-edit-branch').value.trim()
     };
 
@@ -503,7 +593,6 @@ function showTeacherDetailModal(t, container, role) {
       const putResult = await putRes.json();
       if (putResult.success) {
         showToast('Cập nhật hồ sơ giáo viên thành công!', 'success');
-        // Hiển thị trạng thái đã lưu
         const statusEl = modal.querySelector('#teacher-save-status');
         statusEl.classList.remove('hidden');
         statusEl.classList.add('flex');
@@ -511,7 +600,6 @@ function showTeacherDetailModal(t, container, role) {
           statusEl.classList.add('hidden');
           statusEl.classList.remove('flex');
         }, 3000);
-        // Reload danh sách nền
         renderTeachersList(container, role);
       } else {
         showToast(putResult.error || 'Có lỗi xảy ra', 'error');
