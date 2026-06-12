@@ -1,4 +1,9 @@
-<<<<<<< HEAD
+### [12/06/2026 21:44] — Sửa lỗi SQL Check Constraint và hiển thị Nội quy trung tâm
+- **Loại**: Sửa bug
+- **File**: `backend/src/config/db.js`, `backend/seed_test_data.js`, `frontend/src/pages/CenterRules.js`
+- **Mô tả**: Chuẩn hóa dữ liệu cột `ap_dung_cho` trong bảng `noi_quy` thành các giá trị không dấu (`tat_ca`, `hoc_vien`, `giao_vien`, `nhan_vien`) để tương thích với PostgreSQL Check Constraint. Đồng bộ ở cả database seeding và frontend selectbox. Map nhãn tiếng Việt có dấu (`Tất cả`, `Học viên`, `Giáo viên`, `Nhân viên`) trên giao diện người dùng để đảm bảo mặt hiển thị.
+- **Kết quả**: Thành công (Server Backend khởi động tốt không lỗi)
+
 ### [12/06/2026 21:30] — Modal Hồ sơ 2 Tab, Sửa/Đổi gói học, Nâng cấp Infinity Scroll & Bộ lọc, Fix ClassManagement
 - **Loại**: Sửa bug + Tính năng mới + Cải tiến giao diện
 - **File**:
@@ -37,7 +42,7 @@
   - **StaffList.js**: Trang nhân viên mới với bảng có phân trang, CRUD, validate
   - **Dashboard.js**: Thêm tab "Hồ sơ Nhân viên" vào sidebar nhóm Nhân sự, đăng ký route staff-list
   - **API /staff**: GET/POST /api/staff/create, DELETE /api/staff/:id (dùng bảng ho_so, loai_ho_so='nhan_vien')
-=======
+
 ### [12/06/2026 16:20] — Hoàn thiện các trang chấm công, sổ liên lạc, đánh giá giáo viên & API liên quan
 - **Loại**: Hoàn thiện tính năng / Giao diện / API mới
 - **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/LessonDiary.js`, `frontend/src/pages/TeacherFeedbacks.js`, `backend/src/routes/api.js`
@@ -46,7 +51,6 @@
   - **backend/src/routes/api.js**: Bổ sung thêm API endpoint `POST /api/checkin-logs` phục vụ lưu log chấm công thủ công có kiểm tra hồ sơ và tự động gửi thông báo (`createNotification`).
   - **LessonDiary.js**: Xây dựng giao diện sổ liên lạc và nhật ký học tập dạng Timeline sắc nét. Giáo viên có thể lọc từng học viên để xem lịch sử, và trực tiếp sử dụng form viết nhận xét điện tử gửi lên database. Học viên chỉ xem được thông tin của chính mình.
   - **TeacherFeedbacks.js**: Xây dựng biểu đồ bento phân phối sao đánh giá, điểm trung bình và danh sách ý kiến đóng góp chi tiết từ phụ huynh. Tích hợp form đánh giá chất lượng dạy học 1-5 sao dành riêng cho tài khoản học viên.
->>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
 - **Kết quả**: Thành công
 
 ### [12/06/2026 14:31] — Cấu hình bảo mật Git (.gitignore) tránh lộ API key

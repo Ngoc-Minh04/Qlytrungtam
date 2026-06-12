@@ -19,6 +19,13 @@ export async function renderCenterRules(container) {
       const result = await res.json();
       const rules = result.data || [];
 
+      const targetLabels = {
+        'tat_ca': 'Tất cả',
+        'hoc_vien': 'Học viên',
+        'giao_vien': 'Giáo viên',
+        'nhan_vien': 'Nhân viên'
+      };
+
       container.innerHTML = `
         <div class="space-y-6 max-w-4xl mx-auto">
           <!-- Header Area -->
@@ -55,7 +62,7 @@ export async function renderCenterRules(container) {
                     </div>
                     <p class="text-slate-600 leading-relaxed text-[12px] whitespace-pre-wrap">${rule.noi_dung}</p>
                     <div class="flex items-center gap-2 flex-wrap">
-                      <span class="inline-block text-[10px] bg-slate-100 text-slate-600 rounded-md px-2.5 py-1 capitalize font-semibold">Đối tượng: ${rule.ap_dung_cho}</span>
+                      <span class="inline-block text-[10px] bg-slate-100 text-slate-600 rounded-md px-2.5 py-1 capitalize font-semibold">Đối tượng: ${targetLabels[rule.ap_dung_cho] || rule.ap_dung_cho}</span>
                       <span class="text-[10px] text-slate-400">Thứ tự: ${rule.thu_tu}</span>
                     </div>
                   </div>
@@ -95,10 +102,10 @@ export async function renderCenterRules(container) {
                 <div>
                   <label class="block text-[11.5px] font-semibold text-[#414753] mb-1">Áp dụng cho</label>
                   <select id="modal-rule-ap-dung" class="w-full border border-[#e2e2e4] rounded-xl px-3 py-2 outline-none focus:border-[#0066cc] transition text-[13px] bg-white">
-                    <option value="tất cả">Tất cả</option>
-                    <option value="học viên">Học viên</option>
-                    <option value="giáo viên">Giáo viên</option>
-                    <option value="nhân viên">Nhân viên</option>
+                    <option value="tat_ca">Tất cả</option>
+                    <option value="hoc_vien">Học viên</option>
+                    <option value="giao_vien">Giáo viên</option>
+                    <option value="nhan_vien">Nhân viên</option>
                   </select>
                 </div>
                 <div>
