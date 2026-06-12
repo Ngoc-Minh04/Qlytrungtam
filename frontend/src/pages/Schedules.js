@@ -298,6 +298,7 @@ export async function renderSchedules(container) {
           <span class="text-xs text-slate-400">• Nhấn vào tháng/ngày để zoom vào lịch chi tiết</span>
         </div>
 
+<<<<<<< HEAD
         <!-- Calendar container -->
         <div class="bg-white rounded-[18px] border border-apple-divider overflow-hidden" id="calendar-view">
           <!-- Rendered by JS -->
@@ -308,6 +309,19 @@ export async function renderSchedules(container) {
           <div class="p-5 border-b border-apple-divider flex justify-between items-center">
             <h3 class="font-bold text-apple-ink text-sm">Danh sách ca học chi tiết</h3>
             <span class="text-[10px] text-slate-400">${schedules.length} bản ghi</span>
+=======
+        <!-- Bảng danh sách phân trang (dành cho drag/swipe phụ họa bên dưới) -->
+        <div class="bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden">
+          <div class="p-6 border-b border-apple-divider flex justify-between items-center flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-apple-ink text-sm uppercase tracking-wider">Danh sách ca học chi tiết</h3>
+              <span class="text-[10px] text-slate-400">${schedules.length} bản ghi</span>
+            </div>
+            <!-- Nút Refresh đồng bộ kích thước -->
+            <button id="btn-refresh-schedules" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+>>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
           </div>
           <div class="overflow-x-auto overflow-y-auto max-h-[320px]">
             <table class="w-full text-left border-collapse">
@@ -379,8 +393,18 @@ export async function renderSchedules(container) {
       });
     }
 
+<<<<<<< HEAD
     // Khởi động mặc định là view Tuần
     renderCalendar();
+=======
+    document.getElementById('btn-refresh-schedules')?.addEventListener('click', () => {
+      renderSchedules(container);
+    });
+
+    setupSwipePagination(schedules, tableBody, (pageSchedules) => {
+      tableBody.innerHTML = renderTableRows(pageSchedules);
+    }, 10);
+>>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
 
   } catch (err) {
     container.innerHTML = `

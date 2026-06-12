@@ -68,6 +68,15 @@ router.post('/registrations', verifyAccess(['admin', 'le_tan']), async (req, res
       ho_so_id, goi_hoc_phi_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, chi_nhanh_mua || 'Trung tam chính'
     ]);
 
+    await createNotification(
+      'dang_ky_khoa_hoc',
+      'Đăng ký khóa học mới',
+      `Học viên đăng ký thành công khóa học đại trà mới (ID hồ sơ: ${ho_so_id}).`,
+      result.rows[0].id,
+      'dang_ky_khoa_hoc',
+      'nhan_vien'
+    );
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -97,6 +106,15 @@ router.post('/registrations/tutoring', verifyAccess(['admin', 'le_tan']), async 
     const result = await pool.query(insertQuery, [
       hoc_vien_id, giao_vien_id, goi_hoc_kem_id, so_buoi_dang_ky, tu_ngay, den_ngay || null, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt
     ]);
+
+    await createNotification(
+      'dang_ky_hoc_kem',
+      'Đăng ký học kèm 1-1',
+      `Học viên đăng ký thành công gói học kèm 1-1 mới (ID học viên: ${hoc_vien_id}).`,
+      result.rows[0].id,
+      'dang_ky_hoc_kem',
+      'nhan_vien'
+    );
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -172,6 +190,15 @@ router.post('/schedule', verifyAccess(['admin', 'le_tan']), async (req, res) => 
       dang_ky_hoc_kem_id, contract.giao_vien_id, contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi || 'ca_nhan'
     ]);
 
+    await createNotification(
+      'xep_lich_hoc',
+      'Xếp lịch học kèm mới',
+      `Đã xếp lịch học mới cho học viên ngày ${ngay_hoc} từ ${gio_bat_dau} đến ${gio_ket_thuc}.`,
+      result.rows[0].id,
+      'lich_hoc',
+      'nhan_vien'
+    );
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -227,6 +254,16 @@ router.put('/schedule/:id/cancel', verifyAccess(['admin', 'le_tan', 'giao_vien',
           [session.dang_ky_hoc_kem_id]
         );
         await client.query('COMMIT');
+        
+        await createNotification(
+          'huy_lich_muon',
+          'Hủy lịch học sát giờ (Vắng)',
+          `Lịch học ID ${id} bị hủy sát giờ (< ${minHours} giờ). Chuyển thành vắng và trừ buổi.`,
+          id,
+          'lich_hoc',
+          'nhan_vien'
+        );
+
         return res.json({ 
           success: true, 
           data: updated.rows[0], 
@@ -245,6 +282,16 @@ router.put('/schedule/:id/cancel', verifyAccess(['admin', 'le_tan', 'giao_vien',
       "UPDATE lich_hoc SET trang_thai = 'da_huy', ngay_cap_nhat = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *",
       [id]
     );
+
+    await createNotification(
+      'huy_lich_hoc',
+      'Hủy lịch học thành công',
+      `Đã hủy thành công lịch học ID ${id} trước thời hạn.`,
+      id,
+      'lich_hoc',
+      'nhan_vien'
+    );
+
     res.json({ success: true, data: cancelRes.rows[0], message: 'Hủy lịch học thành công và không tính vào gói học.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -318,6 +365,15 @@ router.post('/checkin', async (req, res) => {
       RETURNING *
     `;
     const result = await pool.query(insertQuery, [ho_so_id, current_branch || student.chi_nhanh || 'Trung tam chính']);
+
+    await createNotification(
+      'checkin_hoc_vien',
+      'Học viên check-in',
+      `Học viên "${student.ho_ten}" đã check-in thành công tại chi nhánh "${current_branch || student.chi_nhanh || 'Trung tâm chính'}".`,
+      result.rows[0].id,
+      'luot_vao_ra',
+      'nhan_vien'
+    );
 
     res.json({ 
       success: true, 
@@ -466,6 +522,14 @@ router.post('/course-packages', verifyAccess(['admin', 'le_tan']), async (req, r
       'INSERT INTO goi_hoc_phi (ten_goi, mo_ta, so_thang, gia, is_deleted) VALUES ($1, $2, $3, $4, 0) RETURNING *',
       [ten_goi, mo_ta, parseInt(so_thang), parseFloat(gia)]
     );
+    await createNotification(
+      'them_goi_hoc_phi',
+      'Thêm mới gói học phí',
+      `Gói học phí đại trà "${ten_goi}" đã được thêm mới trên hệ thống.`,
+      result.rows[0].id,
+      'goi_hoc_phi',
+      'nhan_vien'
+    );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -484,6 +548,14 @@ router.put('/course-packages/:id', verifyAccess(['admin', 'le_tan']), async (req
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học phí' });
     }
+    await createNotification(
+      'sua_goi_hoc_phi',
+      'Cập nhật gói học phí',
+      `Gói học phí đại trà "${ten_goi}" đã được cập nhật thành công.`,
+      id,
+      'goi_hoc_phi',
+      'nhan_vien'
+    );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -498,6 +570,14 @@ router.delete('/course-packages/:id', verifyAccess(['admin']), async (req, res) 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học phí' });
     }
+    await createNotification(
+      'xoa_goi_hoc_phi',
+      'Xóa gói học phí',
+      `Đã gỡ bỏ gói học phí "${result.rows[0].ten_goi}" khỏi hệ thống.`,
+      id,
+      'goi_hoc_phi',
+      'nhan_vien'
+    );
     res.json({ success: true, message: 'Đã xóa mềm gói học phí thành công!' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -522,6 +602,14 @@ router.post('/tutoring-packages', verifyAccess(['admin', 'le_tan']), async (req,
       'INSERT INTO goi_hoc_kem (ten_goi, mo_ta, loai_goi, so_buoi, so_thang, gia, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, 0) RETURNING *',
       [ten_goi, mo_ta, loai_goi || 'theo_buoi', parseInt(so_buoi) || 0, parseInt(so_thang) || 0, parseFloat(gia)]
     );
+    await createNotification(
+      'them_goi_hoc_kem',
+      'Thêm mới gói học kèm',
+      `Gói học kèm 1-1 "${ten_goi}" đã được thêm mới trên hệ thống.`,
+      result.rows[0].id,
+      'goi_hoc_kem',
+      'nhan_vien'
+    );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -540,6 +628,14 @@ router.put('/tutoring-packages/:id', verifyAccess(['admin', 'le_tan']), async (r
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học kèm' });
     }
+    await createNotification(
+      'sua_goi_hoc_kem',
+      'Cập nhật gói học kèm',
+      `Gói học kèm 1-1 "${ten_goi}" đã được cập nhật thành công.`,
+      id,
+      'goi_hoc_kem',
+      'nhan_vien'
+    );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -554,6 +650,14 @@ router.delete('/tutoring-packages/:id', verifyAccess(['admin']), async (req, res
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học kèm' });
     }
+    await createNotification(
+      'xoa_goi_hoc_kem',
+      'Xóa gói học kèm',
+      `Đã gỡ bỏ gói học kèm 1-1 "${result.rows[0].ten_goi}" khỏi hệ thống.`,
+      id,
+      'goi_hoc_kem',
+      'nhan_vien'
+    );
     res.json({ success: true, message: 'Đã xóa mềm gói học kèm thành công!' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -665,6 +769,14 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
     );
 
     await client.query('COMMIT');
+    await createNotification(
+      'them_lop_hoc',
+      'Mở lớp học nhóm mới',
+      `Lớp học nhóm "${ten_lop}" đã được mở thành công.`,
+      lopHoc.id,
+      'lop_hoc',
+      'nhan_vien'
+    );
     res.status(201).json({ success: true, data: { class: lopHoc, schedule: schedRes.rows[0] } });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -741,8 +853,13 @@ router.delete('/staff/:id', verifyAccess(['admin']), async (req, res) => {
 
 // GET /api/rules: Lấy nội quy
 router.get('/rules', async (req, res) => {
+  const userRole = req.headers['x-user-role'] || 'hoc_vien';
   try {
-    const result = await pool.query("SELECT * FROM noi_quy WHERE is_active = 1 ORDER BY thu_tu ASC");
+    let queryStr = "SELECT * FROM noi_quy ORDER BY thu_tu ASC";
+    if (userRole !== 'admin' && userRole !== 'le_tan') {
+      queryStr = "SELECT * FROM noi_quy WHERE is_active = 1 ORDER BY thu_tu ASC";
+    }
+    const result = await pool.query(queryStr);
     res.json({ success: true, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -769,6 +886,48 @@ router.get('/checkin-logs', async (req, res) => {
       ORDER BY l.thoi_diem DESC LIMIT 100
     `);
     res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/checkin-logs: Thêm lượt quét check-in chấm công thủ công (Admin & Lễ tân)
+router.post('/checkin-logs', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { ho_so_id, chi_nhanh_thuc_hien, thoi_diem, phuong_thuc } = req.body;
+
+  if (!ho_so_id || !thoi_diem) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
+  }
+
+  try {
+    const hsRes = await pool.query('SELECT ho_ten, ma_ho_so FROM ho_so WHERE id = $1', [ho_so_id]);
+    if (hsRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ tương ứng' });
+    }
+    const targetUser = hsRes.rows[0];
+
+    const queryStr = `
+      INSERT INTO luot_vao_ra (ho_so_id, thoi_diem, loai, phuong_thuc, chi_nhanh_thuc_hien)
+      VALUES ($1, $2, 'vao', $3, $4)
+      RETURNING *
+    `;
+    const result = await pool.query(queryStr, [
+      ho_so_id, 
+      thoi_diem, 
+      phuong_thuc || 'van_tay', 
+      chi_nhanh_thuc_hien || 'Trung tâm chính'
+    ]);
+
+    await createNotification(
+      'cham_cong_thu_cong',
+      'Chấm công thủ công',
+      `Đã ghi nhận lượt chấm công thủ công cho "${targetUser.ho_ten}" vào lúc ${new Date(thoi_diem).toLocaleTimeString('vi-VN')} ngày ${new Date(thoi_diem).toLocaleDateString('vi-VN')}.`,
+      result.rows[0].id,
+      'luot_vao_ra',
+      'nhan_vien'
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -978,6 +1137,14 @@ router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async
     }
 
     await client.query('COMMIT');
+    await createNotification(
+      'huy_khoa_hoc',
+      'Hủy khóa học',
+      `Đăng ký khóa học ID ${id} đã bị hủy. Hoàn tiền: ${so_tien_hoan || 0} VNĐ.`,
+      id,
+      'dang_ky_khoa_hoc',
+      'nhan_vien'
+    );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -1131,6 +1298,17 @@ router.put('/students/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học viên' });
     }
+    
+    // Ghi nhận thông báo
+    await createNotification(
+      'sua_hoc_vien',
+      'Cập nhật hồ sơ học viên',
+      `Hồ sơ học viên "${ho_ten}" đã được cập nhật thành công.`,
+      id,
+      'ho_so',
+      'nhan_vien'
+    );
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1151,6 +1329,17 @@ router.delete('/students/:id', verifyAccess(['admin']), async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học viên để xóa' });
     }
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'xoa_hoc_vien',
+      'Xóa hồ sơ học viên',
+      `Đã xóa mềm hồ sơ học viên "${result.rows[0].ho_ten}" khỏi hệ thống.`,
+      id,
+      'ho_so',
+      'nhan_vien'
+    );
+
     res.json({ success: true, message: 'Đã xóa mềm học viên thành công!' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1175,6 +1364,17 @@ router.put('/teachers/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ giáo viên' });
     }
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'sua_giao_vien',
+      'Cập nhật hồ sơ giáo viên',
+      `Hồ sơ giáo viên "${ho_ten}" đã được cập nhật thành công.`,
+      id,
+      'ho_so',
+      'nhan_vien'
+    );
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1195,6 +1395,17 @@ router.delete('/teachers/:id', verifyAccess(['admin']), async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ giáo viên để xóa' });
     }
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'xoa_giao_vien',
+      'Xóa hồ sơ giáo viên',
+      `Đã xóa mềm hồ sơ giáo viên "${result.rows[0].ho_ten}" khỏi hệ thống.`,
+      id,
+      'ho_so',
+      'nhan_vien'
+    );
+
     res.json({ success: true, message: 'Đã xóa mềm giáo viên thành công!' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1224,6 +1435,16 @@ router.post('/students/create', verifyAccess(['admin', 'le_tan']), async (req, r
       ma_ho_so, ho_ten, ngay_sinh, genderLower, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh
     ]);
 
+    // Ghi nhận thông báo
+    await createNotification(
+      'them_hoc_vien',
+      'Tiếp nhận học viên mới',
+      `Học viên "${ho_ten}" (${ma_ho_so}) đã được tiếp nhận tại chi nhánh "${chi_nhanh || 'Trung tâm chính'}".`,
+      result.rows[0].id,
+      'ho_so',
+      'nhan_vien'
+    );
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('Lỗi API tạo học viên:', err.message);
@@ -1250,6 +1471,16 @@ router.post('/teachers/create', verifyAccess(['admin', 'le_tan']), async (req, r
     const result = await pool.query(insertQuery, [
       ma_ho_so, ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính'
     ]);
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'them_giao_vien',
+      'Tuyển dụng giáo viên mới',
+      `Giáo viên "${ho_ten}" (${ma_ho_so}) đã được thêm mới trên hệ thống.`,
+      result.rows[0].id,
+      'ho_so',
+      'nhan_vien'
+    );
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -1386,6 +1617,209 @@ router.get('/registrations', async (req, res) => {
       ORDER BY r.ngay_tao DESC
     `);
     res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================
+// 6. PHÂN HỆ THÔNG BÁO (Notifications)
+// ============================================================
+
+// Helper function để chèn thông báo
+async function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null, doi_tuong = null, danh_cho = 'nhan_vien') {
+  try {
+    await pool.query(
+      `INSERT INTO thong_bao (loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho]
+    );
+  } catch (err) {
+    console.error('Lỗi tự động chèn thông báo:', err.message);
+  }
+}
+
+// GET /api/notifications: Lấy danh sách thông báo theo role
+router.get('/notifications', async (req, res) => {
+  const userRole = req.headers['x-user-role'] || 'hoc_vien';
+  let target = 'nhan_vien'; // Mặc định Lễ tân/nhân viên
+  if (userRole === 'admin') target = 'admin';
+  else if (userRole === 'giao_vien') target = 'giao_vien';
+  else if (userRole === 'hoc_vien') target = 'hoc_vien';
+
+  try {
+    // Admin xem được tất cả các thông báo
+    let queryStr = '';
+    let params = [];
+    if (userRole === 'admin') {
+      queryStr = 'SELECT * FROM thong_bao ORDER BY ngay_tao DESC LIMIT 100';
+    } else {
+      queryStr = 'SELECT * FROM thong_bao WHERE danh_cho = $1 ORDER BY ngay_tao DESC LIMIT 100';
+      params.push(target);
+    }
+    const result = await pool.query(queryStr, params);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/notifications/:id/read: Đánh dấu đã đọc
+router.put('/notifications/:id/read', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'UPDATE thong_bao SET da_doc = 1 WHERE id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy thông báo' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/notifications/:id: Xóa một thông báo
+router.delete('/notifications/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM thong_bao WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy thông báo' });
+    }
+    res.json({ success: true, message: 'Đã xóa thông báo thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/notifications/all: Xóa tất cả thông báo của người dùng đó
+router.delete('/notifications/all/clear', async (req, res) => {
+  const userRole = req.headers['x-user-role'] || 'hoc_vien';
+  let target = 'nhan_vien';
+  if (userRole === 'admin') target = 'admin';
+  else if (userRole === 'giao_vien') target = 'giao_vien';
+  else if (userRole === 'hoc_vien') target = 'hoc_vien';
+
+  try {
+    if (userRole === 'admin') {
+      await pool.query('DELETE FROM thong_bao');
+    } else {
+      await pool.query('DELETE FROM thong_bao WHERE danh_cho = $1', [target]);
+    }
+    res.json({ success: true, message: 'Đã xóa tất cả thông báo!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================
+// 7. PHÂN HỆ NỘI QUY (Rules Management)
+// ============================================================
+
+// POST /api/rules: Thêm nội quy (Chỉ Admin/Lễ tân)
+router.post('/rules', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { tieu_de, noi_dung, ap_dung_cho, thu_tu } = req.body;
+  if (!tieu_de || !noi_dung) {
+    return res.status(400).json({ success: false, error: 'Tiêu đề và nội dung là bắt buộc' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO noi_quy (tieu_de, noi_dung, ap_dung_cho, thu_tu, is_active) 
+       VALUES ($1, $2, $3, $4, 1) RETURNING *`,
+      [tieu_de, noi_dung, ap_dung_cho || 'tất cả', parseInt(thu_tu) || 0]
+    );
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'them_noi_quy',
+      'Thêm nội quy mới',
+      `Nội quy "${tieu_de}" đã được thêm mới bởi bộ phận quản trị.`,
+      result.rows[0].id,
+      'noi_quy',
+      'nhan_vien'
+    );
+    await createNotification(
+      'them_noi_quy',
+      'Cập nhật nội quy trung tâm',
+      `Đã có nội quy mới được ban hành: "${tieu_de}". Vui lòng đọc kỹ để tuân thủ.`,
+      result.rows[0].id,
+      'noi_quy',
+      'hoc_vien'
+    );
+    await createNotification(
+      'them_noi_quy',
+      'Cập nhật nội quy trung tâm',
+      `Đã có nội quy mới được ban hành: "${tieu_de}". Vui lòng đọc kỹ để tuân thủ.`,
+      result.rows[0].id,
+      'noi_quy',
+      'giao_vien'
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/rules/:id: Cập nhật nội quy (Chỉ Admin/Lễ tân)
+router.put('/rules/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  const { tieu_de, noi_dung, ap_dung_cho, thu_tu, is_active } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE noi_quy 
+       SET tieu_de = $1, noi_dung = $2, ap_dung_cho = $3, thu_tu = $4, is_active = $5 
+       WHERE id = $6 RETURNING *`,
+      [tieu_de, noi_dung, ap_dung_cho, parseInt(thu_tu) || 0, parseInt(is_active) === 0 ? 0 : 1, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy nội quy' });
+    }
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'sua_noi_quy',
+      'Chỉnh sửa nội quy',
+      `Nội quy "${tieu_de}" đã được cập nhật nội dung.`,
+      id,
+      'noi_quy',
+      'nhan_vien'
+    );
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/rules/:id: Xóa nội quy (Chỉ Admin/Lễ tân)
+router.delete('/rules/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Đọc thông tin trước khi xóa để gửi thông báo
+    const ruleRes = await pool.query('SELECT tieu_de FROM noi_quy WHERE id = $1', [id]);
+    if (ruleRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy nội quy' });
+    }
+    const tieu_de = ruleRes.rows[0].tieu_de;
+
+    await pool.query('DELETE FROM noi_quy WHERE id = $1', [id]);
+
+    // Ghi nhận thông báo
+    await createNotification(
+      'xoa_noi_quy',
+      'Xóa nội quy',
+      `Nội quy "${tieu_de}" đã bị gỡ bỏ khỏi hệ thống.`,
+      id,
+      'noi_quy',
+      'nhan_vien'
+    );
+
+    res.json({ success: true, message: 'Đã xóa nội quy thành công!' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

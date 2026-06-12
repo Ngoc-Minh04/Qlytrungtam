@@ -91,9 +91,15 @@ export async function renderStudentsList(container, role) {
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
+<<<<<<< HEAD
           <button id="btn-add-student-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
             <span class="material-symbols-outlined text-[16px]">add</span>
             Thêm hồ sơ mới
+=======
+          <!-- Nút Refresh đồng bộ kích thước -->
+          <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+>>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
           </button>
         </div>
 
@@ -371,6 +377,11 @@ export async function renderStudentsList(container, role) {
     });
     document.getElementById('tab-staff')?.addEventListener('click', () => {
       window._navigatePage && window._navigatePage('staff-list');
+    });
+
+    // Sự kiện refresh học viên
+    document.getElementById('btn-refresh-students')?.addEventListener('click', () => {
+      renderStudentsList(container, role);
     });
 
     // Mở modal thêm hồ sơ

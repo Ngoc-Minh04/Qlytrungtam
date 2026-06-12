@@ -347,9 +347,22 @@ export function renderDashboard(role) {
           <span class="material-symbols-outlined text-[19px]">refresh</span>
         </button>
         <!-- Thông báo -->
-        <button class="p-1.5 text-[#727784] hover:text-[#0066cc] hover:bg-[#f3f3f5] rounded-full transition-all active:scale-95">
-          <span class="material-symbols-outlined text-[19px]">notifications</span>
-        </button>
+        <div class="relative">
+          <button id="btn-notifications" class="relative p-1.5 text-[#727784] hover:text-[#0066cc] hover:bg-[#f3f3f5] rounded-full transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[19px]">notifications</span>
+            <span id="notif-badge" class="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+          </button>
+          <!-- Notification Dropdown Menu -->
+          <div id="notifications-dropdown" class="absolute right-0 top-full mt-2 w-80 bg-white border border-[#e2e2e4] rounded-2xl shadow-xl py-3 hidden z-50 flex flex-col max-h-[400px] overflow-hidden">
+            <div class="px-4 pb-2 border-b border-[#f3f3f5] flex justify-between items-center shrink-0">
+              <span class="text-[12.5px] font-bold text-[#1a1c1d]">Thông báo</span>
+              <button id="btn-clear-all-notif" class="text-[11px] text-[#0066cc] hover:underline font-semibold">Xóa tất cả</button>
+            </div>
+            <div id="notifications-list" class="flex-grow overflow-y-auto divide-y divide-[#f3f3f5] pr-1">
+              <div class="p-4 text-center text-[12px] text-slate-500">Đang tải thông báo...</div>
+            </div>
+          </div>
+        </div>
         <!-- User Dropdown -->
         <div class="relative group/user">
           <button class="flex items-center gap-1.5 px-2 py-1.5 hover:bg-[#f3f3f5] rounded-full transition-all select-none">
@@ -680,6 +693,131 @@ export function renderDashboard(role) {
         renderSubPage(currentActiveSubPage || currentPage, role);
       } else { showToast(result.error || 'Có lỗi xảy ra', 'error'); }
     } catch (err) { showToast('Không thể kết nối máy chủ', 'error'); }
+  });
+
+  // ==========================================
+  // XỬ LÝ LOGIC THÔNG BÁO Ở HEADER (Dropdown & Badge)
+  // ==========================================
+  const btnNotif = document.getElementById('btn-notifications');
+  const dropdownNotif = document.getElementById('notifications-dropdown');
+  const badgeNotif = document.getElementById('notif-badge');
+  const listNotif = document.getElementById('notifications-list');
+  const btnClearAllNotif = document.getElementById('btn-clear-all-notif');
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch(`${API_BASE}/notifications`, {
+        headers: { 'x-user-role': role }
+      });
+      const result = await res.json();
+      if (result.success) {
+        const list = result.data || [];
+        const unreadCount = list.filter(n => n.da_doc === 0).length;
+
+        // Cập nhật Badge
+        if (unreadCount > 0) {
+          badgeNotif.textContent = unreadCount;
+          badgeNotif.classList.remove('hidden');
+        } else {
+          badgeNotif.classList.add('hidden');
+        }
+
+        // Cập nhật Danh sách dropdown
+        if (list.length === 0) {
+          listNotif.innerHTML = `<div class="p-5 text-center text-[12px] text-slate-400">Không có thông báo nào</div>`;
+          return;
+        }
+
+        listNotif.innerHTML = list.map(item => `
+          <div class="p-3 text-[12px] hover:bg-slate-50 transition-all relative flex flex-col gap-1 notif-item cursor-pointer ${item.da_doc === 0 ? 'bg-[#0066cc]/5 border-l-2 border-[#0066cc]' : ''}" data-id="${item.id}">
+            <div class="flex justify-between items-start pr-6">
+              <span class="font-bold text-[#1a1c1d]">${item.tieu_de}</span>
+              <button class="btn-delete-notif absolute right-2 top-2 p-1 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 transition-all" data-id="${item.id}" title="Xóa thông báo">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+              </button>
+            </div>
+            <p class="text-slate-600 pr-4">${item.noi_dung}</p>
+            <span class="text-[9px] text-slate-400">${new Date(item.ngay_tao).toLocaleString()}</span>
+          </div>
+        `).join('');
+
+        // Thêm sự kiện click từng thông báo để đọc
+        listNotif.querySelectorAll('.notif-item').forEach(el => {
+          el.addEventListener('click', async (e) => {
+            // Nếu click vào nút xóa thì bỏ qua
+            if (e.target.closest('.btn-delete-notif')) return;
+            
+            const id = el.getAttribute('data-id');
+            try {
+              const readRes = await fetch(`${API_BASE}/notifications/${id}/read`, { method: 'PUT' });
+              const readResult = await readRes.json();
+              if (readResult.success) {
+                loadNotifications();
+              }
+            } catch (err) { console.error('Lỗi khi đọc thông báo:', err); }
+          });
+        });
+
+        // Thêm sự kiện xóa từng thông báo
+        listNotif.querySelectorAll('.btn-delete-notif').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.getAttribute('data-id');
+            try {
+              const delRes = await fetch(`${API_BASE}/notifications/${id}`, { method: 'DELETE' });
+              const delResult = await delRes.json();
+              if (delResult.success) {
+                showToast('Đã xóa thông báo');
+                loadNotifications();
+              }
+            } catch (err) { console.error('Lỗi khi xóa thông báo:', err); }
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Không thể load thông báo:', err);
+    }
+  }
+
+  // Bắt đầu load thông báo định kỳ
+  loadNotifications();
+  const notifInterval = setInterval(loadNotifications, 15000); // 15 giây tự động reload 1 lần
+  window.addEventListener('unload', () => clearInterval(notifInterval));
+
+  // Toggle Dropdown
+  btnNotif?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownNotif.classList.toggle('hidden');
+    if (!dropdownNotif.classList.contains('hidden')) {
+      loadNotifications();
+    }
+  });
+
+  // Đóng dropdown khi click bên ngoài
+  document.addEventListener('click', (e) => {
+    if (dropdownNotif && !dropdownNotif.contains(e.target) && e.target !== btnNotif && !btnNotif?.contains(e.target)) {
+      dropdownNotif.classList.add('hidden');
+    }
+  });
+
+  // Xóa tất cả thông báo
+  btnClearAllNotif?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (confirm('Bạn có chắc chắn muốn xóa tất cả thông báo không?')) {
+      try {
+        const res = await fetch(`${API_BASE}/notifications/all/clear`, {
+          method: 'DELETE',
+          headers: { 'x-user-role': role }
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Đã xóa toàn bộ thông báo');
+          loadNotifications();
+        }
+      } catch (err) {
+        showToast('Lỗi khi xóa thông báo', 'error');
+      }
+    }
   });
 
   // Render trang mặc định

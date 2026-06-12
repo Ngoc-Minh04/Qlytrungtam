@@ -10,7 +10,12 @@ export async function renderClassManagement(container) {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Form bên trái -->
         <div class="bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
-          <h3 class="font-bold text-apple-ink text-sm">Đăng ký lịch dạy</h3>
+          <div class="flex justify-between items-center pb-1 border-b border-apple-divider/40">
+            <h3 class="font-bold text-apple-ink text-sm">Đăng ký lịch dạy</h3>
+            <button id="btn-refresh-class-form" class="flex items-center justify-center gap-1 px-2.5 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[11px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[28px]" type="button">
+              <span class="material-symbols-outlined text-[14px]">refresh</span>Tải lại
+            </button>
+          </div>
           
           <form id="schedule-form" class="space-y-4 text-xs">
             <!-- 1. Chọn Giáo viên -->
@@ -406,9 +411,14 @@ export async function renderClassManagement(container) {
       });
 
       schList.innerHTML = `
-        <div class="p-4 border-b border-apple-divider flex justify-between items-center">
+        <div class="p-4 border-b border-apple-divider flex justify-between items-center flex-wrap gap-2">
           <h3 class="font-bold text-apple-ink text-xs uppercase tracking-wider">Lịch sử đặt lịch & Lớp học</h3>
-          <span class="text-[10px] text-slate-400">${classesList.length + schedules.length} bản ghi</span>
+          <div class="flex items-center gap-2">
+            <button id="btn-refresh-class-list" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[30px]" type="button">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+            <span class="text-[10px] text-slate-400 bg-white px-3 py-1 rounded-full font-bold">${classesList.length + schedules.length} bản ghi</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -428,11 +438,31 @@ export async function renderClassManagement(container) {
           </table>
         </div>
       `;
+<<<<<<< HEAD
+=======
+
+      schList.querySelectorAll('.btn-remove-selected').forEach(btn => {
+        // Gắn sự kiện (nếu có, không lỗi)
+      });
+
+      document.getElementById('btn-refresh-class-list')?.addEventListener('click', () => {
+        loadScheduleList();
+      });
+
+>>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
     } catch (e) {
       schList.innerHTML = `<div class="p-4 text-red-600 text-xs">Lỗi tải lịch sử đặt lịch: ${e.message}</div>`;
     }
   }
 
+<<<<<<< HEAD
+=======
+  document.getElementById('btn-refresh-class-form')?.addEventListener('click', () => {
+    renderClassManagement(container);
+  });
+
+  // Khởi chạy dữ liệu form
+>>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
   loadFormData();
   loadScheduleList();
 

@@ -101,12 +101,17 @@ export async function renderStudentRequests(container) {
 
         <!-- Table -->
         <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden shadow-sm">
-          <div class="px-5 py-4 border-b border-[#f3f3f5] flex items-center justify-between">
+          <div class="px-5 py-4 border-b border-[#f3f3f5] flex items-center justify-between flex-wrap gap-2">
             <h3 class="font-bold text-apple-ink text-sm flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[18px]">manage_accounts</span>
               Danh sách đăng ký khóa học đang hoạt động
             </h3>
-            <span class="text-[10px] text-slate-400 font-medium">${activeRegs.length} bản ghi</span>
+            <div class="flex items-center gap-2">
+              <button id="btn-refresh-requests" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+              </button>
+              <span class="text-[10px] text-slate-400 bg-[#f3f3f5] px-3 py-1.5 rounded-full font-bold">${activeRegs.length} bản ghi</span>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
@@ -188,6 +193,10 @@ export async function renderStudentRequests(container) {
     setupSwipePagination(activeRegs, tableBody, (pageList) => {
       tableBody.innerHTML = renderRows(pageList);
     }, 10);
+
+    document.getElementById('btn-refresh-requests')?.addEventListener('click', () => {
+      renderStudentRequests(container);
+    });
 
     // Gắn sự kiện nút Hủy KH
     let selectedRegId = null;

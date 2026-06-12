@@ -56,12 +56,18 @@ export async function renderTutoringPackages(container) {
 
     container.innerHTML = `
       <div class="space-y-6">
-        <div class="flex justify-between items-center">
-          ${role === 'admin' || role === 'le_tan' ? `
-            <button id="btn-open-create-tutor-pkg" class="flex items-center gap-1 px-4 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
-              <span class="material-symbols-outlined text-[16px]">add</span>Thêm gói học kèm
+        <div class="flex justify-between items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-2">
+            <!-- Nút Refresh đồng bộ kích thước -->
+            <button id="btn-refresh-tutoring-packages" class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
-          ` : ''}
+            ${role === 'admin' || role === 'le_tan' ? `
+              <button id="btn-open-create-tutor-pkg" class="flex items-center gap-1 px-4 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
+                <span class="material-symbols-outlined text-[16px]">add</span>Thêm gói học kèm
+              </button>
+            ` : ''}
+          </div>
         </div>
 
         <!-- Bảng so sánh ngang Gói học kèm -->
@@ -131,6 +137,10 @@ export async function renderTutoringPackages(container) {
       titleEl.innerHTML = `<span class="material-symbols-outlined text-apple-blue text-[20px]">inventory_2</span> Thêm gói học kèm mới`;
       form.reset();
       modal.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-refresh-tutoring-packages')?.addEventListener('click', () => {
+      renderTutoringPackages(container);
     });
 
     const closeModal = () => modal.classList.add('hidden');

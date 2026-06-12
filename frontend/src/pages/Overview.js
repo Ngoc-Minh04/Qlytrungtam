@@ -41,12 +41,11 @@ export async function renderOverview(container, role) {
     // 4. Tìm check-in sớm nhất hôm nay
     let earliestCheckin = null;
     if (checkinsToday.length > 0) {
-      // Sắp xếp theo gio_quet tăng dần
       const sorted = [...checkinsToday].sort((a, b) => a.gio_quet.localeCompare(b.gio_quet));
       earliestCheckin = sorted[0];
     }
 
-    // 5. Tính toán các gói bán chạy nhất và doanh thu tổng quan (Từ danh sách đăng ký)
+    // 5. Tính toán các gói bán chạy nhất và doanh thu tổng quan
     let packagesSold = {};
     let registrations = [];
     if (role === 'admin' || role === 'le_tan') {
@@ -54,7 +53,7 @@ export async function renderOverview(container, role) {
         const regRes = await fetch(`${API_BASE}/registrations`);
         const regData = await regRes.json();
         registrations = regData.data || [];
-        
+
         registrations.forEach(reg => {
           if (reg.trang_thai_thanh_toan === 'da_thanh_toan') {
             const pkgName = reg.ten_goi || 'Khóa học đại trà';
@@ -90,7 +89,6 @@ export async function renderOverview(container, role) {
         color: 'text-blue-500 bg-blue-50'
       });
     });
-    // Sắp xếp theo thứ tự mới nhất
     recentActivities.sort((a, b) => b.time.localeCompare(a.time));
 
     const totalRevenue = registrations
@@ -99,13 +97,19 @@ export async function renderOverview(container, role) {
 
     const formattedRevenue = new Intl.NumberFormat('vi-VN').format(totalRevenue) + ' VNĐ';
 
+    // ===== ROLE: admin / le_tan =====
     if (role === 'le_tan' || role === 'admin') {
       container.innerHTML = `
         <div class="space-y-6">
-          <!-- Bento Grid Layout -->
+          <div class="flex justify-end gap-2 shrink-0">
+            <button id="btn-refresh-overview" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            
-            <!-- Card 1: Tổng hội viên -->
+
+            <!-- Card 1: Tổng học viên -->
             <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
               <div class="flex justify-between items-start">
                 <div>
@@ -122,7 +126,7 @@ export async function renderOverview(container, role) {
               </p>
             </div>
 
-            <!-- Card 2: Tổng nhân sự -->
+            <!-- Card 2: Tổng giáo viên -->
             <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
               <div class="flex justify-between items-start">
                 <div>
@@ -194,30 +198,31 @@ export async function renderOverview(container, role) {
               </div>
             </div>
 
-            <!-- Card 6: Nhật ký hoạt động gần đây (Scrollable) -->
-            <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm md:col-span-2 lg:col-span-4 flex flex-col justify-between">
-              <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider mb-3">Nhật ký hoạt động gần đây</span>
-                <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                  ${recentActivities.map(act => `
-                    <div class="flex items-center justify-between text-xs py-2 border-b border-[#f3f3f5] last:border-0">
-                      <div class="flex items-center gap-2">
-                        <div class="p-1.5 rounded-lg ${act.color}">
-                          <span class="material-symbols-outlined text-[16px]">${act.icon}</span>
-                        </div>
-                        <span class="text-slate-700 font-medium">${act.desc}</span>
+            <!-- Card 6: Nhật ký hoạt động gần đây -->
+            <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm md:col-span-2 lg:col-span-4">
+              <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider mb-3">Nhật ký hoạt động gần đây</span>
+              <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                ${recentActivities.length > 0 ? recentActivities.map(act => `
+                  <div class="flex items-center justify-between text-xs py-2 border-b border-[#f3f3f5] last:border-0">
+                    <div class="flex items-center gap-2">
+                      <div class="p-1.5 rounded-lg ${act.color}">
+                        <span class="material-symbols-outlined text-[16px]">${act.icon}</span>
                       </div>
-                      <span class="text-[10px] text-slate-400 font-semibold">${act.time}</span>
+                      <span class="text-slate-700 font-medium">${act.desc}</span>
                     </div>
-                  `).join('')}
-                  ${recentActivities.length === 0 ? '<p class="text-slate-400 text-xs py-4 text-center">Chưa có hoạt động nào trong ngày</p>' : ''}
-                </div>
+                    <span class="text-slate-400 shrink-0 ml-2">${act.time}</span>
+                  </div>
+                `).join('') : `
+                  <p class="text-slate-400 text-xs py-4 text-center">Chưa có hoạt động nào gần đây.</p>
+                `}
               </div>
             </div>
 
           </div>
         </div>
       `;
+
+      // ===== ROLE: giao_vien =====
     } else if (role === 'giao_vien') {
       const res = await fetch(`${API_BASE}/schedule/today`);
       const result = await res.json();
@@ -225,6 +230,12 @@ export async function renderOverview(container, role) {
 
       container.innerHTML = `
         <div class="space-y-6">
+          <div class="flex justify-end gap-2 shrink-0">
+            <button id="btn-refresh-overview" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+          </div>
+
           <div class="bg-[#272729] text-white rounded-2xl p-6 flex flex-col justify-between min-h-[150px] shadow-sm">
             <div class="space-y-1">
               <h2 class="text-lg font-bold tracking-tight apple-headline">Lịch dạy học hôm nay</h2>
@@ -255,10 +266,10 @@ export async function renderOverview(container, role) {
                   </div>
                   <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                     ${item.trang_thai === 'cho_hoc' ? `
-                       <button onclick="window.confirmAttendance(${item.id}, 'da_hoc')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-full text-[10px] font-semibold active:scale-95 transition">Điểm danh học</button>
-                       <button onclick="window.confirmAttendance(${item.id}, 'vang')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-[10px] font-semibold active:scale-95 transition">Vắng</button>
+                      <button onclick="window.confirmAttendance(${item.id}, 'da_hoc')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-full text-[10px] font-semibold active:scale-95 transition">Điểm danh học</button>
+                      <button onclick="window.confirmAttendance(${item.id}, 'vang')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-[10px] font-semibold active:scale-95 transition">Vắng</button>
                     ` : `
-                       <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${item.trang_thai === 'da_hoc' ? 'Đã dạy' : 'Vắng mặt'}</span>
+                      <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${item.trang_thai === 'da_hoc' ? 'Đã dạy' : 'Vắng mặt'}</span>
                     `}
                     <button onclick="window.openReportModal(${item.id}, ${item.hoc_vien_id}, ${item.giao_vien_id}, '${item.ten_hoc_vien}')" class="border border-[#e2e2e4] text-[#1a1c1d] hover:bg-white bg-white px-3 py-1 rounded-full text-[10px] font-semibold active:scale-95 transition shadow-sm">Tạo SLL</button>
                   </div>
@@ -270,7 +281,7 @@ export async function renderOverview(container, role) {
         </div>
       `;
 
-      window.confirmAttendance = async function(id, status) {
+      window.confirmAttendance = async function (id, status) {
         try {
           const res = await fetch(`${API_BASE}/attendance/${id}`, {
             method: 'PUT',
@@ -288,14 +299,27 @@ export async function renderOverview(container, role) {
           showToast('Lỗi máy chủ', 'error');
         }
       };
+
+      // ===== ROLE: khác =====
     } else {
       container.innerHTML = `
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 max-w-xl space-y-4 shadow-sm">
-          <h3 class="font-bold text-[#1a1c1d] text-base apple-headline">Chào mừng bạn đến với Stellar Academy!</h3>
+        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 max-w-xl space-y-4 shadow-sm flex flex-col gap-2">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-[#1a1c1d] text-base apple-headline">Chào mừng bạn đến với Stellar Academy!</h3>
+            <button id="btn-refresh-overview" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+          </div>
           <p class="text-slate-600 text-xs leading-relaxed">Hệ thống quản lý trung tâm tiếng Anh. Liên hệ ban quản lý để được cấp quyền truy cập chức năng.</p>
         </div>
       `;
     }
+
+    // Đăng ký sự kiện click cho nút refresh
+    document.getElementById('btn-refresh-overview')?.addEventListener('click', () => {
+      renderOverview(container, role);
+    });
+
   } catch (err) {
     container.innerHTML = `
       <div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs">

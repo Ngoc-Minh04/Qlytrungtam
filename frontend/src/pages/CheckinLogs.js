@@ -44,9 +44,14 @@ export async function renderCheckinLogs(container) {
     container.innerHTML = `
       <div class="space-y-4">
         <div class="bg-apple-parchment rounded-2xl p-6 border border-apple-divider shadow-sm space-y-4 min-h-[400px]">
-          <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40">
+          <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40 flex-wrap gap-2">
             <h3 class="font-bold text-apple-ink text-sm">Nhật ký check-in gần đây</h3>
-            <span class="text-[10px] text-slate-400 bg-white px-3 py-1 rounded-full font-bold">Hôm nay</span>
+            <div class="flex items-center gap-2">
+              <button id="btn-refresh-checkin" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[30px]">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+              </button>
+              <span class="text-[10px] text-slate-400 bg-white px-3 py-1.5 rounded-full font-bold">Hôm nay</span>
+            </div>
           </div>
           <div id="checkin-log-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <!-- Sẽ chèn bằng setupSwipePagination -->
@@ -54,6 +59,10 @@ export async function renderCheckinLogs(container) {
         </div>
       </div>
     `;
+
+    document.getElementById('btn-refresh-checkin')?.addEventListener('click', () => {
+      renderCheckinLogs(container);
+    });
 
     const logListContainer = document.getElementById('checkin-log-list');
     setupSwipePagination(logs, logListContainer, (pageLogs) => {

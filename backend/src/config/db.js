@@ -55,7 +55,50 @@ pool.connect(async (err, client, release) => {
         );
       `);
 
-      console.log('✅ Khởi tạo các bảng lớp học nhóm (lop_hoc, lop_hoc_hoc_vien, lich_hoc_nhom) thành công!');
+      // DDL tạo bảng thong_bao
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS thong_bao (
+          id SERIAL PRIMARY KEY,
+          loai VARCHAR(50) NOT NULL,
+          tieu_de VARCHAR(255) NOT NULL,
+          noi_dung TEXT NOT NULL,
+          doi_tuong_id INT,
+          doi_tuong VARCHAR(50),
+          danh_cho VARCHAR(50) DEFAULT 'nhan_vien',
+          da_doc SMALLINT DEFAULT 0,
+          ngay_tao TIMESTAMPTZ DEFAULT NOW()
+        );
+      `);
+
+      // DDL tạo bảng noi_quy
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS noi_quy (
+          id SERIAL PRIMARY KEY,
+          tieu_de VARCHAR(255) NOT NULL,
+          noi_dung TEXT NOT NULL,
+          ap_dung_cho VARCHAR(100) DEFAULT 'tất cả',
+          thu_tu INT DEFAULT 0,
+          is_active SMALLINT DEFAULT 1,
+          ngay_tao TIMESTAMPTZ DEFAULT NOW()
+        );
+      `);
+
+      // Tự động seed nội quy mặc định nếu bảng trống
+      const checkRules = await client.query('SELECT COUNT(*) FROM noi_quy');
+      if (parseInt(checkRules.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO noi_quy (tieu_de, noi_dung, ap_dung_cho, thu_tu, is_active) VALUES 
+          ('Quy định về thời gian học tập', 'Học viên và giáo viên phải có mặt đúng giờ học đã đăng ký. Học viên đi trễ quá 15 phút sẽ không được vào lớp. Giáo viên có lịch dạy đột xuất cần nghỉ hoặc đổi ca phải thông báo trước 24 giờ cho lễ tân.', 'tất cả', 1, 1),
+          ('Quy định về trang phục', 'Học viên và giáo viên mặc trang phục lịch sự, chỉnh tề khi đến trung tâm. Không mặc quần đùi, áo ba lỗ hoặc trang phục gây phản cảm.', 'tất cả', 2, 1),
+          ('Bảo quản tài sản chung', 'Không mang thức ăn, nước uống có màu vào phòng học. Giữ gìn vệ sinh lớp học, không viết bậy lên bàn ghế và bảng đen. Tắt toàn bộ thiết bị điện (máy lạnh, đèn) sau khi kết thúc buổi học.', 'tất cả', 3, 1),
+          ('Quy định chuẩn bị bài giảng', 'Giáo viên bắt buộc phải chuẩn bị giáo án và tài liệu học tập trước khi lên lớp. Thường xuyên cập nhật nhật ký học tập và sổ liên lạc cho học viên sau mỗi ca học.', 'giáo viên', 4, 1),
+          ('Bảo mật thông tin nội bộ', 'Nghiêm cấm nhân viên và giáo viên tiết lộ thông tin cá nhân của học viên, phụ huynh hoặc các tài liệu đào tạo độc quyền của trung tâm ra ngoài.', 'nhân viên', 5, 1),
+          ('Chính sách hoàn trả học phí', 'Học phí chỉ được xem xét hoàn trả khi học viên chủ động nộp đơn xin dừng học và làm thủ tục hủy khóa trước ngày khai giảng tối thiểu 7 ngày. Phí hoàn trả sẽ tính dựa trên số buổi chưa học thực tế.', 'học viên', 6, 1)
+        `);
+        console.log('✅ Đã seed dữ liệu nội quy mặc định thành công!');
+      }
+
+      console.log('✅ Khởi tạo các bảng lớp học nhóm (lop_hoc, lop_hoc_hoc_vien, lich_hoc_nhom, thong_bao, noi_quy) thành công!');
     } catch (dbErr) {
       console.error('❌ Lỗi khởi tạo bảng lớp học:', dbErr.message);
     } finally {
