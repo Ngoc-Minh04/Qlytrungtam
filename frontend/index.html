@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Center Management System - Stellar Academy</title>
+  
+  <!-- Font Inter và Material Symbols từ Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            apple: {
+              blue: '#0066cc',
+              'blue-focus': '#0071e3',
+              'blue-dark': '#2997ff',
+              white: '#ffffff',
+              parchment: '#f5f5f7',
+              pearl: '#fafafc',
+              ink: '#1d1d1f',
+              'tile-1': '#272729',
+              'tile-2': '#2a2a2c',
+              'tile-3': '#252527',
+              black: '#000000',
+              divider: '#b0b0b5',
+              'divider-soft': 'rgba(0, 0, 0, 0.15)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Reset margins & offsets */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c1c6d5; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #727784; }
+
+    /* Material Symbols FILL transition */
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      transition: font-variation-settings 0.15s ease;
+    }
+
+    /* Apple-style tight heading tracking */
+    .apple-headline { letter-spacing: -0.022em; }
+
+    /* Toast notification */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1a1c1d;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.25s cubic-bezier(0.25,1,0.5,1);
+      max-width: 320px;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #ba1a1a; }
+    .toast.success { background: #004e9f; }
+
+    #app {
+      animation: fadeIn 0.2s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-[#f5f5f7] text-[#1a1c1d] antialiased min-h-screen">
+
+  <!-- Nơi chứa nội dung SPA render động -->
+  <!-- SPA mount point -->
+  <div id="app"></div>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- Script chính của ứng dụng -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

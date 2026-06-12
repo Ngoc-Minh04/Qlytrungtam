@@ -1,0 +1,526 @@
+// TeachersList.js - Hồ sơ Giáo viên hỗ trợ Bộ lọc chuyên môn, Modal Thêm giáo viên mới và In-place Edit
+import { API_BASE, showToast, setupSwipePagination } from './_shared.js';
+
+export async function renderTeachersList(container, role) {
+  container.innerHTML = `
+    <div class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`${API_BASE}/teachers`, {
+      headers: { 'X-User-Role': role || 'admin' }
+    });
+    const result = await res.json();
+    const allTeachers = result.data || [];
+
+    function renderTableRows(pageTeachers) {
+      if (pageTeachers.length === 0) {
+        return `<tr><td colspan="6" class="px-6 py-6 text-center text-slate-500 text-xs">Không tìm thấy giáo viên nào phù hợp.</td></tr>`;
+      }
+      return pageTeachers.map(t => `
+        <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${t.id}">
+          <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-md bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none">
+                ${t.ho_ten ? t.ho_ten.charAt(0) : 'G'}
+              </div>
+              <div>
+                <div class="font-bold text-apple-ink text-sm">${t.ho_ten}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Mã số: ${t.ma_ho_so}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f3f3f5] text-apple-ink font-bold text-[10px] border border-[#e2e2e4]">
+              ${t.chuyen_mon || 'Dạy tiếng Anh'}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-slate-600 font-medium">${t.so_dien_thoai || '—'}</td>
+          <td class="px-6 py-4 text-slate-600">${t.email || '—'}</td>
+          <td class="px-6 py-4 text-slate-600">${t.kinh_nghiem || 0} năm kinh nghiệm</td>
+          <td class="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4 text-right">
+            <button class="btn-delete-teacher-row px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${t.id}">
+              Xóa
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    container.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-lg border border-[#e2e2e4] select-none">
+            <button id="switch-to-students" class="px-5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+              Học viên
+            </button>
+            <button class="px-5 py-1.5 rounded-md bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
+              Giáo viên
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="bg-white p-4 rounded-2xl flex flex-col sm:flex-row gap-3 justify-between items-center border border-[#e2e2e4] shadow-sm">
+          <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-3 items-center">
+            <!-- Tìm kiếm -->
+            <div class="relative w-full sm:w-64 text-xs">
+              <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
+              <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
+            </div>
+            <!-- Bộ lọc Chuyên môn -->
+            <select id="filter-expertise" class="w-full sm:w-48 border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-4 py-1.5 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+              <option value="">Tất cả chuyên môn</option>
+              <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
+              <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
+              <option value="Luyện thi IELTS">Luyện thi IELTS</option>
+              <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-end w-full sm:w-auto mt-2 sm:mt-0">
+            <button id="btn-add-teacher-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              Thêm giáo viên mới
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="px-6 py-4">GIÁO VIÊN</th>
+                  <th class="px-6 py-4">CHUYÊN MÔN</th>
+                  <th class="px-6 py-4">SỐ ĐIỆN THOẠI</th>
+                  <th class="px-6 py-4">EMAIL</th>
+                  <th class="px-6 py-4">KINH NGHIỆM</th>
+                  <th class="px-6 py-4 text-right">THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody id="teachers-table-body">
+                <!-- Sẽ chèn bằng setupSwipePagination -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL THÊM GIÁO VIÊN MỚI -->
+      <div id="add-teacher-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
+            <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
+              <span class="material-symbols-outlined text-apple-blue text-[20px]">person_add</span>
+              Thêm giáo viên / Trợ giảng mới
+            </h3>
+            <button id="btn-close-teacher-modal" class="p-1.5 text-[#727784] hover:bg-[#f3f3f5] rounded-full transition-all">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+          <form id="add-teacher-modal-form" class="space-y-4 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-600 mb-1.5">Họ và tên giáo viên <span class="text-rose-500 font-bold">*</span></label>
+                <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Số điện thoại liên hệ <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-teacher-phone" placeholder="09xxxxxxx" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Địa chỉ Email <span class="text-rose-500 font-bold">*</span></label>
+                <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-teacher-expertise" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                  <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
+                  <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
+                  <option value="Luyện thi IELTS">Luyện thi IELTS</option>
+                  <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Kinh nghiệm (năm) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="number" id="modal-teacher-exp" min="0" value="1" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
+              <button type="button" id="btn-cancel-teacher-add" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-7 py-2.5 rounded-xl bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">Lưu giáo viên</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const tableBody = document.getElementById('teachers-table-body');
+    const searchInput = document.getElementById('search-teachers-input');
+    const filterExpertise = document.getElementById('filter-expertise');
+
+    function updateTableWithPagination(filteredList) {
+      setupSwipePagination(filteredList, tableBody, (pageData) => {
+        tableBody.innerHTML = renderTableRows(pageData);
+        attachRowEvents(pageData);
+      }, 10);
+    }
+
+    // Sự kiện lọc giáo viên
+    function applyFilters() {
+      const q = searchInput.value.toLowerCase();
+      const exp = filterExpertise.value;
+
+      const filtered = allTeachers.filter(t => {
+        const matchesSearch = (t.ho_ten && t.ho_ten.toLowerCase().includes(q)) ||
+          (t.ma_ho_so && t.ma_ho_so.toLowerCase().includes(q)) ||
+          (t.so_dien_thoai && t.so_dien_thoai.includes(q));
+        const matchesExpertise = exp === "" || t.chuyen_mon === exp;
+
+        return matchesSearch && matchesExpertise;
+      });
+
+      updateTableWithPagination(filtered);
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    filterExpertise.addEventListener('change', applyFilters);
+
+    // Gắn sự kiện dòng bảng
+    function attachRowEvents(currentList) {
+      tableBody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', (e) => {
+          const id = row.getAttribute('data-id');
+          if (e.target.closest('.btn-delete-teacher-row')) {
+            e.stopPropagation();
+            deleteTeacher(id);
+            return;
+          }
+          const t = currentList.find(item => item.id == id);
+          if (t) showTeacherDetailModal(t, container, role);
+        });
+      });
+    }
+
+    async function deleteTeacher(id) {
+      if (!confirm('Bạn có chắc chắn muốn xóa hồ sơ giáo viên này khỏi hệ thống?')) return;
+      try {
+        const resDel = await fetch(`${API_BASE}/teachers/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-User-Role': 'admin' }
+        });
+        const resultJson = await resDel.json();
+        if (resultJson.success) {
+          showToast('Đã xóa hồ sơ giáo viên thành công!');
+          renderTeachersList(container, role);
+        } else {
+          showToast(resultJson.error, 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi máy chủ', 'error');
+      }
+    }
+
+    // Khởi tạo trang đầu tiên
+    updateTableWithPagination(allTeachers);
+
+    // Chuyển sang danh sách học viên
+    document.getElementById('switch-to-students')?.addEventListener('click', () => {
+      window._navigatePage && window._navigatePage('students-list');
+    });
+
+    // Mở modal thêm giáo viên
+    const addModal = document.getElementById('add-teacher-modal');
+    document.getElementById('btn-add-teacher-modal')?.addEventListener('click', () => {
+      addModal.classList.remove('hidden');
+      document.getElementById('add-teacher-modal-form').reset();
+    });
+
+    document.getElementById('btn-close-teacher-modal')?.addEventListener('click', () => addModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-teacher-add')?.addEventListener('click', () => addModal.classList.add('hidden'));
+
+    // Gửi form thêm giáo viên mới với validation JS
+    document.getElementById('add-teacher-modal-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fields = [
+        { id: 'modal-teacher-fullName', label: 'Họ và tên giáo viên' },
+        { id: 'modal-teacher-phone', label: 'Số điện thoại liên hệ' },
+        { id: 'modal-teacher-email', label: 'Địa chỉ Email' },
+        { id: 'modal-teacher-expertise', label: 'Chuyên môn giảng dạy' },
+        { id: 'modal-teacher-exp', label: 'Kinh nghiệm (năm)' }
+      ];
+
+      let hasError = false;
+      fields.forEach(f => {
+        const input = document.getElementById(f.id);
+        if (!input.value || input.value.trim() === '') {
+          input.classList.add('border-red-500', 'bg-red-50');
+          input.classList.remove('border-[#e2e2e4]', 'bg-apple-pearl');
+          if (!hasError) {
+            showToast(`Vui lòng điền trường bắt buộc: ${f.label}`, 'error');
+            input.focus();
+            hasError = true;
+          }
+        } else {
+          input.classList.remove('border-red-500', 'bg-red-50');
+          input.classList.add('border-[#e2e2e4]', 'bg-apple-pearl');
+        }
+      });
+
+      if (hasError) return;
+
+      const payload = {
+        ho_ten: document.getElementById('modal-teacher-fullName').value.trim(),
+        so_dien_thoai: document.getElementById('modal-teacher-phone').value.trim(),
+        email: document.getElementById('modal-teacher-email').value.trim(),
+        chuyen_mon: document.getElementById('modal-teacher-expertise').value,
+        kinh_nghiem: parseInt(document.getElementById('modal-teacher-exp').value) || 0
+      };
+
+      try {
+        const postRes = await fetch(`${API_BASE}/teachers/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': 'admin'
+          },
+          body: JSON.stringify(payload)
+        });
+        const resultJson = await postRes.json();
+        if (resultJson.success) {
+          showToast('Tạo hồ sơ giáo viên thành công!');
+          addModal.classList.add('hidden');
+          renderTeachersList(container, role); // Reload
+        } else {
+          showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    });
+
+  } catch (err) {
+    container.innerHTML = `
+      <div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs">
+        <strong>Lỗi tải dữ liệu:</strong> ${err.message}
+      </div>
+    `;
+  }
+}
+
+// ===== MODAL CHI TIẾT + IN-PLACE EDIT GIÁO VIÊN =====
+function showTeacherDetailModal(t, container, role) {
+  let modal = document.getElementById('teacher-detail-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'teacher-detail-modal';
+    modal.className = 'fixed inset-0 bg-black/45 backdrop-blur-md z-50 flex items-center justify-center p-4';
+    document.body.appendChild(modal);
+  }
+
+  const ngayTaoFormatted = t.ngay_tao ? new Date(t.ngay_tao).toLocaleDateString('vi-VN') : '—';
+
+  modal.innerHTML = `
+    <div class="bg-white rounded-3xl max-w-xl w-full border border-[#e2e2e4] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-xs text-[#1a1c1d]" style="animation: modalIn 0.2s ease">
+      <!-- Header cố định -->
+      <div class="flex justify-between items-center px-6 py-4 border-b border-[#f3f3f5] shrink-0">
+        <h3 class="text-sm font-bold text-[#1a1c1d] flex items-center gap-2">
+          <span class="material-symbols-outlined text-apple-blue text-[22px]">badge</span>
+          Hồ sơ Giáo viên & Trợ giảng
+        </h3>
+        <button id="close-teacher-detail-modal" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all flex items-center justify-center">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Body Scroll -->
+      <form id="teacher-edit-inplace-form" class="p-6 overflow-y-auto space-y-5 flex-1">
+        <!-- Profile Banner -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-[#0066cc]/8 via-[#0066cc]/3 to-transparent border border-[#0066cc]/15">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0066cc] to-[#004e9f] text-white flex items-center justify-center font-extrabold text-xl shadow-lg shadow-[#0066cc]/20 shrink-0 select-none" id="teacher-avatar-initial">
+              ${t.ho_ten ? t.ho_ten.charAt(0).toUpperCase() : 'G'}
+            </div>
+            <div>
+              <h4 class="font-extrabold text-base text-apple-ink" id="teacher-display-name">${t.ho_ten}</h4>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <span class="px-2 py-0.5 rounded-md bg-[#0066cc]/10 text-apple-blue font-bold text-[10px] tracking-wide uppercase">${t.ma_ho_so}</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                <span class="text-slate-400 font-medium text-[10.5px]">Gia nhập: ${ngayTaoFormatted}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Trạng thái lưu -->
+          <div id="teacher-save-status" class="hidden items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10.5px] font-semibold self-end sm:self-center">
+            <span class="material-symbols-outlined text-[14px]">check_circle</span> Đã lưu
+          </div>
+        </div>
+
+        <!-- Thông báo hướng dẫn -->
+        <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-xl text-[10.5px] text-blue-600">
+          <span class="material-symbols-outlined text-[14px]">edit_note</span>
+          Chỉnh sửa trực tiếp các trường bên dưới rồi nhấn <strong class="mx-1">Lưu thay đổi</strong> để cập nhật.
+        </div>
+
+        <!-- Grid Thông tin chỉnh sửa -->
+        <div class="space-y-4">
+          <h4 class="font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 text-slate-400">
+            <span class="material-symbols-outlined text-[16px]">info</span> Thông tin chi tiết hồ sơ
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <!-- Họ tên -->
+            <div class="sm:col-span-2 space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">person</span> Họ và tên
+              </label>
+              <input type="text" id="t-edit-name" value="${t.ho_ten || ''}" required
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Chuyên môn -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">school</span> Chuyên môn
+              </label>
+              <select id="t-edit-expertise"
+                class="w-full border border-[#e2e2e4] bg-[#fafafa] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition cursor-pointer">
+                <option value="Dạy tiếng Anh" ${t.chuyen_mon === 'Dạy tiếng Anh' ? 'selected' : ''}>Dạy tiếng Anh</option>
+                <option value="Dạy Giao tiếp" ${t.chuyen_mon === 'Dạy Giao tiếp' ? 'selected' : ''}>Dạy Giao tiếp</option>
+                <option value="Luyện thi IELTS" ${t.chuyen_mon === 'Luyện thi IELTS' ? 'selected' : ''}>Luyện thi IELTS</option>
+                <option value="Tiếng Anh Trẻ Em" ${t.chuyen_mon === 'Tiếng Anh Trẻ Em' ? 'selected' : ''}>Tiếng Anh Trẻ Em</option>
+              </select>
+            </div>
+
+            <!-- Kinh nghiệm -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">military_tech</span> Kinh nghiệm (năm)
+              </label>
+              <input type="number" id="t-edit-exp" value="${t.kinh_nghiem || 0}" min="0"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Số điện thoại -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">call</span> Số điện thoại
+              </label>
+              <input type="tel" id="t-edit-phone" value="${t.so_dien_thoai || ''}"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Email -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">mail</span> Email
+              </label>
+              <input type="email" id="t-edit-email" value="${t.email || ''}"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Chi nhánh -->
+            <div class="sm:col-span-2 space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">home_work</span> Chi nhánh công tác
+              </label>
+              <input type="text" id="t-edit-branch" value="${t.chi_nhanh || ''}" placeholder="Trung tâm chính"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5] shrink-0">
+          <button type="button" id="close-teacher-detail-modal-footer"
+            class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">
+            Đóng
+          </button>
+          <button type="submit" id="btn-save-teacher-edit"
+            class="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">
+            <span class="material-symbols-outlined text-[15px]">save</span> Lưu thay đổi
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <style>
+      @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.96) translateY(8px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+      }
+    </style>
+  `;
+
+  modal.style.display = 'flex';
+
+  // Đóng modal
+  const closeModal = () => { modal.style.display = 'none'; };
+  modal.querySelector('#close-teacher-detail-modal').addEventListener('click', closeModal);
+  modal.querySelector('#close-teacher-detail-modal-footer').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  // Cập nhật avatar khi đổi tên
+  modal.querySelector('#t-edit-name').addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (val) {
+      modal.querySelector('#teacher-avatar-initial').textContent = val.charAt(0).toUpperCase();
+      modal.querySelector('#teacher-display-name').textContent = val;
+    }
+  });
+
+  // Submit In-place Edit
+  modal.querySelector('#teacher-edit-inplace-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = modal.querySelector('#btn-save-teacher-edit');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span> Đang lưu...`;
+
+    const payload = {
+      ho_ten: modal.querySelector('#t-edit-name').value.trim(),
+      chuyen_mon: modal.querySelector('#t-edit-expertise').value,
+      kinh_nghiem: parseInt(modal.querySelector('#t-edit-exp').value) || 0,
+      so_dien_thoai: modal.querySelector('#t-edit-phone').value.trim(),
+      email: modal.querySelector('#t-edit-email').value.trim(),
+      chi_nhanh: modal.querySelector('#t-edit-branch').value.trim()
+    };
+
+    try {
+      const putRes = await fetch(`${API_BASE}/teachers/${t.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': 'admin'
+        },
+        body: JSON.stringify(payload)
+      });
+      const putResult = await putRes.json();
+      if (putResult.success) {
+        showToast('Cập nhật hồ sơ giáo viên thành công!', 'success');
+        // Hiển thị trạng thái đã lưu
+        const statusEl = modal.querySelector('#teacher-save-status');
+        statusEl.classList.remove('hidden');
+        statusEl.classList.add('flex');
+        setTimeout(() => {
+          statusEl.classList.add('hidden');
+          statusEl.classList.remove('flex');
+        }, 3000);
+        // Reload danh sách nền
+        renderTeachersList(container, role);
+      } else {
+        showToast(putResult.error || 'Có lỗi xảy ra', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi máy chủ', 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<span class="material-symbols-outlined text-[15px]">save</span> Lưu thay đổi`;
+    }
+  });
+}
