@@ -393,18 +393,8 @@ export async function renderSchedules(container) {
       });
     }
 
-<<<<<<< HEAD
     // Khởi động mặc định là view Tuần
     renderCalendar();
-=======
-    document.getElementById('btn-refresh-schedules')?.addEventListener('click', () => {
-      renderSchedules(container);
-    });
-
-    setupSwipePagination(schedules, tableBody, (pageSchedules) => {
-      tableBody.innerHTML = renderTableRows(pageSchedules);
-    }, 10);
->>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
 
   } catch (err) {
     container.innerHTML = `

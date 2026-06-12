@@ -1,3 +1,9 @@
+### [12/06/2026 21:55] — Khắc phục lỗi Syntax do Conflict Merge trong ClassManagement.js và Schedules.js
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/Schedules.js`
+- **Mô tả**: Dọn dẹp các ký tự xung đột merge Git (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) còn sót lại khiến file JS bị lỗi cú pháp không chạy được trên frontend. Đã chọn giữ các đoạn mã logic đúng đắn tương ứng của phiên bản mới nhất.
+- **Kết quả**: Thành công (Ứng dụng frontend SPA tải và chạy bình thường)
+
 ### [12/06/2026 21:44] — Sửa lỗi SQL Check Constraint và hiển thị Nội quy trung tâm
 - **Loại**: Sửa bug
 - **File**: `backend/src/config/db.js`, `backend/seed_test_data.js`, `frontend/src/pages/CenterRules.js`

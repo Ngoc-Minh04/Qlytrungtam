@@ -438,31 +438,15 @@ export async function renderClassManagement(container) {
           </table>
         </div>
       `;
-<<<<<<< HEAD
-=======
-
-      schList.querySelectorAll('.btn-remove-selected').forEach(btn => {
-        // Gắn sự kiện (nếu có, không lỗi)
-      });
-
       document.getElementById('btn-refresh-class-list')?.addEventListener('click', () => {
         loadScheduleList();
       });
-
->>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
     } catch (e) {
       schList.innerHTML = `<div class="p-4 text-red-600 text-xs">Lỗi tải lịch sử đặt lịch: ${e.message}</div>`;
     }
   }
 
-<<<<<<< HEAD
-=======
-  document.getElementById('btn-refresh-class-form')?.addEventListener('click', () => {
-    renderClassManagement(container);
-  });
-
   // Khởi chạy dữ liệu form
->>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
   loadFormData();
   loadScheduleList();
 
