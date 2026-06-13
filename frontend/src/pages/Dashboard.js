@@ -16,7 +16,9 @@ import { renderTeacherFeedbacks } from './TeacherFeedbacks.js';
 import { renderCourseRegistrations } from './CourseRegistrations.js';
 import { renderStudentRequests } from './StudentRequests.js';
 import { renderRevenueReport } from './RevenueReport.js';
+import { renderAccountManagement } from './AccountManagement.js';
 import { API_BASE, showToast } from './_shared.js';
+import { initChatbot, destroyChatbot } from './Chatbot.js';
 
 let currentPage = 'dashboard';
 let currentActiveSubPage = 'dashboard';
@@ -76,6 +78,10 @@ const GROUP_PAGES = {
       { page: 'student-requests', label: 'Xử lý Yêu cầu' }
     ]
   },
+  'accounts-group': {
+    label: 'Quản lý Tài khoản', icon: 'manage_accounts', roles: ['admin'],
+    tabs: [{ page: 'account-management', label: 'Tài khoản người dùng', roles: ['admin'] }]
+  },
   'system-group': {
     label: 'Hệ thống & Nội quy', icon: 'admin_panel_settings', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'],
     tabs: [
@@ -104,6 +110,7 @@ function getMenuConfig(role) {
     { page: 'quality-group', icon: 'menu_book', label: 'Chất lượng đào tạo', roles: ['admin', 'giao_vien'] },
     { page: 'finance-group', icon: 'payments', label: 'Yêu cầu', roles: ['admin', 'le_tan'] },
     { page: 'revenue-report', icon: 'bar_chart', label: 'Báo cáo Doanh thu', roles: ['admin'] },
+    { page: 'accounts-group', icon: 'manage_accounts', label: 'Quản lý Tài khoản', roles: ['admin'] },
     { page: 'system-group', icon: 'admin_panel_settings', label: 'Hệ thống & Nội quy', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'] },
   ];
   return allItems.filter(item => !item.roles || item.roles.includes(role));
@@ -128,6 +135,7 @@ function getPageRenderer(page, role) {
     'course-registrations': (c) => renderCourseRegistrations(c),
     'student-requests': (c) => renderStudentRequests(c),
     'revenue-report': (c) => renderRevenueReport(c),
+    'account-management': (c) => renderAccountManagement(c),
   };
   return map[page] || map['dashboard'];
 }
@@ -588,9 +596,7 @@ export function renderDashboard(role) {
 
   // Logout
   document.getElementById('btn-header-logout')?.addEventListener('click', () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('username');
+    localStorage.clear();
     window.location.reload();
   });
 
@@ -704,7 +710,10 @@ export function renderDashboard(role) {
   async function loadNotifications() {
     try {
       const res = await fetch(`${API_BASE}/notifications`, {
-        headers: { 'x-user-role': role }
+        headers: {
+          'x-user-role': role,
+          'x-ho-so-id': localStorage.getItem('hoSoId') || ''
+        }
       });
       const result = await res.json();
       if (result.success) {
@@ -819,4 +828,7 @@ export function renderDashboard(role) {
 
   // Render trang mặc định
   renderSubPage(currentActiveSubPage || currentPage, role);
+
+  // Khởi động chatbot
+  initChatbot();
 }

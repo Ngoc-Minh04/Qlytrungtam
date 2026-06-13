@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3005;
 app.use(cors({
   origin: '*', // Cho phép tất cả các nguồn hoặc cấu hình chi tiết nếu cần thiết
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'X-User-Branch', 'x-user-role', 'x-user-branch']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'X-User-Branch', 'x-user-role', 'x-user-branch', 'x-tai-khoan-id', 'x-ho-so-id', 'X-Tai-Khoan-Id', 'X-Ho-So-Id']
 }));
 
 // Middleware parser body
