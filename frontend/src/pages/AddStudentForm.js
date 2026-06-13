@@ -1,5 +1,5 @@
 // AddStudentForm.js - Tiếp nhận học viên mới
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, setupCustomDatePicker } from './_shared.js';
 
 export async function renderAddStudentForm(container) {
   container.innerHTML = `
@@ -13,7 +13,7 @@ export async function renderAddStudentForm(container) {
           <div class="w-28 h-28 rounded-2xl bg-white flex flex-col items-center justify-center mb-3 shadow-sm border border-apple-divider/60 group relative overflow-hidden cursor-pointer hover:bg-apple-parchment transition">
             <span class="material-symbols-outlined text-3xl text-apple-blue opacity-85 mb-1">add_a_photo</span>
             <span class="text-[10px] font-semibold text-apple-ink">Tải ảnh đại diện</span>
-            <input type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+            <input type="file" id="add-avatar-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
           <div class="text-center space-y-1">
             <h3 class="font-bold text-apple-ink text-xs">Hồ sơ & ảnh chân dung</h3>
@@ -37,7 +37,9 @@ export async function renderAddStudentForm(container) {
                 </div>
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Ngày sinh</label>
-                  <input type="date" id="add-dob" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                  <div id="add-dob-container" class="relative">
+                    <input type="date" id="add-dob" required>
+                  </div>
                 </div>
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Giới tính</label>
@@ -94,6 +96,10 @@ export async function renderAddStudentForm(container) {
                     <option value="Downtown Campus">Downtown Campus</option>
                   </select>
                 </div>
+                <div class="md:col-span-2 flex items-center gap-2 py-1 bg-slate-50 px-3 rounded-xl border border-slate-100">
+                  <input type="checkbox" id="add-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
+                  <label for="add-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none">Tự động tạo tài khoản đăng nhập (mật khẩu mặc định: 123456)</label>
+                </div>
               </div>
             </div>
  
@@ -107,38 +113,57 @@ export async function renderAddStudentForm(container) {
     </div>
   `;
 
+  // Tải Lịch Custom
+  setupCustomDatePicker(document.getElementById('add-dob'), document.getElementById('add-dob-container'));
+
   document.getElementById('add-student-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const payload = {
-      ho_ten: document.getElementById('add-fullName').value,
-      ngay_sinh: document.getElementById('add-dob').value,
-      gioi_tinh: document.getElementById('add-gender').value,
-      ten_phu_huynh: document.getElementById('add-parentName').value,
-      so_dien_thoai: document.getElementById('add-phone').value,
-      email: document.getElementById('add-email').value,
-      trinh_do_dau_vao: document.getElementById('add-entryLevel').value,
-      chi_nhanh: document.getElementById('add-branch').value,
-      loai_ho_so: 'hoc_vien'
+    const avatarFile = document.getElementById('add-avatar-file')?.files[0];
+    const autoCreate = document.getElementById('add-autoAccount').checked;
+
+    const submitData = async (avatarBase64 = null) => {
+      const payload = {
+        ho_ten: document.getElementById('add-fullName').value,
+        ngay_sinh: document.getElementById('add-dob').value,
+        gioi_tinh: document.getElementById('add-gender').value,
+        ten_phu_huynh: document.getElementById('add-parentName').value,
+        so_dien_thoai: document.getElementById('add-phone').value,
+        email: document.getElementById('add-email').value,
+        trinh_do_dau_vao: document.getElementById('add-entryLevel').value,
+        chi_nhanh: document.getElementById('add-branch').value,
+        loai_ho_so: 'hoc_vien',
+        avatar_url: avatarBase64,
+        auto_create_account: autoCreate
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/students/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': 'le_tan'
+          },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Tạo hồ sơ học viên thành công!');
+          window._navigatePage && window._navigatePage('students-list');
+        } else {
+          showToast(result.error || 'Có lỗi xảy ra', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi API', 'error');
+      }
     };
 
-    try {
-      const res = await fetch(`${API_BASE}/students/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': 'le_tan'
-        },
-        body: JSON.stringify(payload)
-      });
-      const result = await res.json();
-      if (result.success) {
-        showToast('Tạo hồ sơ học viên thành công!');
-        window._navigatePage && window._navigatePage('students-list');
-      } else {
-        showToast(result.error || 'Có lỗi xảy ra', 'error');
-      }
-    } catch (err) {
-      showToast('Lỗi API', 'error');
+    if (avatarFile) {
+      const reader = new FileReader();
+      reader.onload = () => submitData(reader.result);
+      reader.onerror = () => showToast('Lỗi khi đọc file ảnh', 'error');
+      reader.readAsDataURL(avatarFile);
+    } else {
+      submitData(null);
     }
   });
 }

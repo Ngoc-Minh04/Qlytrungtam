@@ -1,5 +1,5 @@
 // StudentsList.js - Hồ sơ Học viên, Giáo viên, Nhân viên (tab 3 nút)
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 
 // Hàm validate email hợp lệ (phải có domain.tld)
 function isValidEmail(email) {
@@ -90,17 +90,15 @@ export async function renderStudentsList(container, role) {
             <button id="tab-staff" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+            <button id="btn-add-student-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              Thêm hồ sơ mới
+            </button>
           </div>
-<<<<<<< HEAD
-          <button id="btn-add-student-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">add</span>
-            Thêm hồ sơ mới
-=======
-          <!-- Nút Refresh đồng bộ kích thước -->
-          <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
-            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
->>>>>>> 0b53f0f445b13ccaab6d05b2c20179af06e02497
-          </button>
         </div>
 
         <!-- Bộ lọc gộp lại trên 1 dòng có bộ lọc nâng cao -->
@@ -176,7 +174,7 @@ export async function renderStudentsList(container, role) {
 
       <!-- MODAL TIẾP NHẬN HỌC VIÊN MỚI (Ẩn mặc định) -->
       <div id="add-student-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
           <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
             <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[20px]">person_add</span>
@@ -187,40 +185,60 @@ export async function renderStudentsList(container, role) {
             </button>
           </div>
           <form id="add-student-modal-form" class="space-y-4 text-xs">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col sm:flex-row gap-4 items-start">
+              <!-- Avatar vuông góc trái trên cùng -->
+              <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
+                <span class="block font-semibold text-slate-600 self-start sm:self-center">Ảnh đại diện</span>
+                <div class="relative w-24 h-24 border border-dashed border-[#e2e2e4] rounded-2xl overflow-hidden flex items-center justify-center bg-[#f3f3f5] hover:bg-slate-100 transition cursor-pointer group" id="modal-avatar-preview-container">
+                  <span class="material-symbols-outlined text-[28px] text-slate-400 group-hover:scale-110 transition duration-150">upload</span>
+                  <img id="modal-add-avatar-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+                </div>
+                <input type="file" id="modal-add-avatar" accept="image/*" class="hidden">
+                <button type="button" id="btn-trigger-avatar-upload" class="px-2.5 py-1 bg-white border border-[#e2e2e4] text-[10px] font-bold rounded-lg hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
+              </div>
+
+              <!-- Cột thông tin cơ bản bên phải avatar -->
+              <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                <div class="md:col-span-2">
+                  <label class="block font-semibold text-slate-600 mb-1">Họ và tên học viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-add-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Ngày sinh</label>
+                  <div id="modal-add-dob-container" class="relative">
+                    <input type="date" id="modal-add-dob">
+                  </div>
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Giới tính <span class="text-rose-500 font-bold">*</span></label>
+                  <select id="modal-add-gender" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Các hàng thông tin khác phía dưới -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div class="md:col-span-2">
-                <label class="block font-semibold text-slate-600 mb-1.5">Họ và tên học viên <span class="text-rose-500 font-bold">*</span></label>
-                <input type="text" id="modal-add-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1">Họ tên phụ huynh</label>
+                <input type="text" id="modal-add-parentName" placeholder="Tên cha mẹ hoặc người giám hộ (không bắt buộc)..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Ngày sinh</label>
-                <input type="date" id="modal-add-dob" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Giới tính <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-add-gender" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                  <option value="Khác">Khác</option>
-                </select>
-              </div>
-              <div class="md:col-span-2">
-                <label class="block font-semibold text-slate-600 mb-1.5">Họ tên phụ huynh</label>
-                <input type="text" id="modal-add-parentName" placeholder="Tên cha mẹ hoặc người giám hộ (không bắt buộc)..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-add-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-add-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Địa chỉ Email</label>
-                <input type="email" id="modal-add-email" placeholder="parent@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1">Địa chỉ Email</label>
+                <input type="email" id="modal-add-email" placeholder="parent@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Trình độ đầu vào <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-add-entryLevel" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                <label class="block font-semibold text-slate-600 mb-1">Trình độ đầu vào <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-add-entryLevel" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Cơ bản A1">A1 Beginner</option>
                   <option value="Cơ bản A2">A2 Elementary</option>
                   <option value="Trung cấp B1">B1 Intermediate</option>
@@ -230,11 +248,29 @@ export async function renderStudentsList(container, role) {
                 </select>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Chi nhánh tiếp nhận <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-add-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                <label class="block font-semibold text-slate-600 mb-1">Chi nhánh tiếp nhận <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-add-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Trung tam chính">Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
                 </select>
+              </div>
+
+              <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
+              <div class="md:col-span-2 space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="modal-add-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
+                  <label for="modal-add-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
+                    <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs">
+                  </div>
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-add-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
+                  </div>
+                </div>
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
@@ -389,6 +425,63 @@ export async function renderStudentsList(container, role) {
     document.getElementById('btn-add-student-modal')?.addEventListener('click', () => {
       addModal.classList.remove('hidden');
       document.getElementById('add-student-modal-form').reset();
+      
+      const phoneInput = document.getElementById('modal-add-phone');
+      const usernameInput = document.getElementById('modal-add-username');
+      const passwordInput = document.getElementById('modal-add-password');
+      const autoAccCheckbox = document.getElementById('modal-add-autoAccount');
+      const avatarPreview = document.getElementById('modal-add-avatar-preview');
+      if (avatarPreview) avatarPreview.classList.add('hidden');
+      
+      if (autoAccCheckbox && autoAccCheckbox.checked) {
+        usernameInput.value = phoneInput.value;
+        passwordInput.value = '123456';
+      }
+
+      setupCustomDatePicker(
+        document.getElementById('modal-add-dob'),
+        document.getElementById('modal-add-dob-container')
+      );
+    });
+
+    // Thêm sự kiện upload avatar preview & auto account sync
+    document.getElementById('btn-trigger-avatar-upload')?.addEventListener('click', () => {
+      document.getElementById('modal-add-avatar').click();
+    });
+    document.getElementById('modal-avatar-preview-container')?.addEventListener('click', () => {
+      document.getElementById('modal-add-avatar').click();
+    });
+    document.getElementById('modal-add-avatar')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const preview = document.getElementById('modal-add-avatar-preview');
+          if (preview) {
+            preview.src = reader.result;
+            preview.classList.remove('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('modal-add-phone')?.addEventListener('input', (e) => {
+      const autoAccCheckbox = document.getElementById('modal-add-autoAccount');
+      const usernameInput = document.getElementById('modal-add-username');
+      if (autoAccCheckbox && autoAccCheckbox.checked && usernameInput) {
+        usernameInput.value = e.target.value.trim();
+      }
+    });
+
+    document.getElementById('modal-add-autoAccount')?.addEventListener('change', (e) => {
+      const usernameInput = document.getElementById('modal-add-username');
+      const passwordInput = document.getElementById('modal-add-password');
+      const phoneInput = document.getElementById('modal-add-phone');
+      if (e.target.checked) {
+        if (usernameInput) usernameInput.value = phoneInput.value.trim();
+        if (passwordInput) passwordInput.value = '123456';
+      }
     });
 
     document.getElementById('btn-close-add-modal')?.addEventListener('click', () => addModal.classList.add('hidden'));
@@ -438,37 +531,59 @@ export async function renderStudentsList(container, role) {
         return;
       }
 
-      const payload = {
-        ho_ten: document.getElementById('modal-add-fullName').value.trim(),
-        ngay_sinh: document.getElementById('modal-add-dob').value || null,
-        gioi_tinh: document.getElementById('modal-add-gender').value.toLowerCase(),
-        ten_phu_huynh: document.getElementById('modal-add-parentName').value.trim() || null,
-        so_dien_thoai: phoneVal,
-        email: emailVal || null,
-        trinh_do_dau_vao: document.getElementById('modal-add-entryLevel').value,
-        chi_nhanh: document.getElementById('modal-add-branch').value,
-        loai_ho_so: 'hoc_vien'
+      const avatarFile = document.getElementById('modal-add-avatar').files[0];
+      const autoCreateAccount = document.getElementById('modal-add-autoAccount').checked;
+
+      const submitForm = async (avatarBase64 = null) => {
+        const payload = {
+          ho_ten: document.getElementById('modal-add-fullName').value.trim(),
+          ngay_sinh: document.getElementById('modal-add-dob').value || null,
+          gioi_tinh: document.getElementById('modal-add-gender').value.toLowerCase(),
+          ten_phu_huynh: document.getElementById('modal-add-parentName').value.trim() || null,
+          so_dien_thoai: phoneVal,
+          email: emailVal || null,
+          trinh_do_dau_vao: document.getElementById('modal-add-entryLevel').value,
+          chi_nhanh: document.getElementById('modal-add-branch').value,
+          loai_ho_so: 'hoc_vien',
+          avatar_url: avatarBase64,
+          auto_create_account: autoCreateAccount,
+          username: document.getElementById('modal-add-username') ? document.getElementById('modal-add-username').value.trim() : null,
+          password: document.getElementById('modal-add-password') ? document.getElementById('modal-add-password').value.trim() : null
+        };
+
+        try {
+          const postRes = await fetch(`${API_BASE}/students/create`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Role': 'le_tan'
+            },
+            body: JSON.stringify(payload)
+          });
+          const resultJson = await postRes.json();
+          if (resultJson.success) {
+            showToast('Tạo hồ sơ học viên thành công!');
+            addModal.classList.add('hidden');
+            renderStudentsList(container, role);
+          } else {
+            showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi máy chủ khi tạo học viên', 'error');
+        }
       };
 
-      try {
-        const postRes = await fetch(`${API_BASE}/students/create`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': 'le_tan'
-          },
-          body: JSON.stringify(payload)
-        });
-        const resultJson = await postRes.json();
-        if (resultJson.success) {
-          showToast('Tạo hồ sơ học viên thành công!');
-          addModal.classList.add('hidden');
-          renderStudentsList(container, role);
-        } else {
-          showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
-        }
-      } catch (err) {
-        showToast('Lỗi máy chủ khi tạo học viên', 'error');
+      if (avatarFile) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          submitForm(reader.result);
+        };
+        reader.onerror = () => {
+          showToast('Lỗi khi đọc file ảnh đại diện', 'error');
+        };
+        reader.readAsDataURL(avatarFile);
+      } else {
+        submitForm(null);
       }
     });
 
@@ -586,8 +701,9 @@ function showStudentDetailModal(sv) {
                     <span class="material-symbols-outlined text-slate-400 text-[18px] mt-2">calendar_today</span>
                     <div class="w-full">
                       <span class="block text-[9px] text-slate-400 font-semibold uppercase px-1">Ngày sinh</span>
-                      <input type="date" id="inplace-dob" value="${dobFormatted}"
-                             class="font-bold text-apple-ink text-xs w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-apple-blue focus:bg-white px-1 py-0.5 outline-none rounded transition">
+                      <div id="inplace-dob-container" class="relative">
+                        <input type="date" id="inplace-dob" value="${dobFormatted}">
+                      </div>
                     </div>
                   </div>
                   <!-- Giới tính -->
@@ -866,11 +982,11 @@ function showStudentDetailModal(sv) {
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Giá thực tế (VNĐ)</label>
-                      <input type="number" id="reg-gia-thuc-te" min="0" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="text" id="reg-gia-thuc-te" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Đã thu (VNĐ)</label>
-                      <input type="number" id="reg-da-thu" min="0" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="text" id="reg-da-thu" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
                     </div>
                   </div>
                   <div>
@@ -922,6 +1038,12 @@ function showStudentDetailModal(sv) {
           </div>
         </div>
       `;
+
+      // Khởi tạo custom date picker cho inplace edit
+      setupCustomDatePicker(
+        modal.querySelector('#inplace-dob'),
+        modal.querySelector('#inplace-dob-container')
+      );
 
       // JS Tabs Navigation
       const btnTabInfo = modal.querySelector('#btn-tab-info');
@@ -1190,6 +1312,14 @@ function showStudentDetailModal(sv) {
       const tuNgayInput = modal.querySelector('#reg-tu-ngay');
       const denNgayInput = modal.querySelector('#reg-den-ngay');
 
+      // Lắng nghe sự kiện gõ phím để format tiền tệ trực quan
+      giaInput?.addEventListener('input', (e) => {
+        e.target.value = formatCurrencyInput(e.target.value);
+      });
+      daThuInput?.addEventListener('input', (e) => {
+        e.target.value = formatCurrencyInput(e.target.value);
+      });
+
       pkgSelect?.addEventListener('change', () => {
         const type = modal.querySelector('#reg-pkg-type')?.value;
         const opt = pkgSelect.options[pkgSelect.selectedIndex];
@@ -1198,8 +1328,8 @@ function showStudentDetailModal(sv) {
         const price = parseFloat(opt.getAttribute('data-price')) || 0;
         const months = parseInt(opt.getAttribute('data-months')) || 0;
 
-        if (giaInput) giaInput.value = price;
-        if (daThuInput) daThuInput.value = price;
+        if (giaInput) giaInput.value = formatCurrencyInput(String(price));
+        if (daThuInput) daThuInput.value = formatCurrencyInput(String(price));
 
         if (type === 'khoa_hoc' && tuNgayInput && denNgayInput && months > 0) {
           const start = new Date(tuNgayInput.value);
@@ -1227,8 +1357,8 @@ function showStudentDetailModal(sv) {
       modal.querySelector('#btn-submit-register-pkg')?.addEventListener('click', async () => {
         const type = modal.querySelector('#reg-pkg-type')?.value;
         const pkgId = modal.querySelector('#reg-pkg-id')?.value;
-        const giaThucTe = parseFloat(modal.querySelector('#reg-gia-thuc-te')?.value) || 0;
-        const daThu = parseFloat(modal.querySelector('#reg-da-thu')?.value) || 0;
+        const giaThucTe = parseCurrencyInput(modal.querySelector('#reg-gia-thuc-te')?.value || '0');
+        const daThu = parseCurrencyInput(modal.querySelector('#reg-da-thu')?.value || '0');
         const phuongThuc = modal.querySelector('#reg-phuong-thuc')?.value || 'tien_mat';
 
         if (!pkgId) { showToast('Vui lòng chọn gói học', 'error'); return; }
@@ -1270,7 +1400,8 @@ function showStudentDetailModal(sv) {
       });
 
     })
-    .catch(() => {
-      showToast('Không thể tải thông tin gói học viên', 'error');
+    .catch((err) => {
+      console.error('Lỗi khi tải thông tin gói học viên:', err);
+      showToast('Không thể tải thông tin gói học viên: ' + err.message, 'error');
     });
 }

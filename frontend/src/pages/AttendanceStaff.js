@@ -1,5 +1,4 @@
-// AttendanceStaff.js - Bảng Chấm công Nhân sự & Giáo viên
-const API_BASE = '/api';
+import { API_BASE, showToast, setupCustomDatePicker } from './_shared.js';
 
 export async function renderAttendanceStaff(container) {
   const userRole = localStorage.getItem('userRole') || 'hoc_vien';
@@ -240,7 +239,9 @@ export async function renderAttendanceStaff(container) {
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ngày quét</label>
-                <input type="date" name="ngay_quet" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+                <div id="attendance-date-container" class="relative">
+                  <input type="date" name="ngay_quet" id="attendance-date" required />
+                </div>
               </div>
               <div class="space-y-1">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Giờ quét</label>
@@ -266,6 +267,15 @@ export async function renderAttendanceStaff(container) {
       </div>
     `;
 
+    // Khởi tạo custom date picker cho ngày quét
+    const dateInput = document.getElementById('attendance-date');
+    const dateContainer = document.getElementById('attendance-date-container');
+    const setupPicker = () => {
+      // Vì setupCustomDatePicker thay đổi kiểu thành hidden, chúng ta cần đảm bảo form submit đọc đúng giá trị
+      setupCustomDatePicker(dateInput, dateContainer);
+    };
+    setupPicker();
+
     // Gắn các sự kiện click / modal
     document.getElementById('btn-refresh-attendance')?.addEventListener('click', () => {
       renderAttendanceStaff(container);
@@ -281,6 +291,9 @@ export async function renderAttendanceStaff(container) {
       const form = document.getElementById('add-log-form');
       form.elements['ngay_quet'].value = localDate;
       form.elements['gio_quet'].value = localTime;
+      
+      // Vẽ lại picker
+      setupPicker();
       
       modal.classList.remove('hidden');
     });

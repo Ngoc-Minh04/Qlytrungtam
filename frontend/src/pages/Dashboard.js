@@ -782,7 +782,7 @@ export function renderDashboard(role) {
   // Bắt đầu load thông báo định kỳ
   loadNotifications();
   const notifInterval = setInterval(loadNotifications, 15000); // 15 giây tự động reload 1 lần
-  window.addEventListener('unload', () => clearInterval(notifInterval));
+  window.addEventListener('pagehide', () => clearInterval(notifInterval));
 
   // Toggle Dropdown
   btnNotif?.addEventListener('click', (e) => {

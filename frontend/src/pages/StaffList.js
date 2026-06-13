@@ -126,7 +126,7 @@ export async function renderStaffList(container, role) {
 
       <!-- MODAL THÊM NHÂN VIÊN MỚI -->
       <div id="add-staff-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
           <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
             <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
               <span class="material-symbols-outlined text-emerald-600 text-[20px]">person_add</span>
@@ -137,24 +137,42 @@ export async function renderStaffList(container, role) {
             </button>
           </div>
           <form id="add-staff-modal-form" class="space-y-4 text-xs">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-600 mb-1.5">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
-                <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+            <div class="flex flex-col sm:flex-row gap-4 items-start">
+              <!-- Avatar vuông góc trái trên cùng -->
+              <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
+                <span class="block font-semibold text-slate-600 self-start sm:self-center">Ảnh đại diện</span>
+                <div class="relative w-24 h-24 border border-dashed border-[#e2e2e4] rounded-2xl overflow-hidden flex items-center justify-center bg-[#f3f3f5] hover:bg-slate-100 transition cursor-pointer group" id="modal-avatar-preview-container">
+                  <span class="material-symbols-outlined text-[28px] text-slate-400 group-hover:scale-110 transition duration-150">upload</span>
+                  <img id="modal-add-avatar-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+                </div>
+                <input type="file" id="modal-add-avatar" accept="image/*" class="hidden">
+                <button type="button" id="btn-trigger-avatar-upload" class="px-2.5 py-1 bg-white border border-[#e2e2e4] text-[10px] font-bold rounded-lg hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
               </div>
+
+              <!-- Cột thông tin cơ bản bên phải avatar -->
+              <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <div class="sm:col-span-2">
+                  <label class="block font-semibold text-slate-600 mb-1">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- Các hàng thông tin khác phía dưới -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Địa chỉ Email</label>
-                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <label class="block font-semibold text-slate-600 mb-1">Địa chỉ Email</label>
+                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-staff-role" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                <label class="block font-semibold text-slate-600 mb-1">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-staff-role" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Lễ tân">Lễ tân</option>
                   <option value="Kế toán">Kế toán</option>
                   <option value="Nhân viên">Nhân viên</option>
@@ -162,11 +180,29 @@ export async function renderStaffList(container, role) {
                 </select>
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-staff-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                <label class="block font-semibold text-slate-600 mb-1">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-staff-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Trung tam chính">Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
                 </select>
+              </div>
+
+              <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
+              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="modal-staff-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
+                  <label for="modal-staff-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
+                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs">
+                  </div>
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-staff-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
+                  </div>
+                </div>
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
@@ -293,7 +329,60 @@ export async function renderStaffList(container, role) {
     document.getElementById('btn-add-staff-modal')?.addEventListener('click', () => {
       addModal.classList.remove('hidden');
       document.getElementById('add-staff-modal-form').reset();
+      
+      const phoneInput = document.getElementById('modal-staff-phone');
+      const usernameInput = document.getElementById('modal-staff-username');
+      const passwordInput = document.getElementById('modal-staff-password');
+      const autoAccCheckbox = document.getElementById('modal-staff-autoAccount');
+      const avatarPreview = document.getElementById('modal-add-avatar-preview');
+      if (avatarPreview) avatarPreview.classList.add('hidden');
+      
+      if (autoAccCheckbox && autoAccCheckbox.checked) {
+        usernameInput.value = phoneInput.value;
+        passwordInput.value = '123456';
+      }
     });
+
+    // Thêm sự kiện upload avatar preview & auto account sync
+    document.getElementById('btn-trigger-avatar-upload')?.addEventListener('click', () => {
+      document.getElementById('modal-add-avatar').click();
+    });
+    document.getElementById('modal-avatar-preview-container')?.addEventListener('click', () => {
+      document.getElementById('modal-add-avatar').click();
+    });
+    document.getElementById('modal-add-avatar')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const preview = document.getElementById('modal-add-avatar-preview');
+          if (preview) {
+            preview.src = reader.result;
+            preview.classList.remove('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('modal-staff-phone')?.addEventListener('input', (e) => {
+      const autoAccCheckbox = document.getElementById('modal-staff-autoAccount');
+      const usernameInput = document.getElementById('modal-staff-username');
+      if (autoAccCheckbox && autoAccCheckbox.checked && usernameInput) {
+        usernameInput.value = e.target.value.trim();
+      }
+    });
+
+    document.getElementById('modal-staff-autoAccount')?.addEventListener('change', (e) => {
+      const usernameInput = document.getElementById('modal-staff-username');
+      const passwordInput = document.getElementById('modal-staff-password');
+      const phoneInput = document.getElementById('modal-staff-phone');
+      if (e.target.checked) {
+        if (usernameInput) usernameInput.value = phoneInput.value.trim();
+        if (passwordInput) passwordInput.value = '123456';
+      }
+    });
+
     document.getElementById('btn-close-staff-modal')?.addEventListener('click', () => addModal.classList.add('hidden'));
     document.getElementById('btn-cancel-staff-add')?.addEventListener('click', () => addModal.classList.add('hidden'));
 
@@ -320,31 +409,53 @@ export async function renderStaffList(container, role) {
         return;
       }
 
-      const payload = {
-        ho_ten: nameVal,
-        so_dien_thoai: phoneVal,
-        email: emailVal || null,
-        chuc_vu: document.getElementById('modal-staff-role').value,
-        chi_nhanh: document.getElementById('modal-staff-branch').value,
-        loai_ho_so: 'nhan_vien'
+      const avatarFile = document.getElementById('modal-staff-avatar').files[0];
+      const autoCreateAccount = document.getElementById('modal-staff-autoAccount').checked;
+
+      const submitForm = async (avatarBase64 = null) => {
+        const payload = {
+          ho_ten: nameVal,
+          so_dien_thoai: phoneVal,
+          email: emailVal || null,
+          chuc_vu: document.getElementById('modal-staff-role').value,
+          chi_nhanh: document.getElementById('modal-staff-branch').value,
+          loai_ho_so: 'nhan_vien',
+          avatar_url: avatarBase64,
+          auto_create_account: autoCreateAccount,
+          username: document.getElementById('modal-staff-username') ? document.getElementById('modal-staff-username').value.trim() : null,
+          password: document.getElementById('modal-staff-password') ? document.getElementById('modal-staff-password').value.trim() : null
+        };
+
+        try {
+          const postRes = await fetch(`${API_BASE}/staff/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
+            body: JSON.stringify(payload)
+          });
+          const resultJson = await postRes.json();
+          if (resultJson.success) {
+            showToast('Tạo hồ sơ nhân viên thành công!');
+            addModal.classList.add('hidden');
+            renderStaffList(container, role);
+          } else {
+            showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi máy chủ khi tạo nhân viên', 'error');
+        }
       };
 
-      try {
-        const postRes = await fetch(`${API_BASE}/staff/create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
-          body: JSON.stringify(payload)
-        });
-        const resultJson = await postRes.json();
-        if (resultJson.success) {
-          showToast('Tạo hồ sơ nhân viên thành công!');
-          addModal.classList.add('hidden');
-          renderStaffList(container, role);
-        } else {
-          showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
-        }
-      } catch (err) {
-        showToast('Lỗi máy chủ khi tạo nhân viên', 'error');
+      if (avatarFile) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          submitForm(reader.result);
+        };
+        reader.onerror = () => {
+          showToast('Lỗi khi đọc file ảnh đại diện', 'error');
+        };
+        reader.readAsDataURL(avatarFile);
+      } else {
+        submitForm(null);
       }
     });
 
