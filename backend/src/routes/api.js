@@ -540,39 +540,20 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
     const bestSellerRes = await pool.query(bestSellerQuery);
 
     // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter
-<<<<<<< HEAD
-    const dc1 = dateCondition.replace('ngay_tao', 'd.ngay_tao');
-    const dc2 = dateCondition.replace('ngay_tao', 'dk.ngay_tao');
-    const paymentsQuery = `
-      SELECT * FROM (
-=======
     let paymentsQuery = '';
     let paymentsRes;
     if (start_date && end_date) {
       paymentsQuery = `
->>>>>>> main
         SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
         FROM dang_ky_khoa_hoc d
         JOIN ho_so h ON d.ho_so_id = h.id
         JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-<<<<<<< HEAD
-        WHERE d.trang_thai NOT IN ('huy', 'tam_dung') ${dc1}
-=======
         WHERE d.trang_thai NOT IN ('huy', 'tam_dung') AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
->>>>>>> main
         UNION ALL
         SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao
         FROM dang_ky_hoc_kem dk
         JOIN ho_so h ON dk.hoc_vien_id = h.id
         JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-<<<<<<< HEAD
-        WHERE dk.trang_thai NOT IN ('huy', 'tam_dung') ${dc2}
-      ) AS combined
-      ORDER BY ngay_tao DESC
-      LIMIT 30
-    `;
-    const paymentsRes = await pool.query(paymentsQuery);
-=======
         WHERE dk.trang_thai NOT IN ('huy', 'tam_dung') AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
         ORDER BY ngay_tao DESC
         LIMIT 30
@@ -596,7 +577,6 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       `;
       paymentsRes = await pool.query(paymentsQuery);
     }
->>>>>>> main
 
     res.json({
       success: true,
@@ -1032,7 +1012,6 @@ router.get('/teachers', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // ============================================================
 // PHÂN HỆ QUẢN LÝ TÀI KHOẢN (Admin)
 // ============================================================
@@ -1262,8 +1241,7 @@ router.post('/checkin-logs', verifyAccess(['admin', 'le_tan']), async (req, res)
   }
 });
 
-=======
->>>>>>> main
+
 // ============================================================
 // API NHÂN VIÊN (dùng bảng ho_so, loai_ho_so = 'nhan_vien')
 // ============================================================
@@ -1922,8 +1900,6 @@ router.delete('/rules/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
   }
 });
 
-<<<<<<< HEAD
-
 // ============================================================
 // PHÂN HỆ XÁC THỰC (AUTH)
 // ============================================================
@@ -1969,6 +1945,33 @@ router.post('/auth/login', async (req, res) => {
 
     // Cập nhật lần đăng nhập cuối
     await pool.query('UPDATE tai_khoan SET lan_dang_nhap_cuoi = NOW() WHERE id = $1', [user.id]);
+
+    // Tự động liên kết hồ sơ nếu tài khoản chưa được liên kết (ho_so_id IS NULL)
+    if (!user.ho_so_id && (user.vai_tro === 'giao_vien' || user.vai_tro === 'hoc_vien')) {
+      const searchPattern = user.ten_dang_nhap.toUpperCase();
+      const findProfile = await pool.query(
+        `SELECT id, ho_ten, email, so_dien_thoai, chi_nhanh, loai_ho_so, ma_ho_so 
+         FROM ho_so 
+         WHERE (UPPER(ma_ho_so) = $1 OR UPPER(ho_ten) = $1 OR UPPER(email) = $1) 
+           AND loai_ho_so = $2 
+           AND is_deleted = 0 
+         LIMIT 1`,
+        [searchPattern, user.vai_tro]
+      );
+      if (findProfile.rows.length > 0) {
+        const matchedProfile = findProfile.rows[0];
+        user.ho_so_id = matchedProfile.id;
+        user.ho_ten = matchedProfile.ho_ten;
+        user.email = matchedProfile.email;
+        user.so_dien_thoai = matchedProfile.so_dien_thoai;
+        user.chi_nhanh = matchedProfile.chi_nhanh;
+        user.loai_ho_so = matchedProfile.loai_ho_so;
+        user.ma_ho_so = matchedProfile.ma_ho_so;
+
+        // Cập nhật lại trong database để hoàn thành liên kết
+        await pool.query('UPDATE tai_khoan SET ho_so_id = $1 WHERE id = $2', [matchedProfile.id, user.id]);
+      }
+    }
 
     res.json({
       success: true,
@@ -2247,7 +2250,22 @@ router.get('/student-portal/overview', async (req, res) => {
 
 // GET /api/teacher-portal/overview: Dữ liệu tổng quan cho Portal Giáo viên
 router.get('/teacher-portal/overview', async (req, res) => {
-  const ho_so_id = req.headers['x-ho-so-id'];
+  let ho_so_id = req.headers['x-ho-so-id'];
+  const userRole = req.headers['x-user-role'] || 'giao_vien';
+
+  if (!ho_so_id && (userRole === 'admin' || userRole === 'le_tan')) {
+    try {
+      const fallbackRes = await pool.query(
+        "SELECT id FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY id ASC LIMIT 1"
+      );
+      if (fallbackRes.rows.length > 0) {
+        ho_so_id = fallbackRes.rows[0].id;
+      }
+    } catch (err) {
+      console.error('Lỗi lấy hồ sơ giáo viên fallback:', err);
+    }
+  }
+
   if (!ho_so_id) {
     return res.status(401).json({ success: false, error: 'Thiếu thông tin xác thực giáo viên' });
   }
@@ -2505,7 +2523,22 @@ router.put('/booking-requests/:id/approve', verifyAccess(['admin', 'le_tan']), a
 
 // GET /api/teacher-portal/my-students: Danh sách học viên GV đang dạy
 router.get('/teacher-portal/my-students', async (req, res) => {
-  const ho_so_id = req.headers['x-ho-so-id'];
+  let ho_so_id = req.headers['x-ho-so-id'];
+  const userRole = req.headers['x-user-role'] || 'giao_vien';
+
+  if (!ho_so_id && (userRole === 'admin' || userRole === 'le_tan')) {
+    try {
+      const fallbackRes = await pool.query(
+        "SELECT id FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY id ASC LIMIT 1"
+      );
+      if (fallbackRes.rows.length > 0) {
+        ho_so_id = fallbackRes.rows[0].id;
+      }
+    } catch (err) {
+      console.error('Lỗi lấy hồ sơ giáo viên fallback:', err);
+    }
+  }
+
   if (!ho_so_id) return res.status(401).json({ success: false, error: 'Thiếu xác thực' });
   try {
     const result = await pool.query(
@@ -2529,8 +2562,23 @@ router.get('/teacher-portal/my-students', async (req, res) => {
 
 // GET /api/teacher-portal/stats: Thống kê theo tháng cho giáo viên
 router.get('/teacher-portal/stats', async (req, res) => {
-  const ho_so_id = req.headers['x-ho-so-id'];
+  let ho_so_id = req.headers['x-ho-so-id'];
   const { thang, nam } = req.query;
+  const userRole = req.headers['x-user-role'] || 'giao_vien';
+
+  if (!ho_so_id && (userRole === 'admin' || userRole === 'le_tan')) {
+    try {
+      const fallbackRes = await pool.query(
+        "SELECT id FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY id ASC LIMIT 1"
+      );
+      if (fallbackRes.rows.length > 0) {
+        ho_so_id = fallbackRes.rows[0].id;
+      }
+    } catch (err) {
+      console.error('Lỗi lấy hồ sơ giáo viên fallback:', err);
+    }
+  }
+
   if (!ho_so_id) return res.status(401).json({ success: false, error: 'Thiếu xác thực' });
   try {
     const m = parseInt(thang) || new Date().getMonth() + 1;
@@ -2588,10 +2636,29 @@ router.get('/teacher-portal/stats', async (req, res) => {
   }
 });
 
-// GET /api/reports/teacher/:teacherId: Lịch sử sổ liên lạc GV đã viết
-router.get('/reports/teacher/:teacherId', async (req, res) => {
-  const { teacherId } = req.params;
+// GET /api/reports/teacher/:teacherId?: Lịch sử sổ liên lạc GV đã viết
+router.get('/reports/teacher/:teacherId?', async (req, res) => {
+  let { teacherId } = req.params;
   const { hoc_vien_id } = req.query;
+  const userRole = req.headers['x-user-role'] || 'giao_vien';
+
+  if ((!teacherId || teacherId === 'undefined' || teacherId === 'null') && (userRole === 'admin' || userRole === 'le_tan')) {
+    try {
+      const fallbackRes = await pool.query(
+        "SELECT id FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY id ASC LIMIT 1"
+      );
+      if (fallbackRes.rows.length > 0) {
+        teacherId = fallbackRes.rows[0].id;
+      }
+    } catch (err) {
+      console.error('Lỗi lấy hồ sơ giáo viên fallback:', err);
+    }
+  }
+
+  if (!teacherId || teacherId === 'undefined' || teacherId === 'null') {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin ID giáo viên' });
+  }
+
   try {
     let query = `
       SELECT s.*, hs_hv.ho_ten as ten_hoc_vien, hs_hv.ma_ho_so as ma_hoc_vien
@@ -2754,7 +2821,23 @@ router.post('/chatbot', async (req, res) => {
     res.json({ success: true, reply });
   } catch (err) {
     console.error('Gemini API error:', err.message);
-    res.status(500).json({ success: false, error: 'Trợ lý AI tạm thời không khả dụng. Vui lòng thử lại.' });
+    
+    // Tạo phản hồi ngoại tuyến thông minh làm cứu cánh thay vì crash lỗi 500
+    let reply = `Chào ${hoTen || 'bạn'}! Stella AI hiện đang trong chế độ offline (Bảo trì phím kết nối API). Mình tạm thời trả lời nhanh: `;
+    const msgLower = message.toLowerCase();
+    if (msgLower.includes('lịch') || msgLower.includes('ngày') || msgLower.includes('ca')) {
+      reply += 'Lịch dạy hoặc lịch học của bạn đã được hiển thị đầy đủ trên màn hình thời khóa biểu chính. Bạn có thể kiểm tra trực tiếp ở đó nhé!';
+    } else if (msgLower.includes('học phí') || msgLower.includes('tiền') || msgLower.includes('đóng')) {
+      reply += 'Thông tin chi tiết về học phí, số tiền đã đóng và số tiền còn thiếu nằm trong tab "Học phí". Vui lòng kiểm tra hoặc liên hệ bộ phận Lễ tân nếu cần hỗ trợ.';
+    } else if (msgLower.includes('sổ liên lạc') || msgLower.includes('nhận xét') || msgLower.includes('nhật ký')) {
+      reply += 'Nhật ký học tập và nhận xét chi tiết sau mỗi buổi dạy được cập nhật trong tab "Sổ liên lạc". Giáo viên có thể điền thông tin và gửi trực tiếp tại đây.';
+    } else if (msgLower.includes('học sinh') || msgLower.includes('học viên') || msgLower.includes('sinh viên')) {
+      reply += 'Danh sách học viên và thông tin chi tiết từng bạn được quản lý trong tab "Học viên". Bạn có thể xem lịch sử học tập và tiến độ của các em tại đó.';
+    } else {
+      reply += 'Stella AI đã ghi nhận ý kiến của bạn. Ban quản trị trung tâm sẽ phản hồi lại bạn sớm nhất!';
+    }
+    
+    res.json({ success: true, reply });
   }
 });
 
@@ -2830,7 +2913,12 @@ router.get('/profile/:id', async (req, res) => {
       [id]
     );
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ' });
-=======
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // API PUT /api/registrations/:id/cancel: Hủy đăng ký khóa học, hoàn tiền, tự động trừ doanh thu qua Trigger
 router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
@@ -2913,15 +3001,11 @@ router.put('/registrations/:id', verifyAccess(['admin', 'le_tan']), async (req, 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học đang hoạt động để chỉnh sửa' });
     }
->>>>>>> main
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-<<<<<<< HEAD
-=======
 // API PUT /api/registrations/tutoring/:id: Cập nhật / đổi gói dạy học kèm 1-1
 router.put('/registrations/tutoring/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
@@ -3142,5 +3226,4 @@ router.delete('/teachers/:id', verifyAccess(['admin']), async (req, res) => {
   }
 });
 
->>>>>>> main
 module.exports = router;

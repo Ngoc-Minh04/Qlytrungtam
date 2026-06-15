@@ -1,3 +1,13 @@
+### [15/06/2026 11:00] — Khắc phục lỗi 401/404 Portal Giáo viên và 500 Chatbot AI
+- **Loại**: Sửa bug / Cải tiến hệ thống API
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Auto-link Hồ sơ**: Tự động so khớp và liên kết tài khoản giáo viên/học viên mới tạo với hồ sơ tương ứng trong DB dựa trên tên đăng nhập (so khớp hoa/thường với `ma_ho_so`, `ho_ten`, `email`) ngay khi đăng nhập để tránh lỗi trống `ho_so_id` gây ra mã 401.
+  - **Fallback Cổng Giáo viên**: Tự động lấy giáo viên đầu tiên trong database làm fallback khi người dùng quyền `admin` hoặc `le_tan` truy cập Cổng Giáo viên mà không truyền `ho_so_id` nhằm hỗ trợ chế độ xem thử/giả lập.
+  - **Reports API**: Chuyển tham số `:teacherId` của endpoint `/api/reports/teacher/:teacherId` thành tùy chọn (`:teacherId?`) và tự động áp dụng fallback để tránh lỗi 404 khi truy cập không truyền ID.
+  - **Offline Chatbot**: Bọc try-catch xung quanh Gemini API trong endpoint `/api/chatbot` và trả về phản hồi offline thông minh, thân thiện thay vì crash lỗi 500 khi API Key gặp sự cố.
+- **Kết quả**: Thành công
+
 ### [15/06/2026 10:40] — Sửa lỗi Date Picker, Lớp học SQL 500, Tạo nhân viên trùng SĐT và hiển thị Avatar
 - **Loại**: Sửa bug
 - **File**: `frontend/src/pages/_shared.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/TeachersList.js`, `backend/src/routes/api.js`
