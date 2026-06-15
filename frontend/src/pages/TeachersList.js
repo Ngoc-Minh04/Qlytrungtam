@@ -33,8 +33,8 @@ export async function renderTeachersList(container, role) {
         <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${t.id}">
           <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full overflow-hidden shadow-md bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none">
-                ${t.ho_ten ? t.ho_ten.charAt(0) : 'G'}
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-md bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none shrink-0">
+                ${t.avatar_url ? `<img src="${t.avatar_url}" class="w-full h-full object-cover">` : (t.ho_ten ? t.ho_ten.charAt(0) : 'G')}
               </div>
               <div>
                 <div class="font-bold text-apple-ink text-sm">${t.ho_ten}</div>
@@ -62,7 +62,7 @@ export async function renderTeachersList(container, role) {
     container.innerHTML = `
       <div class="space-y-6">
         <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="inline-flex bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none">
             <button id="tab-students" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
@@ -74,35 +74,51 @@ export async function renderTeachersList(container, role) {
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
-          <!-- Nút Refresh đồng bộ kích thước -->
-          <button id="btn-refresh-teachers" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
-            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
-          </button>
-        </div>
-
-        <!-- Filter & Search Bar -->
-        <div class="bg-white p-4 rounded-2xl flex flex-col sm:flex-row gap-3 justify-between items-center border border-[#e2e2e4] shadow-sm">
-          <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-3 items-center">
-            <!-- Tìm kiếm -->
-            <div class="relative w-full sm:w-64 text-xs">
-              <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
-              <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
-            </div>
-            <!-- Bộ lọc Chuyên môn -->
-            <select id="filter-expertise" class="w-full sm:w-48 border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-4 py-1.5 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
-              <option value="">Tất cả chuyên môn</option>
-              <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
-              <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
-              <option value="Luyện thi IELTS">Luyện thi IELTS</option>
-              <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
-            </select>
-          </div>
-          <div class="flex items-center justify-end w-full sm:w-auto mt-2 sm:mt-0">
-            <button id="btn-add-teacher-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
+          <div class="flex items-center gap-2">
+            <!-- Nút Refresh đồng bộ kích thước -->
+            <button id="btn-refresh-teachers" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+            <button id="btn-add-teacher-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">add</span>
               Thêm giáo viên mới
             </button>
           </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-[#e2e2e4] shadow-sm">
+          <!-- Tìm kiếm -->
+          <div class="relative flex-1 min-w-[180px] text-xs">
+            <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
+            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
+          </div>
+          <!-- Bộ lọc Chuyên môn -->
+          <select id="filter-expertise" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+            <option value="">Tất cả chuyên môn</option>
+            <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
+            <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
+            <option value="Luyện thi IELTS">Luyện thi IELTS</option>
+            <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
+          </select>
+          <!-- Bộ Lọc Kinh Nghiệm -->
+          <select id="filter-experience" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+            <option value="">Tất cả kinh nghiệm</option>
+            <option value="1-3">1 - 3 năm</option>
+            <option value="3-5">3 - 5 năm</option>
+            <option value="5+">> 5 năm</option>
+          </select>
+          <!-- Bộ Lọc Giới Tính -->
+          <select id="filter-gender" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+            <option value="">Tất cả giới tính</option>
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+            <option value="Khác">Khác</option>
+          </select>
+          <!-- Nút Đặt lại bộ lọc -->
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+            <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
+          </button>
         </div>
 
         <!-- Table Container -->
@@ -274,18 +290,33 @@ export async function renderTeachersList(container, role) {
     if (scrollContainer) scrollContainer.addEventListener('scroll', onScroll, { passive: true });
     else window.addEventListener('scroll', onScroll, { passive: true });
 
+    const filterExperience = document.getElementById('filter-experience');
+    const filterGender = document.getElementById('filter-gender');
+
     // Sự kiện lọc giáo viên
     function applyFilters() {
       const q = searchInput.value.toLowerCase();
       const exp = filterExpertise.value;
+      const experienceVal = filterExperience.value;
+      const genderVal = filterGender.value;
 
       const filtered = allTeachers.filter(t => {
         const matchesSearch = (t.ho_ten && t.ho_ten.toLowerCase().includes(q)) ||
           (t.ma_ho_so && t.ma_ho_so.toLowerCase().includes(q)) ||
           (t.so_dien_thoai && t.so_dien_thoai.includes(q));
         const matchesExpertise = exp === "" || t.chuyen_mon === exp;
+        
+        let matchesExperience = true;
+        if (experienceVal) {
+          const years = parseInt(t.kinh_nghiem) || 0;
+          if (experienceVal === '1-3') matchesExperience = years >= 1 && years <= 3;
+          else if (experienceVal === '3-5') matchesExperience = years >= 3 && years <= 5;
+          else if (experienceVal === '5+') matchesExperience = years > 5;
+        }
 
-        return matchesSearch && matchesExpertise;
+        const matchesGender = genderVal === "" || (t.gioi_tinh && t.gioi_tinh.toLowerCase() === genderVal.toLowerCase());
+
+        return matchesSearch && matchesExpertise && matchesExperience && matchesGender;
       });
 
       updateTableInfinity(filtered);
@@ -293,6 +324,16 @@ export async function renderTeachersList(container, role) {
 
     searchInput.addEventListener('input', applyFilters);
     filterExpertise.addEventListener('change', applyFilters);
+    filterExperience.addEventListener('change', applyFilters);
+    filterGender.addEventListener('change', applyFilters);
+
+    document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
+      searchInput.value = '';
+      filterExpertise.value = '';
+      filterExperience.value = '';
+      filterGender.value = '';
+      applyFilters();
+    });
 
     // Gắn sự kiện dòng bảng
     function attachRowEvents(currentList) {
@@ -452,7 +493,7 @@ export async function renderTeachersList(container, role) {
         return;
       }
 
-      const avatarFile = document.getElementById('modal-teacher-avatar').files[0];
+      const avatarFile = document.getElementById('modal-add-avatar').files[0];
       const autoCreateAccount = document.getElementById('modal-teacher-autoAccount').checked;
 
       const submitForm = async (avatarBase64 = null) => {

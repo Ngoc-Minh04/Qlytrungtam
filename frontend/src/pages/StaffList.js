@@ -35,8 +35,8 @@ export async function renderStaffList(container, role) {
         <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${nv.id}">
           <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-bold text-white select-none text-sm">
-                ${(nv.ho_ten || 'N').charAt(0)}
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-bold text-white select-none text-sm shrink-0">
+                ${nv.avatar_url ? `<img src="${nv.avatar_url}" class="w-full h-full object-cover">` : (nv.ho_ten || 'N').charAt(0)}
               </div>
               <div>
                 <div class="font-bold text-apple-ink text-sm">${nv.ho_ten || '—'}</div>
@@ -75,10 +75,15 @@ export async function renderStaffList(container, role) {
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
-          <button id="btn-add-staff-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">add</span>
-            Thêm nhân viên mới
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-refresh-staff" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+            </button>
+            <button id="btn-add-staff-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              Thêm nhân viên mới
+            </button>
+          </div>
         </div>
 
         <!-- Bộ lọc -->
@@ -94,6 +99,9 @@ export async function renderStaffList(container, role) {
             <option value="Kế toán">Kế toán</option>
             <option value="Nhân viên">Nhân viên</option>
           </select>
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+            <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
+          </button>
         </div>
 
         <!-- Table -->
@@ -282,6 +290,16 @@ export async function renderStaffList(container, role) {
     searchInput.addEventListener('input', applyFilters);
     filterRole.addEventListener('change', applyFilters);
 
+    document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
+      searchInput.value = '';
+      filterRole.value = '';
+      applyFilters();
+    });
+
+    document.getElementById('btn-refresh-staff')?.addEventListener('click', () => {
+      renderStaffList(container, role);
+    });
+
     function attachRowEvents(list) {
       tableBody.querySelectorAll('tr').forEach(row => {
         row.addEventListener('click', (e) => {
@@ -291,6 +309,9 @@ export async function renderStaffList(container, role) {
             deleteStaff(id);
             return;
           }
+          const id = row.getAttribute('data-id');
+          const nv = list.find(item => item.id == id);
+          if (nv) showStaffDetailModal(nv, container, role);
         });
       });
     }
@@ -335,7 +356,10 @@ export async function renderStaffList(container, role) {
       const passwordInput = document.getElementById('modal-staff-password');
       const autoAccCheckbox = document.getElementById('modal-staff-autoAccount');
       const avatarPreview = document.getElementById('modal-add-avatar-preview');
-      if (avatarPreview) avatarPreview.classList.add('hidden');
+      if (avatarPreview) {
+        avatarPreview.classList.add('hidden');
+        avatarPreview.src = '';
+      }
       
       if (autoAccCheckbox && autoAccCheckbox.checked) {
         usernameInput.value = phoneInput.value;
@@ -409,7 +433,7 @@ export async function renderStaffList(container, role) {
         return;
       }
 
-      const avatarFile = document.getElementById('modal-staff-avatar').files[0];
+      const avatarFile = document.getElementById('modal-add-avatar').files[0];
       const autoCreateAccount = document.getElementById('modal-staff-autoAccount').checked;
 
       const submitForm = async (avatarBase64 = null) => {
@@ -466,4 +490,222 @@ export async function renderStaffList(container, role) {
       </div>
     `;
   }
+}
+
+// ===== MODAL CHI TIẾT + IN-PLACE EDIT NHÂN VIÊN =====
+function showStaffDetailModal(nv, container, role) {
+  let modal = document.getElementById('staff-detail-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'staff-detail-modal';
+    modal.className = 'fixed inset-0 bg-black/45 backdrop-blur-md z-50 flex items-center justify-center p-4';
+    document.body.appendChild(modal);
+  }
+
+  const ngayTaoFormatted = nv.ngay_tao ? new Date(nv.ngay_tao).toLocaleDateString('vi-VN') : '—';
+
+  modal.innerHTML = `
+    <div class="bg-white rounded-3xl max-w-xl w-full border border-[#e2e2e4] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-xs text-[#1a1c1d]" style="animation: modalIn 0.2s ease">
+      <!-- Header cố định -->
+      <div class="flex justify-between items-center px-6 py-4 border-b border-[#f3f3f5] shrink-0">
+        <h3 class="text-sm font-bold text-[#1a1c1d] flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-600 text-[22px]">manage_accounts</span>
+          Hồ sơ Nhân sự & Nhân viên
+        </h3>
+        <button id="close-staff-detail-modal" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all flex items-center justify-center">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Body Scroll -->
+      <form id="staff-edit-inplace-form" class="p-6 overflow-y-auto space-y-5 flex-1">
+        <!-- Profile Banner -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/8 via-emerald-500/3 to-transparent border border-emerald-500/15">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-xl shadow-lg shrink-0 select-none">
+              ${nv.avatar_url ? `<img src="${nv.avatar_url}" class="w-full h-full object-cover">` : (nv.ho_ten ? nv.ho_ten.charAt(0).toUpperCase() : 'N')}
+            </div>
+            <div>
+              <h4 class="font-extrabold text-base text-apple-ink">${nv.ho_ten}</h4>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold text-[10px] tracking-wide uppercase">${nv.ma_ho_so}</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                <span class="text-slate-400 font-medium text-[10.5px]">Đăng ký lúc: ${ngayTaoFormatted}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Trạng thái lưu -->
+          <div id="staff-save-status" class="hidden items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10.5px] font-semibold self-end sm:self-center">
+            <span class="material-symbols-outlined text-[14px]">check_circle</span> Đã lưu
+          </div>
+        </div>
+
+        <!-- Thông báo hướng dẫn -->
+        <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-xl text-[10.5px] text-blue-600">
+          <span class="material-symbols-outlined text-[14px]">edit_note</span>
+          Chỉnh sửa trực tiếp các trường bên dưới rồi nhấn <strong class="mx-1">Lưu thay đổi</strong> để cập nhật.
+        </div>
+
+        <!-- Grid Thông tin chỉnh sửa -->
+        <div class="space-y-4">
+          <h4 class="font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 text-slate-400">
+            <span class="material-symbols-outlined text-[16px]">info</span> Thông tin chi tiết hồ sơ
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <!-- Họ tên -->
+            <div class="sm:col-span-2 space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">person</span> Họ và tên
+              </label>
+              <input type="text" id="s-edit-name" value="${nv.ho_ten || ''}" required
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Chức vụ -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">work</span> Chức vụ / Vai trò
+              </label>
+              <select id="s-edit-role"
+                class="w-full border border-[#e2e2e4] bg-[#fafafa] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition cursor-pointer">
+                <option value="Lễ tân" ${nv.chuc_vu === 'Lễ tân' ? 'selected' : ''}>Lễ tân</option>
+                <option value="Kế toán" ${nv.chuc_vu === 'Kế toán' ? 'selected' : ''}>Kế toán</option>
+                <option value="Nhân viên" ${nv.chuc_vu === 'Nhân viên' ? 'selected' : ''}>Nhân viên</option>
+                <option value="Quản lý" ${nv.chuc_vu === 'Quản lý' ? 'selected' : ''}>Quản lý</option>
+              </select>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">call</span> Số điện thoại
+              </label>
+              <input type="tel" id="s-edit-phone" value="${nv.so_dien_thoai || ''}" required maxlength="10"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Email -->
+            <div class="space-y-1 sm:col-span-2">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">mail</span> Địa chỉ Email
+              </label>
+              <input type="email" id="s-edit-email" value="${nv.email || ''}"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Chi nhánh -->
+            <div class="space-y-1 sm:col-span-2">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">location_on</span> Chi nhánh công tác
+              </label>
+              <select id="s-edit-branch"
+                class="w-full border border-[#e2e2e4] bg-[#fafafa] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition cursor-pointer">
+                <option value="Trung tam chính" ${nv.chi_nhanh === 'Trung tam chính' ? 'selected' : ''}>Trung tâm chính</option>
+                <option value="Downtown Campus" ${nv.chi_nhanh === 'Downtown Campus' ? 'selected' : ''}>Downtown Campus</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer / Action Buttons -->
+        <div class="flex gap-2 pt-4 border-t border-[#f3f3f5] shrink-0 justify-between">
+          <button type="button" id="btn-delete-staff-profile" class="px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl transition active:scale-95 text-xs">
+            Xóa hồ sơ nhân viên
+          </button>
+          <div class="flex gap-2">
+            <button type="button" id="btn-cancel-inplace-edit" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Đóng</button>
+            <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu thay đổi</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+
+  // Đóng modal
+  const closeModal = () => modal.classList.add('hidden');
+  modal.querySelector('#close-staff-detail-modal').addEventListener('click', closeModal);
+  modal.querySelector('#btn-cancel-inplace-edit').addEventListener('click', closeModal);
+
+  // Xóa nhân viên trực tiếp
+  modal.querySelector('#btn-delete-staff-profile').addEventListener('click', async () => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa hồ sơ nhân viên ${nv.ho_ten}?`)) return;
+    try {
+      const delRes = await fetch(`${API_BASE}/staff/${nv.id}`, {
+        method: 'DELETE',
+        headers: { 'X-User-Role': 'admin' }
+      });
+      const delResult = await delRes.json();
+      if (delResult.success) {
+        showToast('Đã xóa nhân viên thành công!', 'success');
+        closeModal();
+        renderStaffList(container, role);
+      } else {
+        showToast(delResult.error, 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối máy chủ', 'error');
+    }
+  });
+
+  // Submit form cập nhật
+  modal.querySelector('#staff-edit-inplace-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nameVal = modal.querySelector('#s-edit-name').value.trim();
+    const phoneVal = modal.querySelector('#s-edit-phone').value.trim();
+    const emailVal = modal.querySelector('#s-edit-email').value.trim();
+
+    if (!isValidPhone(phoneVal)) {
+      showToast('Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0', 'error');
+      return;
+    }
+    if (emailVal && !isValidEmail(emailVal)) {
+      showToast('Email không hợp lệ. Phải có định dạng abc@domain.com', 'error');
+      return;
+    }
+
+    const payload = {
+      ho_ten: nameVal,
+      so_dien_thoai: phoneVal,
+      email: emailVal || null,
+      chuc_vu: modal.querySelector('#s-edit-role').value,
+      chi_nhanh: modal.querySelector('#s-edit-branch').value
+    };
+
+    try {
+      const putRes = await fetch(`${API_BASE}/staff/${nv.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': 'admin'
+        },
+        body: JSON.stringify(payload)
+      });
+      const putResult = await putRes.json();
+      if (putResult.success) {
+        showToast('Cập nhật hồ sơ nhân viên thành công!', 'success');
+        const saveStatus = modal.querySelector('#staff-save-status');
+        if (saveStatus) {
+          saveStatus.classList.remove('hidden');
+          saveStatus.classList.add('flex');
+          setTimeout(() => {
+            saveStatus.classList.add('hidden');
+            saveStatus.classList.remove('flex');
+            closeModal();
+            renderStaffList(container, role);
+          }, 1000);
+        } else {
+          closeModal();
+          renderStaffList(container, role);
+        }
+      } else {
+        showToast(putResult.error || 'Có lỗi xảy ra', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi máy chủ khi cập nhật', 'error');
+    }
+  });
 }

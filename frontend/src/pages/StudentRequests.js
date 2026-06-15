@@ -208,7 +208,11 @@ export async function renderStudentRequests(container) {
       selectedRegId = btn.getAttribute('data-id');
       const name = btn.getAttribute('data-name') || 'học viên này';
       document.getElementById('cancel-student-name').textContent = name;
-      document.getElementById('cancel-refund-amount').value = '0';
+      
+      // Tìm registration tương ứng để lấy số tiền đã thu
+      const reg = activeRegs.find(r => r.id == selectedRegId);
+      const daThu = reg ? reg.so_tien_da_thu || 0 : 0;
+      document.getElementById('cancel-refund-amount').value = daThu;
       document.getElementById('cancel-reason').value = '';
       cancelModal.classList.remove('hidden');
     });

@@ -1,5 +1,5 @@
 // StudentsList.js - Hồ sơ Học viên, Giáo viên, Nhân viên (tab 3 nút)
-import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput, setupCustomDatePicker } from './_shared.js';
 
 // Hàm validate email hợp lệ (phải có domain.tld)
 function isValidEmail(email) {
@@ -48,8 +48,8 @@ export async function renderStudentsList(container, role) {
         <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${sv.id}">
           <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none">
-                ${(sv.ho_ten || 'H').charAt(0)}
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none shrink-0">
+                ${sv.avatar_url ? `<img src="${sv.avatar_url}" class="w-full h-full object-cover">` : (sv.ho_ten || 'H').charAt(0)}
               </div>
               <div>
                 <div class="font-bold text-apple-ink text-sm">${sv.ho_ten}</div>
@@ -90,6 +90,7 @@ export async function renderStudentsList(container, role) {
             <button id="tab-staff" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
+          </div>
           <div class="flex items-center gap-2">
             <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
@@ -142,6 +143,9 @@ export async function renderStudentsList(container, role) {
             <option value="nữ">Nữ</option>
             <option value="khác">Khác</option>
           </select>
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+            <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
+          </button>
         </div>
 
         <!-- Table Container (bỏ cột Chi nhánh, còn 5 cột) -->
@@ -390,6 +394,16 @@ export async function renderStudentsList(container, role) {
     filterTeacher.addEventListener('change', applyFilters);
     filterGender.addEventListener('change', applyFilters);
 
+    document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
+      searchInput.value = '';
+      filterLevel.value = '';
+      filterStatus.value = '';
+      filterPackage.value = '';
+      filterTeacher.value = '';
+      filterGender.value = '';
+      applyFilters();
+    });
+
     function attachRowEvents(currentList) {
       tableBody.querySelectorAll('tr').forEach(row => {
         row.addEventListener('click', (e) => {
@@ -431,13 +445,24 @@ export async function renderStudentsList(container, role) {
       const passwordInput = document.getElementById('modal-add-password');
       const autoAccCheckbox = document.getElementById('modal-add-autoAccount');
       const avatarPreview = document.getElementById('modal-add-avatar-preview');
-      if (avatarPreview) avatarPreview.classList.add('hidden');
+      if (avatarPreview) {
+        avatarPreview.classList.add('hidden');
+        avatarPreview.src = '';
+      }
       
       if (autoAccCheckbox && autoAccCheckbox.checked) {
         usernameInput.value = phoneInput.value;
         passwordInput.value = '123456';
       }
 
+      // Đặt mặc định ngày sinh là ngày hôm nay theo giờ địa phương (YYYY-MM-DD)
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      const todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+      const dobInput = document.getElementById('modal-add-dob');
+      if (dobInput) {
+        dobInput.value = todayLocal;
+      }
+      
       setupCustomDatePicker(
         document.getElementById('modal-add-dob'),
         document.getElementById('modal-add-dob-container')
@@ -676,8 +701,8 @@ function showStudentDetailModal(sv) {
               <!-- Header Profile -->
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-[#0066cc]/5 via-[#0066cc]/1 to-transparent border border-[#0066cc]/10">
                 <div class="flex items-center gap-4 w-full">
-                  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0066cc] to-[#004e9f] text-white flex items-center justify-center font-extrabold text-2xl shadow-lg shadow-[#0066cc]/15 shrink-0 select-none">
-                    ${(sv.ho_ten || 'H').charAt(0)}
+                  <div class="w-16 h-16 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-2xl shadow-lg shrink-0 select-none">
+                    ${sv.avatar_url ? `<img src="${sv.avatar_url}" class="w-full h-full object-cover">` : (sv.ho_ten || 'H').charAt(0)}
                   </div>
                   <div class="flex-grow space-y-1">
                     <input type="text" id="inplace-fullName" value="${sv.ho_ten || ''}" required 

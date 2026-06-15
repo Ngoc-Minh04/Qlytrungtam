@@ -1,6 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
+const cloudinary = require('cloudinary').v2;
+
+// Cấu hình Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Helper upload base64 lên Cloudinary
+async function uploadToCloudinary(base64Str) {
+  if (!base64Str) return null;
+  try {
+    // Nếu client truyền lên base64, upload trực tiếp lên Cloudinary
+    const uploadRes = await cloudinary.uploader.upload(base64Str, {
+      folder: 'stellar_academy_avatars'
+    });
+    return uploadRes.secure_url;
+  } catch (err) {
+    console.error('Lỗi upload Cloudinary:', err.message);
+    return null;
+  }
+}
 
 // ============================================================
 // MIDDLEWARE PHÂN QUYỀN VÀ BẢO MẬT API (Bảo mật API nâng cao)
@@ -254,8 +277,15 @@ router.put('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
     const newEnd = gio_ket_thuc || session.gio_ket_thuc;
 
     // Chặn sửa ngày/giờ quá khứ
-    const ngayHocDate = new Date(newNgay);
-    const ngayHocStr = ngayHocDate.toISOString().split('T')[0];
+    let ngayHocStr;
+    if (typeof newNgay === 'string') {
+      ngayHocStr = newNgay.split('T')[0];
+    } else {
+      const y = newNgay.getFullYear();
+      const m = String(newNgay.getMonth() + 1).padStart(2, '0');
+      const d = String(newNgay.getDate()).padStart(2, '0');
+      ngayHocStr = `${y}-${m}-${d}`;
+    }
     const targetDateTime = new Date(`${ngayHocStr}T${newStart}:00`);
     if (targetDateTime < new Date()) {
       return res.status(400).json({ success: false, error: 'Không thể chỉnh sửa lịch học lùi về thời điểm quá khứ!' });
@@ -875,7 +905,7 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
     const newGvId = giao_vien_id || oldClass.giao_vien_id;
     await client.query(
       `UPDATE lop_hoc 
-       SET ten_lop = $1, giao_vien_id = $2, goi_hoc_phi_id = $3, ngay_cap_nhat = CURRENT_TIMESTAMP
+       SET ten_lop = $1, giao_vien_id = $2, goi_hoc_phi_id = $3
        WHERE id = $4`,
       [ten_lop || oldClass.ten_lop, newGvId, goi_hoc_phi_id !== undefined ? goi_hoc_phi_id : oldClass.goi_hoc_phi_id, id]
     );
@@ -902,8 +932,15 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
         const updatedEnd = gio_ket_thuc || activeSched.gio_ket_thuc;
 
         // Chặn sửa ngày/giờ quá khứ
-        const ngayHocDate = new Date(updatedNgay);
-        const ngayHocStr = ngayHocDate.toISOString().split('T')[0];
+        let ngayHocStr;
+        if (typeof updatedNgay === 'string') {
+          ngayHocStr = updatedNgay.split('T')[0];
+        } else {
+          const y = updatedNgay.getFullYear();
+          const m = String(updatedNgay.getMonth() + 1).padStart(2, '0');
+          const d = String(updatedNgay.getDate()).padStart(2, '0');
+          ngayHocStr = `${y}-${m}-${d}`;
+        }
         const targetDateTime = new Date(`${ngayHocStr}T${updatedStart}:00`);
         if (targetDateTime < new Date()) {
           throw new Error('Không thể chỉnh sửa lịch học lùi về thời điểm quá khứ!');
@@ -953,7 +990,7 @@ router.delete('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('UPDATE lop_hoc SET is_deleted = 1, ngay_xoa = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    await client.query('UPDATE lop_hoc SET is_deleted = 1 WHERE id = $1', [id]);
     await client.query('UPDATE lich_hoc_nhom SET trang_thai = \'da_huy\' WHERE lop_hoc_id = $1', [id]);
     await client.query('COMMIT');
     res.json({ success: true, message: 'Đã xóa lớp học nhóm thành công!' });
@@ -996,18 +1033,44 @@ router.post('/staff/create', verifyAccess(['admin']), async (req, res) => {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc: họ tên và số điện thoại' });
   }
 
+  if (auto_create_account) {
+    const finalUsername = (username || so_dien_thoai || '').trim();
+    try {
+      const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
+      if (dupCheck.rows.length > 0) {
+        return res.status(400).json({ success: false, error: `Số điện thoại hoặc tên đăng nhập '${finalUsername}' đã được sử dụng. Vui lòng chọn số điện thoại hoặc tên đăng nhập khác.` });
+      }
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'nhan_vien'");
-    const nextNum = parseInt(countRes.rows[0].count) + 1;
-    const ma_ho_so = `NV${String(nextNum).padStart(3, '0')}`;
+    // Tự sinh ma_ho_so (đảm bảo tính duy nhất và không bị trùng khóa)
+    let nextNum = 1;
+    let ma_ho_so = '';
+    let isUnique = false;
+    while (!isUnique) {
+      const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'nhan_vien'");
+      nextNum = parseInt(countRes.rows[0].count) + nextNum;
+      ma_ho_so = `NV${String(nextNum).padStart(3, '0')}`;
+      const checkDup = await client.query("SELECT id FROM ho_so WHERE ma_ho_so = $1", [ma_ho_so]);
+      if (checkDup.rows.length === 0) {
+        isUnique = true;
+      } else {
+        nextNum++;
+      }
+    }
     
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : (avatar_url || null);
+
     const result = await client.query(
       `INSERT INTO ho_so (ma_ho_so, ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh, loai_ho_so, avatar_url, is_deleted)
        VALUES ($1, $2, $3, $4, $5, $6, 'nhan_vien', $7, 0) RETURNING *`,
-      [ma_ho_so, ho_ten.trim(), so_dien_thoai.trim(), email || null, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', avatar_url || null]
+      [ma_ho_so, ho_ten.trim(), so_dien_thoai.trim(), email || null, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', finalAvatarUrl]
     );
 
     const newStaff = result.rows[0];
@@ -1047,6 +1110,30 @@ router.delete('/staff/:id', verifyAccess(['admin']), async (req, res) => {
   }
 });
 
+// API PUT /api/staff/:id: Cập nhật nhân viên
+router.put('/staff/:id', verifyAccess(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh } = req.body;
+  try {
+    const updateQuery = `
+      UPDATE ho_so
+      SET ho_ten = $1, so_dien_thoai = $2, email = $3, chuc_vu = $4,
+          chi_nhanh = $5, ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $6 AND loai_ho_so = 'nhan_vien' AND is_deleted = 0
+      RETURNING *
+    `;
+    const result = await pool.query(updateQuery, [
+      ho_ten, so_dien_thoai, email, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', id
+    ]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ nhân viên' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============================================================
 // 1. PHÂN HỆ QUẢN LÝ HỒ SƠ & TÀI KHOẢN HỌC VIÊN / GIÁO VIÊN
 // ============================================================
@@ -1056,14 +1143,44 @@ router.post('/students/create', verifyAccess(['admin', 'le_tan']), async (req, r
   const { ho_ten, ngay_sinh, gioi_tinh, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, avatar_url, auto_create_account, username, password } = req.body;
   const genderLower = gioi_tinh ? gioi_tinh.toLowerCase() : 'khác';
 
+  let genderDb = 'khac';
+  if (genderLower === 'nam') genderDb = 'nam';
+  else if (genderLower === 'nữ' || genderLower === 'nu') genderDb = 'nu';
+  else genderDb = 'khac';
+
+  if (auto_create_account) {
+    const finalUsername = (username || so_dien_thoai || '').trim();
+    try {
+      const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
+      if (dupCheck.rows.length > 0) {
+        return res.status(400).json({ success: false, error: `Số điện thoại hoặc tên đăng nhập '${finalUsername}' đã được sử dụng. Vui lòng chọn số điện thoại hoặc tên đăng nhập khác.` });
+      }
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Tự sinh ma_ho_so (ví dụ tìm số thứ tự lớn nhất)
-    const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'hoc_vien'");
-    const nextNum = parseInt(countRes.rows[0].count) + 1;
-    const ma_ho_so = `HV${String(nextNum).padStart(3, '0')}`;
+    // Tự sinh ma_ho_so (đảm bảo tính duy nhất và không bị trùng khóa)
+    let nextNum = 1;
+    let ma_ho_so = '';
+    let isUnique = false;
+    while (!isUnique) {
+      const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'hoc_vien'");
+      nextNum = parseInt(countRes.rows[0].count) + nextNum;
+      ma_ho_so = `HV${String(nextNum).padStart(3, '0')}`;
+      const checkDup = await client.query("SELECT id FROM ho_so WHERE ma_ho_so = $1", [ma_ho_so]);
+      if (checkDup.rows.length === 0) {
+        isUnique = true;
+      } else {
+        nextNum++;
+      }
+    }
+
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : (avatar_url || null);
 
     const insertQuery = `
       INSERT INTO ho_so (
@@ -1074,7 +1191,7 @@ router.post('/students/create', verifyAccess(['admin', 'le_tan']), async (req, r
     `;
 
     const result = await client.query(insertQuery, [
-      ma_ho_so, ho_ten, ngay_sinh, genderLower, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, avatar_url || null
+      ma_ho_so, ho_ten, ngay_sinh, genderDb, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, finalAvatarUrl
     ]);
 
     const newStudent = result.rows[0];
@@ -1110,13 +1227,39 @@ router.post('/students/create', verifyAccess(['admin', 'le_tan']), async (req, r
 router.post('/teachers/create', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { ho_ten, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, avatar_url, auto_create_account, username, password } = req.body;
 
+  if (auto_create_account) {
+    const finalUsername = (username || so_dien_thoai || '').trim();
+    try {
+      const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
+      if (dupCheck.rows.length > 0) {
+        return res.status(400).json({ success: false, error: `Số điện thoại hoặc tên đăng nhập '${finalUsername}' đã được sử dụng. Vui lòng chọn số điện thoại hoặc tên đăng nhập khác.` });
+      }
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'giao_vien'");
-    const nextNum = parseInt(countRes.rows[0].count) + 1;
-    const ma_ho_so = `GV${String(nextNum).padStart(3, '0')}`;
+    // Tự sinh ma_ho_so (đảm bảo tính duy nhất và không bị trùng khóa)
+    let nextNum = 1;
+    let ma_ho_so = '';
+    let isUnique = false;
+    while (!isUnique) {
+      const countRes = await client.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'giao_vien'");
+      nextNum = parseInt(countRes.rows[0].count) + nextNum;
+      ma_ho_so = `GV${String(nextNum).padStart(3, '0')}`;
+      const checkDup = await client.query("SELECT id FROM ho_so WHERE ma_ho_so = $1", [ma_ho_so]);
+      if (checkDup.rows.length === 0) {
+        isUnique = true;
+      } else {
+        nextNum++;
+      }
+    }
+
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : (avatar_url || null);
 
     const insertQuery = `
       INSERT INTO ho_so (
@@ -1126,7 +1269,7 @@ router.post('/teachers/create', verifyAccess(['admin', 'le_tan']), async (req, r
     `;
 
     const result = await client.query(insertQuery, [
-      ma_ho_so, ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', avatar_url || null
+      ma_ho_so, ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', finalAvatarUrl
     ]);
 
     const newTeacher = result.rows[0];
@@ -1297,11 +1440,37 @@ router.get('/registrations', async (req, res) => {
 
 // Helper function để chèn thông báo
 async function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null, doi_tuong = null, danh_cho = 'nhan_vien') {
+  // Map loai để vượt qua constraint 'thong_bao_loai_check' trong DB Edtech cũ
+  const validTypes = [
+    'sap_het_han_goi_tap', 'het_han_goi_tap', 'check_in', 
+    'chua_check_in_truoc_buoi_pt', 'cron_tu_xac_nhan', 'sap_het_buoi_pt', 
+    'ho_so_moi', 'gia_han_goi_tap', 'dang_ky_goi_pt_moi', 'huy_buoi_tap', 
+    'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa', 'tai_khoan_moi', 
+    'tom_tat_buoi_sang', 'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
+  ];
+  let finalLoai = loai;
+  if (!validTypes.includes(loai)) {
+    if (loai.includes('dang_ky_khoa_hoc') || loai.includes('dang_ky_goi_pt_moi') || loai.includes('them_')) {
+      finalLoai = 'dang_ky_goi_pt_moi';
+    } else if (loai.includes('huy_')) {
+      finalLoai = 'huy_buoi_tap';
+    } else if (loai.includes('sua_') || loai.includes('cap_nhat_')) {
+      finalLoai = 'cap_nhat_buoi_tap';
+    } else {
+      finalLoai = 'ho_so_moi';
+    }
+  }
+
+  let finalDanhCho = danh_cho;
+  if (danh_cho === 'giao_vien' || danh_cho === 'hoc_vien') {
+    finalDanhCho = 'nhan_vien'; // Constraint chỉ cho phép ['admin', 'nhan_vien', 'ca_hai']
+  }
+
   try {
     await pool.query(
       `INSERT INTO thong_bao (loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho) 
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho]
+      [finalLoai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, finalDanhCho]
     );
   } catch (err) {
     console.error('Lỗi tự động chèn thông báo:', err.message);
@@ -1668,6 +1837,11 @@ router.put('/students/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
   const { id } = req.params;
   const { ho_ten, ngay_sinh, gioi_tinh, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh } = req.body;
   const genderLower = gioi_tinh ? gioi_tinh.toLowerCase() : 'khác';
+  let genderDb = 'khac';
+  if (genderLower === 'nam') genderDb = 'nam';
+  else if (genderLower === 'nữ' || genderLower === 'nu') genderDb = 'nu';
+  else genderDb = 'khac';
+
   try {
     const updateQuery = `
       UPDATE ho_so
@@ -1678,7 +1852,7 @@ router.put('/students/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, ngay_sinh, genderLower, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, id
+      ho_ten, ngay_sinh, genderDb, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học viên' });

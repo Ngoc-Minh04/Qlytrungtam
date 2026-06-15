@@ -49,8 +49,16 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
     containerEl.appendChild(dateBtn);
   }
 
-  // Khởi tạo giá trị ban đầu
-  let selectedDate = pickerInput.value ? new Date(pickerInput.value) : new Date();
+  // Khởi tạo giá trị ban đầu (tránh lệch ngày do timezone offset khi chuyển đổi)
+  let selectedDate = new Date();
+  if (pickerInput.value) {
+    const parts = pickerInput.value.split('-');
+    if (parts.length === 3) {
+      selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else {
+      selectedDate = new Date(pickerInput.value);
+    }
+  }
   if (isNaN(selectedDate.getTime())) selectedDate = new Date();
 
   const updateBtnLabel = (date) => {
@@ -69,16 +77,41 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
 
   updateBtnLabel(selectedDate);
 
+  // Tạo getter/setter hoặc observer để cập nhật giao diện khi pickerInput.value thay đổi từ ngoài
+  const observer = new MutationObserver(() => {
+    if (pickerInput.value) {
+      const parts = pickerInput.value.split('-');
+      if (parts.length === 3) {
+        const newD = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        if (!isNaN(newD.getTime()) && newD.toDateString() !== selectedDate.toDateString()) {
+          selectedDate = newD;
+          const dStr = String(selectedDate.getDate()).padStart(2, '0');
+          const mStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const yStr = selectedDate.getFullYear();
+          dateBtn.innerHTML = `
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-apple-blue">calendar_today</span>
+              <span>${dStr}/${mStr}/${yStr}</span>
+            </span>
+            <span class="material-symbols-outlined text-[14px] text-slate-400">arrow_drop_down</span>
+          `;
+        }
+      }
+    }
+  });
+  observer.observe(pickerInput, { attributes: true, attributeFilter: ['value'] });
+
   // Tạo Popover chứa lịch
   let popover = containerEl.querySelector('.custom-date-picker-popover');
   if (!popover) {
     popover = document.createElement('div');
-    popover.className = 'custom-date-picker-popover hidden absolute left-0 right-0 mt-1 bg-white border border-[#e2e2e4] rounded-2xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-1 duration-150 text-xs w-[280px] mx-auto';
+    // Bỏ max-h và overflow để hiển thị trọn vẹn lịch biểu không cần cuộn
+    popover.className = 'custom-date-picker-popover hidden absolute left-0 mt-1 bg-white border border-[#e2e2e4] rounded-2xl shadow-xl z-[9999] p-4 animate-in fade-in slide-in-from-top-1 duration-150 text-xs w-[280px]';
     containerEl.classList.add('relative');
     containerEl.appendChild(popover);
   }
 
-  let viewMode = 'day'; // 'year' | 'month' | 'day'
+  let viewMode = 'day'; // 'day', 'month', 'year'
   let activeYear = selectedDate.getFullYear();
   let activeMonth = selectedDate.getMonth();
 
@@ -88,60 +121,86 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
   function renderPicker() {
     popover.innerHTML = '';
 
+    // Tạo Header dùng chung đối xứng: < [Tiêu đề] >
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-center mb-3 pb-2 border-b border-apple-divider/40 font-bold select-none';
+    
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'btn-prev p-1 hover:bg-slate-100 rounded-full flex items-center justify-center';
+    prevBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-slate-600">chevron_left</span>';
+
+    const titleEl = document.createElement('span');
+    titleEl.className = 'btn-title text-slate-700 cursor-pointer hover:text-apple-blue transition-colors text-xs font-bold';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'btn-next p-1 hover:bg-slate-100 rounded-full flex items-center justify-center';
+    nextBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-slate-600">chevron_right</span>';
+
+    header.appendChild(prevBtn);
+    header.appendChild(titleEl);
+    header.appendChild(nextBtn);
+    popover.appendChild(header);
+
     if (viewMode === 'year') {
-      // --- VIEW NĂM ---
-      const startYear = activeYear - 4;
-      const years = Array.from({ length: 9 }, (_, i) => startYear + i);
+      // --- VIEW THẬP KỶ (HIỂN THỊ 12 NĂM) ---
+      const startDecade = Math.floor(activeYear / 10) * 10;
+      titleEl.textContent = `${startDecade} - ${startDecade + 9}`;
       
-      const header = document.createElement('div');
-      header.className = 'flex justify-between items-center mb-3 pb-2 border-b border-apple-divider/40 font-bold';
-      header.innerHTML = `
-        <button type="button" class="btn-prev p-1 hover:bg-slate-100 rounded-full"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
-        <span class="text-slate-700">${startYear} - ${startYear + 8}</span>
-        <button type="button" class="btn-next p-1 hover:bg-slate-100 rounded-full"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
-      `;
-      popover.appendChild(header);
+      // Không zoom out thêm vì đây là cấp cao nhất
+      titleEl.classList.remove('cursor-pointer', 'hover:text-apple-blue');
 
       const grid = document.createElement('div');
-      grid.className = 'grid grid-cols-3 gap-2';
-      years.forEach(y => {
-        const isSel = y === activeYear;
+      grid.className = 'grid grid-cols-4 gap-2';
+
+      // Hiển thị 12 năm: từ startDecade - 1 đến startDecade + 10
+      for (let i = -1; i <= 10; i++) {
+        const y = startDecade + i;
+        const isSel = y === selectedDate.getFullYear();
+        const isOut = i === -1 || i === 10; // 2 năm lân cận thập kỷ
+        
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `py-2 rounded-xl font-bold transition active:scale-95 border ${isSel ? 'bg-apple-blue border-apple-blue text-white shadow-md' : 'bg-white border-apple-divider text-slate-700 hover:border-apple-blue hover:bg-blue-50'}`;
+        btn.className = `py-2 rounded-xl font-bold transition active:scale-95 border text-[11px]
+          ${isSel ? 'bg-apple-blue border-apple-blue text-white shadow-md' : 
+            isOut ? 'bg-white border-apple-divider/40 text-slate-300 opacity-50' : 
+            'bg-white border-apple-divider text-slate-700 hover:border-apple-blue hover:bg-blue-50'}`;
         btn.textContent = y;
-        btn.addEventListener('click', () => {
+        
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           activeYear = y;
           viewMode = 'month';
           renderPicker();
         });
         grid.appendChild(btn);
-      });
+      }
       popover.appendChild(grid);
 
-      header.querySelector('.btn-prev').addEventListener('click', () => { activeYear -= 9; renderPicker(); });
-      header.querySelector('.btn-next').addEventListener('click', () => { activeYear += 9; renderPicker(); });
+      prevBtn.addEventListener('click', (e) => { e.stopPropagation(); activeYear -= 10; renderPicker(); });
+      nextBtn.addEventListener('click', (e) => { e.stopPropagation(); activeYear += 10; renderPicker(); });
 
     } else if (viewMode === 'month') {
-      // --- VIEW THÁNG ---
-      const header = document.createElement('div');
-      header.className = 'flex justify-between items-center mb-3 pb-2 border-b border-apple-divider/40 font-bold';
-      header.innerHTML = `
-        <button type="button" class="btn-to-year hover:underline text-apple-blue text-[11px] flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">arrow_back</span> ${activeYear}</button>
-        <span class="text-slate-700">${activeYear}</span>
-        <div class="w-10"></div>
-      `;
-      popover.appendChild(header);
+      // --- VIEW NĂM (HIỂN THỊ 12 THÁNG) ---
+      titleEl.textContent = `${activeYear}`;
+      titleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewMode = 'year';
+        renderPicker();
+      });
 
       const grid = document.createElement('div');
       grid.className = 'grid grid-cols-3 gap-2';
       monthNames.forEach((mName, idx) => {
-        const isSel = idx === activeMonth;
+        const isSel = idx === selectedDate.getMonth() && activeYear === selectedDate.getFullYear();
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `py-2 rounded-xl font-bold transition active:scale-95 border ${isSel ? 'bg-apple-blue border-apple-blue text-white shadow-md' : 'bg-white border-apple-divider text-slate-700 hover:border-apple-blue hover:bg-blue-50'}`;
+        btn.className = `py-2 rounded-xl font-bold transition active:scale-95 border text-[11px]
+          ${isSel ? 'bg-apple-blue border-apple-blue text-white shadow-md' : 'bg-white border-apple-divider text-slate-700 hover:border-apple-blue hover:bg-blue-50'}`;
         btn.textContent = mName;
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           activeMonth = idx;
           viewMode = 'day';
           renderPicker();
@@ -150,13 +209,24 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
       });
       popover.appendChild(grid);
 
-      header.querySelector('.btn-to-year').addEventListener('click', () => { viewMode = 'year'; renderPicker(); });
+      prevBtn.addEventListener('click', (e) => { e.stopPropagation(); activeYear--; renderPicker(); });
+      nextBtn.addEventListener('click', (e) => { e.stopPropagation(); activeYear++; renderPicker(); });
 
     } else {
-      // --- VIEW NGÀY ---
+      // --- VIEW THÁNG (HIỂN THỊ CÁC NGÀY) ---
+      titleEl.textContent = `Tháng ${activeMonth + 1} ${activeYear}`;
+      titleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewMode = 'month';
+        renderPicker();
+      });
+
+      const daysGrid = document.createElement('div');
+      daysGrid.className = 'grid grid-cols-7 mb-1';
+      daysGrid.innerHTML = dayNames.map(d => `<div class="text-center text-[10px] font-bold text-slate-400 py-1 uppercase select-none">${d}</div>`).join('');
+      popover.appendChild(daysGrid);
+
       const firstDay = new Date(activeYear, activeMonth, 1);
-      const lastDay = new Date(activeYear, activeMonth + 1, 0);
-      
       let startDay = new Date(firstDay);
       const firstDayOfWeek = firstDay.getDay() === 0 ? 7 : firstDay.getDay();
       startDay.setDate(firstDay.getDate() - (firstDayOfWeek - 1));
@@ -167,23 +237,6 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
         cells.push(new Date(cur));
         cur.setDate(cur.getDate() + 1);
       }
-
-      const header = document.createElement('div');
-      header.className = 'flex justify-between items-center mb-2 pb-2 border-b border-apple-divider/40 font-bold';
-      header.innerHTML = `
-        <button type="button" class="btn-to-month hover:underline text-apple-blue text-[11px] flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">arrow_back</span> Tháng</button>
-        <span class="text-slate-700 font-bold">${monthNames[activeMonth]} ${activeYear}</span>
-        <div class="flex items-center gap-1">
-          <button type="button" class="btn-prev p-1 hover:bg-slate-100 rounded-full"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
-          <button type="button" class="btn-next p-1 hover:bg-slate-100 rounded-full"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
-        </div>
-      `;
-      popover.appendChild(header);
-
-      const daysGrid = document.createElement('div');
-      daysGrid.className = 'grid grid-cols-7 mb-1';
-      daysGrid.innerHTML = dayNames.map(d => `<div class="text-center text-[10px] font-bold text-slate-400 py-1 uppercase select-none">${d}</div>`).join('');
-      popover.appendChild(daysGrid);
 
       const grid = document.createElement('div');
       grid.className = 'grid grid-cols-7 gap-1';
@@ -218,13 +271,14 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
       });
       popover.appendChild(grid);
 
-      header.querySelector('.btn-to-month').addEventListener('click', () => { viewMode = 'month'; renderPicker(); });
-      header.querySelector('.btn-prev').addEventListener('click', () => {
+      prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (activeMonth === 0) { activeMonth = 11; activeYear--; }
         else activeMonth--;
         renderPicker();
       });
-      header.querySelector('.btn-next').addEventListener('click', () => {
+      nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (activeMonth === 11) { activeMonth = 0; activeYear++; }
         else activeMonth++;
         renderPicker();
@@ -243,10 +297,28 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
     popover.classList.toggle('hidden');
     if (!popover.classList.contains('hidden')) {
       viewMode = 'day';
+      // Trích xuất lại từ giá trị hiện tại của pickerInput để đồng bộ khi hiển thị
+      let curDate = new Date();
+      if (pickerInput.value) {
+        const parts = pickerInput.value.split('-');
+        if (parts.length === 3) {
+          curDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+          curDate = new Date(pickerInput.value);
+        }
+      }
+      if (!isNaN(curDate.getTime())) {
+        selectedDate = curDate;
+      }
       activeYear = selectedDate.getFullYear();
       activeMonth = selectedDate.getMonth();
       renderPicker();
     }
+  });
+
+  // Ngăn chặn đóng popover khi click vào bên trong nó
+  popover.addEventListener('click', (e) => {
+    e.stopPropagation();
   });
 
   // Đóng khi click ngoài

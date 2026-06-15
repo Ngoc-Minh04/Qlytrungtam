@@ -1,3 +1,21 @@
+### [15/06/2026 10:40] — Sửa lỗi Date Picker, Lớp học SQL 500, Tạo nhân viên trùng SĐT và hiển thị Avatar
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/_shared.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/TeachersList.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - Thêm `e.stopPropagation()` vào các nút chọn năm/tháng của Date Picker trong `_shared.js` để tránh tự đóng popover khi thay đổi chế độ xem.
+  - Sửa câu lệnh UPDATE và DELETE lớp học nhóm trong `api.js` (loại bỏ cột `ngay_cap_nhat` và `ngay_xoa` không tồn tại ở bảng `lop_hoc` gây lỗi 500).
+  - Bổ sung kiểm tra trùng lặp `ten_dang_nhap` trước khi tạo mới tài khoản trong các API để trả về mã lỗi 400 Bad Request rõ ràng thay vì lỗi 500 database.
+  - Chuẩn hóa cột `gioi_tinh` không dấu (`nam`/`nu`/`khac`) khi tạo/sửa học viên để tương thích với PostgreSQL Check Constraint.
+  - Cập nhật hiển thị ảnh đại diện Cloudinary dạng thẻ `<img>` trong bảng danh sách cho Học viên, Giáo viên, và Nhân viên.
+  - Đặt mặc định ngày sinh học viên là ngày hôm nay.
+- **Kết quả**: Thành công
+
+### [15/06/2026 08:10] — Sửa lỗi thiếu import setupCustomDatePicker trong StudentsList.js
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**: Sửa lỗi ReferenceError do thiếu import hàm `setupCustomDatePicker` từ tệp tin `_shared.js` dẫn đến việc tab "Học viên & Tiếp nhận" không hiển thị hoặc bị lỗi khi click nút thêm mới / sửa đổi thông tin.
+- **Kết quả**: Thành công
+
 ### [12/06/2026 21:55] — Khắc phục lỗi Syntax do Conflict Merge trong ClassManagement.js và Schedules.js
 - **Loại**: Sửa bug
 - **File**: `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/Schedules.js`
