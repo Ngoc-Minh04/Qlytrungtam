@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') }); // Load .env từ thư mục backend
+require('dotenv').config({ path: path.join(__dirname, '../.env') }); // Load .env từ backend/src/.env
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -97,6 +97,17 @@ pool.connect(async (err, client, release) => {
         `);
         console.log('✅ Đã seed dữ liệu nội quy mặc định thành công!');
       }
+
+      // Migration: thêm cột ho_so_id vào tai_khoan nếu chưa có
+      await client.query(`
+        ALTER TABLE tai_khoan ADD COLUMN IF NOT EXISTS ho_so_id INT REFERENCES ho_so(id);
+      `);
+      await client.query(`
+        ALTER TABLE tai_khoan ADD COLUMN IF NOT EXISTS is_deleted SMALLINT DEFAULT 0;
+      `);
+      await client.query(`
+        ALTER TABLE tai_khoan ADD COLUMN IF NOT EXISTS lan_dang_nhap_cuoi TIMESTAMPTZ;
+      `);
 
       // DDL tạo bảng vai_tro
       await client.query(`

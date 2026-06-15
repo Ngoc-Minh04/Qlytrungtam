@@ -4,84 +4,183 @@ import { renderTeacherPortal } from './pages/TeacherPortal.js';
 
 const API_BASE = 'http://localhost:3006/api';
 
-// Định nghĩa hàm render trang Login — Minimal Centered Card
+// Định nghĩa hàm render trang Login — Split Layout
 function renderLogin() {
   const app = document.getElementById('app');
   app.innerHTML = `
     <style>
-      @keyframes loginFadeIn {
-        from { opacity: 0; transform: translateY(18px) scale(0.98); }
-        to   { opacity: 1; transform: translateY(0) scale(1); }
+      @keyframes loginSlideIn {
+        from { opacity: 0; transform: translateX(24px); }
+        to   { opacity: 1; transform: translateX(0); }
       }
-      @keyframes dotFloat {
-        0%, 100% { transform: translateY(0px); }
-        50%       { transform: translateY(-8px); }
+      @keyframes loginFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        33%       { transform: translateY(-10px) rotate(1deg); }
+        66%       { transform: translateY(-5px) rotate(-1deg); }
       }
-      .login-card { animation: loginFadeIn 0.5s cubic-bezier(.22,.68,0,1.2) forwards; }
-      .dot-1 { animation: dotFloat 3s ease-in-out infinite; }
-      .dot-2 { animation: dotFloat 3s ease-in-out 0.4s infinite; }
-      .dot-3 { animation: dotFloat 3s ease-in-out 0.8s infinite; }
-      .login-input:focus { box-shadow: 0 0 0 3px rgba(0,102,204,0.12); }
+      @keyframes shimmer {
+        0%   { background-position: -200% center; }
+        100% { background-position: 200% center; }
+      }
+      .login-form-side { animation: loginSlideIn 0.5s cubic-bezier(.22,.68,0,1.2) forwards; }
+      .login-float-card { animation: loginFloat 6s ease-in-out infinite; }
+      .login-float-card-2 { animation: loginFloat 6s ease-in-out 2s infinite; }
+      .login-float-card-3 { animation: loginFloat 6s ease-in-out 4s infinite; }
+      .login-input:focus { box-shadow: 0 0 0 3px rgba(255,255,255,0.25); }
+      .login-input { background: rgba(255,255,255,0.10) !important; border-color: rgba(255,255,255,0.20) !important; color: white !important; }
+      .login-input::placeholder { color: rgba(255,255,255,0.45) !important; }
+      .login-input:focus { background: rgba(255,255,255,0.15) !important; border-color: rgba(255,255,255,0.45) !important; }
+      .login-label { color: rgba(255,255,255,0.7); }
+      .login-divider { border-color: rgba(255,255,255,0.15); }
     </style>
 
-    <!-- Nền với pattern chấm mờ -->
-    <div class="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
-      style="background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 40%, #f0f7ff 100%);">
+    <div class="min-h-screen w-full flex overflow-hidden" style="background: #0f172a;">
 
-      <!-- Decorative blobs -->
-      <div class="absolute top-[-80px] left-[-80px] w-[360px] h-[360px] rounded-full pointer-events-none"
-        style="background: radial-gradient(circle, rgba(0,102,204,0.10) 0%, transparent 70%);"></div>
-      <div class="absolute bottom-[-100px] right-[-60px] w-[400px] h-[400px] rounded-full pointer-events-none"
-        style="background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);"></div>
-      <div class="absolute top-1/2 left-[8%] w-3 h-3 rounded-full bg-[#0066cc]/20 dot-1 hidden md:block"></div>
-      <div class="absolute top-[25%] right-[12%] w-2 h-2 rounded-full bg-indigo-300/40 dot-2 hidden md:block"></div>
-      <div class="absolute bottom-[20%] left-[15%] w-2.5 h-2.5 rounded-full bg-[#0066cc]/15 dot-3 hidden md:block"></div>
+      <!-- Cột trái: Brand / Illustration -->
+      <div class="hidden lg:flex flex-col flex-1 relative overflow-hidden"
+        style="background: linear-gradient(135deg, #0066cc 0%, #004ea8 45%, #1e3a8a 100%);">
 
-      <!-- Login Card -->
-      <div class="login-card relative w-full max-w-[420px] mx-4">
+        <!-- Background pattern -->
+        <div class="absolute inset-0 opacity-10"
+          style="background-image: radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px); background-size: 48px 48px;"></div>
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-20"
+          style="background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%); transform: translate(150px, -150px);"></div>
+        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-15"
+          style="background: radial-gradient(circle, rgba(99,179,237,0.4) 0%, transparent 70%); transform: translate(-100px, 100px);"></div>
 
-        <!-- Logo & Brand trên đầu card -->
-        <div class="text-center mb-7">
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 shadow-lg"
-            style="background: linear-gradient(135deg, #0066cc 0%, #004ea8 100%);">
-            <span class="text-white font-extrabold text-2xl tracking-tighter select-none">S</span>
+        <!-- Content -->
+        <div class="relative z-10 flex flex-col h-full p-12">
+          <!-- Logo -->
+          <div class="flex items-center gap-3 mb-auto">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(255,255,255,0.2);">
+              <span class="text-white font-extrabold text-lg select-none">S</span>
+            </div>
+            <span class="text-white font-bold text-[17px] tracking-tight">Stellar Academy</span>
           </div>
-          <h1 class="text-[22px] font-extrabold text-[#1a1c1d] tracking-tight leading-tight">Stellar Academy</h1>
-          <p class="text-[12px] text-slate-400 mt-1 font-medium">Cổng quản lý trung tâm ngoại ngữ</p>
+
+          <!-- Floating UI cards -->
+          <div class="flex-1 flex items-center justify-center">
+            <div class="relative w-full max-w-[380px]">
+
+              <!-- Card 1: Thống kê -->
+              <div class="login-float-card absolute -top-8 -left-4 bg-white rounded-2xl p-4 shadow-2xl w-[200px]" style="opacity:0.95;">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600 text-[14px]">school</span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-600">Học viên</span>
+                </div>
+                <div class="text-[24px] font-extrabold text-slate-800">248</div>
+                <div class="text-[10px] text-emerald-500 font-semibold mt-0.5">↑ +12 tháng này</div>
+              </div>
+
+              <!-- Card 2: Doanh thu -->
+              <div class="login-float-card-2 absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 shadow-2xl w-[190px]" style="opacity:0.95;">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-emerald-600 text-[14px]">trending_up</span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-600">Doanh thu</span>
+                </div>
+                <div class="text-[20px] font-extrabold text-slate-800">128tr</div>
+                <div class="text-[10px] text-emerald-500 font-semibold mt-0.5">↑ +8.5% so với kỳ</div>
+              </div>
+
+              <!-- Card 3: Lịch dạy hôm nay -->
+              <div class="login-float-card-3 absolute top-1/2 -right-12 -translate-y-1/2 bg-white rounded-2xl p-4 shadow-2xl w-[170px]" style="opacity:0.95;">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-violet-600 text-[14px]">calendar_today</span>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-600">Hôm nay</span>
+                </div>
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                    <span class="text-[9.5px] text-slate-500">8:00 — IELTS B2</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></div>
+                    <span class="text-[9.5px] text-slate-500">10:00 — Comm A1</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></div>
+                    <span class="text-[9.5px] text-slate-500">14:30 — TOEIC</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main illustration circle -->
+              <div class="w-[200px] h-[200px] mx-auto rounded-full flex items-center justify-center"
+                style="background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.2);">
+                <div class="w-[150px] h-[150px] rounded-full flex items-center justify-center"
+                  style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.25);">
+                  <span class="material-symbols-outlined text-white text-[64px]">school</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Bottom tagline -->
+          <div class="mt-auto">
+            <h2 class="text-white text-[26px] font-extrabold leading-tight mb-3">
+              Quản lý thông minh<br>
+              <span style="color: rgba(255,255,255,0.7);">cho trung tâm của bạn</span>
+            </h2>
+            <p class="text-[13px]" style="color: rgba(255,255,255,0.55);">Theo dõi học viên, doanh thu, lịch dạy và hơn thế nữa — tất cả trong một nền tảng.</p>
+          </div>
         </div>
+      </div>
 
-        <!-- Card chính -->
-        <div class="bg-white rounded-3xl shadow-xl border border-[#e8eaf0] p-8 space-y-5"
-          style="box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,102,204,0.06);">
+      <!-- Cột phải: Form đăng nhập -->
+      <div class="login-form-side flex flex-col w-full lg:w-[440px] shrink-0 relative"
+        style="background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);">
 
-          <div class="space-y-1">
-            <h2 class="text-[15px] font-bold text-[#1a1c1d]">Đăng nhập</h2>
-            <p class="text-[11.5px] text-slate-400">Nhập tài khoản được cấp để tiếp tục</p>
+        <!-- Top decoration -->
+        <div class="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+          style="background: radial-gradient(circle, rgba(0,102,204,0.12) 0%, transparent 70%); transform: translate(80px, -80px);"></div>
+
+        <div class="flex-1 flex flex-col justify-center px-10 py-12 relative z-10">
+
+          <!-- Logo mobile (chỉ hiện trên mobile) -->
+          <div class="flex items-center gap-3 mb-10 lg:hidden">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #0066cc, #004ea8);">
+              <span class="text-white font-extrabold text-base select-none">S</span>
+            </div>
+            <span class="text-white font-bold text-[16px] tracking-tight">Stellar Academy</span>
           </div>
 
-          <form id="login-form" class="space-y-4">
+          <!-- Heading -->
+          <div class="mb-8">
+            <h1 class="text-[28px] font-extrabold text-white leading-tight mb-2">Chào mừng trở lại</h1>
+            <p class="text-[13px]" style="color: rgba(255,255,255,0.45);">Đăng nhập vào tài khoản của bạn để tiếp tục</p>
+          </div>
+
+          <form id="login-form" class="space-y-5">
 
             <!-- Username -->
-            <div class="space-y-1.5">
-              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Tên đăng nhập</label>
+            <div class="space-y-2">
+              <label class="login-label text-[11px] font-bold uppercase tracking-wider block">Tên đăng nhập</label>
               <div class="relative">
-                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">person</span>
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] pointer-events-none" style="color: rgba(255,255,255,0.35);">person</span>
                 <input type="text" id="username" required autocomplete="username"
-                  class="login-input w-full pl-10 pr-4 py-3 bg-[#f8f9fc] border border-[#e2e6ef] rounded-xl outline-none focus:border-[#0066cc] focus:bg-white transition-all text-[13px] font-semibold text-[#1a1c1d] placeholder:font-normal placeholder:text-slate-400"
-                  placeholder="admin / letan / ...">
+                  class="login-input w-full pl-10 pr-4 py-3.5 border rounded-xl outline-none transition-all text-[13px] font-semibold"
+                  placeholder="Nhập tên đăng nhập">
               </div>
             </div>
 
             <!-- Password -->
-            <div class="space-y-1.5">
-              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Mật khẩu</label>
+            <div class="space-y-2">
+              <label class="login-label text-[11px] font-bold uppercase tracking-wider block">Mật khẩu</label>
               <div class="relative">
-                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">lock</span>
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] pointer-events-none" style="color: rgba(255,255,255,0.35);">lock</span>
                 <input type="password" id="password" required autocomplete="current-password"
-                  class="login-input w-full pl-10 pr-11 py-3 bg-[#f8f9fc] border border-[#e2e6ef] rounded-xl outline-none focus:border-[#0066cc] focus:bg-white transition-all text-[13px] font-semibold text-[#1a1c1d] placeholder:font-normal placeholder:text-slate-400"
-                  placeholder="••••••••">
+                  class="login-input w-full pl-10 pr-11 py-3.5 border rounded-xl outline-none transition-all text-[13px] font-semibold"
+                  placeholder="Nhập mật khẩu">
                 <button type="button" id="toggle-password-btn"
-                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0066cc] transition-colors p-0.5">
+                  class="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-0.5"
+                  style="color: rgba(255,255,255,0.35);">
                   <span class="material-symbols-outlined text-[18px]" id="password-visibility-icon">visibility</span>
                 </button>
               </div>
@@ -89,7 +188,8 @@ function renderLogin() {
 
             <!-- Error message slot -->
             <div id="login-error-wrap" class="hidden">
-              <div class="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-xl px-3.5 py-2.5 text-[11.5px] font-medium">
+              <div class="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11.5px] font-medium"
+                style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5;">
                 <span class="material-symbols-outlined text-[16px] shrink-0">error</span>
                 <span id="login-error-text">Tên đăng nhập hoặc mật khẩu không đúng</span>
               </div>
@@ -97,37 +197,19 @@ function renderLogin() {
 
             <!-- Submit -->
             <button type="submit" id="login-submit-btn"
-              class="w-full text-white font-bold py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] text-[13px] mt-1 shadow-md"
-              style="background: linear-gradient(135deg, #0066cc 0%, #004ea8 100%); box-shadow: 0 4px 14px rgba(0,102,204,0.35);">
+              class="w-full text-white font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] text-[14px] mt-2"
+              style="background: linear-gradient(135deg, #0066cc 0%, #004ea8 100%); box-shadow: 0 4px 24px rgba(0,102,204,0.4);">
               <span id="login-btn-text">Đăng nhập</span>
-              <span class="material-symbols-outlined text-[17px]" id="login-btn-icon">arrow_forward</span>
+              <span class="material-symbols-outlined text-[18px]" id="login-btn-icon">arrow_forward</span>
             </button>
 
           </form>
 
-          <!-- Role hints -->
-          <div class="border-t border-[#f0f2f7] pt-4">
-            <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Tài khoản demo</p>
-            <div class="grid grid-cols-2 gap-1.5">
-              ${[
-                { role: 'Admin', user: 'admin', color: '#6366f1', bg: '#eef2ff' },
-                { role: 'Lễ tân', user: 'letan', color: '#0066cc', bg: '#eff6ff' },
-                { role: 'Giáo viên', user: 'giaovien', color: '#059669', bg: '#ecfdf5' },
-                { role: 'Học viên', user: 'hocvien', color: '#d97706', bg: '#fffbeb' },
-              ].map(r => `
-                <button type="button" class="demo-login-btn text-left px-2.5 py-1.5 rounded-lg text-[10.5px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                  style="background:${r.bg}; color:${r.color};" data-user="${r.user}">
-                  ${r.role}: <span class="font-bold">${r.user}</span>
-                </button>
-              `).join('')}
-            </div>
-          </div>
-
+          <!-- Footer -->
+          <p class="text-center text-[11px] mt-10" style="color: rgba(255,255,255,0.25);">© 2026 Stellar Academy · All rights reserved</p>
         </div>
-
-        <!-- Footer -->
-        <p class="text-center text-[10px] text-slate-400 mt-5">© 2026 Stellar Academy · All rights reserved</p>
       </div>
+
     </div>
   `;
 
@@ -135,17 +217,8 @@ function renderLogin() {
   document.getElementById('toggle-password-btn')?.addEventListener('click', () => {
     const input = document.getElementById('password');
     const icon = document.getElementById('password-visibility-icon');
-    if (input.type === 'password') { input.type = 'text'; icon.textContent = 'visibility_off'; }
-    else { input.type = 'password'; icon.textContent = 'visibility'; }
-  });
-
-  // Demo login buttons — điền sẵn username
-  document.querySelectorAll('.demo-login-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('username').value = btn.dataset.user;
-      document.getElementById('password').value = btn.dataset.user + '123';
-      document.getElementById('username').focus();
-    });
+    if (input.type === 'password') { input.type = 'text'; icon.textContent = 'visibility_off'; icon.parentElement.style.color = 'rgba(255,255,255,0.6)'; }
+    else { input.type = 'password'; icon.textContent = 'visibility'; icon.parentElement.style.color = 'rgba(255,255,255,0.35)'; }
   });
 
   function showLoginError(msg) {
@@ -222,6 +295,12 @@ const routes = {
   '/teacher-portal': renderTeacherPortal,
 };
 
+function setHash(path) {
+  if (window.location.hash.replace('#', '') !== path) {
+    history.replaceState(null, '', '#' + path);
+  }
+}
+
 // Hàm điều phối render trang chính
 export function renderPage(path) {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -229,7 +308,7 @@ export function renderPage(path) {
 
   // Chuyển hướng nếu chưa đăng nhập
   if (!isLoggedIn && path !== '/login') {
-    window.history.pushState({}, '', '/login');
+    setHash('/login');
     renderLogin();
     return;
   }
@@ -237,13 +316,13 @@ export function renderPage(path) {
   // Chuyển hướng đến trang phù hợp vai trò nếu đã đăng nhập và vào /login hoặc /
   if (isLoggedIn && (path === '/login' || path === '/')) {
     if (userRole === 'hoc_vien') {
-      window.history.pushState({}, '', '/student-portal');
+      setHash('/student-portal');
       renderStudentPortal();
     } else if (userRole === 'giao_vien') {
-      window.history.pushState({}, '', '/teacher-portal');
+      setHash('/teacher-portal');
       renderTeacherPortal();
     } else {
-      window.history.pushState({}, '', '/dashboard');
+      setHash('/dashboard');
       renderDashboard(userRole);
     }
     return;
@@ -251,16 +330,17 @@ export function renderPage(path) {
 
   // Bảo vệ: học viên không được vào dashboard nội bộ
   if (isLoggedIn && userRole === 'hoc_vien' && path === '/dashboard') {
-    window.history.pushState({}, '', '/student-portal');
+    setHash('/student-portal');
     renderStudentPortal();
     return;
   }
   if (isLoggedIn && userRole === 'giao_vien' && path === '/dashboard') {
-    window.history.pushState({}, '', '/teacher-portal');
+    setHash('/teacher-portal');
     renderTeacherPortal();
     return;
   }
 
+  setHash(path);
   const renderer = routes[path];
   if (renderer === renderDashboard || path === '/dashboard') {
     renderDashboard(userRole);
@@ -274,10 +354,9 @@ export function renderPage(path) {
   }
 }
 
-// Hàm chuyển hướng trang (History API)
+// Hàm chuyển hướng trang (Hash-based routing — tương thích Live Server)
 export function navigate(path) {
-  window.history.pushState({}, '', path);
-  renderPage(path);
+  window.location.hash = path;
 }
 
 // Lắng nghe sự kiện click trên toàn bộ ứng dụng để chặn reload trang với các liên kết data-link
@@ -290,7 +369,8 @@ document.body.addEventListener('click', (e) => {
   }
 });
 
-// Lắng nghe sự kiện Back/Forward của trình duyệt
-window.addEventListener('popstate', () => {
-  renderPage(window.location.pathname);
+// Lắng nghe sự kiện hash thay đổi (Back/Forward và navigate())
+window.addEventListener('hashchange', () => {
+  const path = window.location.hash.replace('#', '') || '/';
+  renderPage(path);
 });

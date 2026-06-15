@@ -462,18 +462,22 @@ router.get('/reports/revenue', verifyAccess(['admin']), async (req, res) => {
     const bestSellerRes = await pool.query(bestSellerQuery);
 
     // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter
+    const dc1 = dateCondition.replace('ngay_tao', 'd.ngay_tao');
+    const dc2 = dateCondition.replace('ngay_tao', 'dk.ngay_tao');
     const paymentsQuery = `
-      SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
-      FROM dang_ky_khoa_hoc d
-      JOIN ho_so h ON d.ho_so_id = h.id
-      JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-      WHERE d.trang_thai NOT IN ('huy', 'tam_dung') ${dateCondition}
-      UNION ALL
-      SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao
-      FROM dang_ky_hoc_kem dk
-      JOIN ho_so h ON dk.hoc_vien_id = h.id
-      JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-      WHERE dk.trang_thai NOT IN ('huy', 'tam_dung') ${dateCondition.replace('ngay_tao', 'ngay_tao')}
+      SELECT * FROM (
+        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
+        FROM dang_ky_khoa_hoc d
+        JOIN ho_so h ON d.ho_so_id = h.id
+        JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
+        WHERE d.trang_thai NOT IN ('huy', 'tam_dung') ${dc1}
+        UNION ALL
+        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao
+        FROM dang_ky_hoc_kem dk
+        JOIN ho_so h ON dk.hoc_vien_id = h.id
+        JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
+        WHERE dk.trang_thai NOT IN ('huy', 'tam_dung') ${dc2}
+      ) AS combined
       ORDER BY ngay_tao DESC
       LIMIT 30
     `;
@@ -797,13 +801,16 @@ router.get('/teachers', async (req, res) => {
 router.get('/accounts', verifyAccess(['admin']), async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT tk.id, tk.ten_dang_nhap, tk.is_active, tk.lan_dang_nhap_cuoi, tk.ngay_tao,
-             vt.ten_vai_tro as vai_tro,
+      SELECT tk.id, tk.ten_dang_nhap,
+             CASE WHEN tk.trang_thai = 'hoat_dong' THEN 1 ELSE 0 END as is_active,
+             tk.trang_thai,
+             tk.lan_dang_nhap_cuoi, tk.ngay_tao,
+             vt.ma_vai_tro as vai_tro,
              hs.ho_ten, hs.ma_ho_so, hs.email, hs.loai_ho_so
       FROM tai_khoan tk
       JOIN vai_tro vt ON tk.vai_tro_id = vt.id
       LEFT JOIN ho_so hs ON tk.ho_so_id = hs.id
-      WHERE tk.is_deleted = 0
+      WHERE (tk.is_deleted = 0 OR tk.is_deleted IS NULL)
       ORDER BY tk.ngay_tao DESC
     `);
     res.json({ success: true, data: result.rows });
@@ -814,6 +821,7 @@ router.get('/accounts', verifyAccess(['admin']), async (req, res) => {
 
 // POST /api/accounts: Tạo tài khoản mới cho học viên hoặc giáo viên
 router.post('/accounts', verifyAccess(['admin']), async (req, res) => {
+  const bcrypt = require('bcryptjs');
   const { ten_dang_nhap, mat_khau, vai_tro, ho_so_id } = req.body;
   if (!ten_dang_nhap || !mat_khau || !vai_tro) {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
@@ -822,20 +830,19 @@ router.post('/accounts', verifyAccess(['admin']), async (req, res) => {
     return res.status(400).json({ success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự' });
   }
   try {
-    // Kiểm tra trùng tên đăng nhập
-    const dup = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1 AND is_deleted = 0', [ten_dang_nhap]);
+    const dup = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1 AND (is_deleted = 0 OR is_deleted IS NULL)', [ten_dang_nhap]);
     if (dup.rows.length > 0) {
       return res.status(400).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
     }
-    // Lấy vai_tro_id
-    const vrRes = await pool.query('SELECT id FROM vai_tro WHERE ten_vai_tro = $1', [vai_tro]);
+    const vrRes = await pool.query('SELECT id FROM vai_tro WHERE ma_vai_tro = $1', [vai_tro]);
     if (vrRes.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'Vai trò không hợp lệ' });
     }
     const vai_tro_id = vrRes.rows[0].id;
+    const mat_khau_hash = bcrypt.hashSync(mat_khau, 12);
     const result = await pool.query(
-      'INSERT INTO tai_khoan (ten_dang_nhap, mat_khau, vai_tro_id, ho_so_id, is_active) VALUES ($1, $2, $3, $4, 1) RETURNING id',
-      [ten_dang_nhap, mat_khau, vai_tro_id, ho_so_id || null]
+      'INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, ho_so_id, trang_thai) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [ten_dang_nhap, mat_khau_hash, vai_tro_id, ho_so_id || null, 'hoat_dong']
     );
     await createNotification('tao_tai_khoan','Tạo tài khoản mới',
       `Tài khoản "${ten_dang_nhap}" (${vai_tro}) đã được tạo thành công.`,
@@ -850,11 +857,12 @@ router.post('/accounts', verifyAccess(['admin']), async (req, res) => {
 router.put('/accounts/:id/toggle', verifyAccess(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
-    const cur = await pool.query('SELECT is_active, ten_dang_nhap FROM tai_khoan WHERE id = $1 AND is_deleted = 0', [id]);
+    const cur = await pool.query('SELECT trang_thai, ten_dang_nhap FROM tai_khoan WHERE id = $1 AND (is_deleted = 0 OR is_deleted IS NULL)', [id]);
     if (cur.rows.length === 0) return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản' });
-    const newStatus = cur.rows[0].is_active ? 0 : 1;
-    await pool.query('UPDATE tai_khoan SET is_active = $1 WHERE id = $2', [newStatus, id]);
-    res.json({ success: true, is_active: newStatus });
+    const isActive = cur.rows[0].trang_thai === 'hoat_dong';
+    const newTrangThai = isActive ? 'bi_khoa' : 'hoat_dong';
+    await pool.query('UPDATE tai_khoan SET trang_thai = $1 WHERE id = $2', [newTrangThai, id]);
+    res.json({ success: true, is_active: !isActive, trang_thai: newTrangThai });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -862,13 +870,15 @@ router.put('/accounts/:id/toggle', verifyAccess(['admin']), async (req, res) => 
 
 // PUT /api/accounts/:id/reset-password: Admin đặt lại mật khẩu
 router.put('/accounts/:id/reset-password', verifyAccess(['admin']), async (req, res) => {
+  const bcrypt = require('bcryptjs');
   const { id } = req.params;
   const { mat_khau_moi } = req.body;
   if (!mat_khau_moi || mat_khau_moi.length < 6) {
     return res.status(400).json({ success: false, error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
   }
   try {
-    await pool.query('UPDATE tai_khoan SET mat_khau = $1 WHERE id = $2 AND is_deleted = 0', [mat_khau_moi, id]);
+    const mat_khau_hash = bcrypt.hashSync(mat_khau_moi, 12);
+    await pool.query('UPDATE tai_khoan SET mat_khau_hash = $1 WHERE id = $2 AND (is_deleted = 0 OR is_deleted IS NULL)', [mat_khau_hash, id]);
     res.json({ success: true, message: 'Đặt lại mật khẩu thành công' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -881,7 +891,7 @@ router.delete('/accounts/:id', verifyAccess(['admin']), async (req, res) => {
   try {
     const cur = await pool.query('SELECT ten_dang_nhap FROM tai_khoan WHERE id = $1', [id]);
     if (cur.rows.length === 0) return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản' });
-    await pool.query('UPDATE tai_khoan SET is_deleted = 1 WHERE id = $1', [id]);
+    await pool.query('UPDATE tai_khoan SET is_deleted = 1, trang_thai = $1 WHERE id = $2', ['bi_khoa', id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1801,6 +1811,7 @@ router.delete('/rules/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
 
 // POST /api/auth/login: Đăng nhập bằng tài khoản thật
 router.post('/auth/login', async (req, res) => {
+  const bcrypt = require('bcryptjs');
   const { ten_dang_nhap, mat_khau } = req.body;
   if (!ten_dang_nhap || !mat_khau) {
     return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu' });
@@ -1808,13 +1819,13 @@ router.post('/auth/login', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT tk.id, tk.ten_dang_nhap, tk.mat_khau, tk.ho_so_id, tk.is_active,
-              vt.ten_vai_tro as vai_tro,
+      `SELECT tk.id, tk.ten_dang_nhap, tk.mat_khau_hash, tk.ho_so_id, tk.trang_thai,
+              vt.ma_vai_tro as vai_tro,
               hs.ho_ten, hs.email, hs.so_dien_thoai, hs.chi_nhanh, hs.loai_ho_so, hs.ma_ho_so
        FROM tai_khoan tk
        JOIN vai_tro vt ON tk.vai_tro_id = vt.id
        LEFT JOIN ho_so hs ON tk.ho_so_id = hs.id
-       WHERE tk.ten_dang_nhap = $1 AND tk.is_deleted = 0`,
+       WHERE tk.ten_dang_nhap = $1 AND (tk.is_deleted = 0 OR tk.is_deleted IS NULL)`,
       [ten_dang_nhap]
     );
 
@@ -1824,12 +1835,16 @@ router.post('/auth/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    if (!user.is_active) {
+    if (user.trang_thai !== 'hoat_dong') {
       return res.status(403).json({ success: false, error: 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.' });
     }
 
-    // So sánh mật khẩu plain text (có thể nâng cấp lên bcrypt sau)
-    if (user.mat_khau !== mat_khau) {
+    // So sánh mật khẩu: hỗ trợ cả bcrypt hash lẫn plain text cũ
+    const isMatch = user.mat_khau_hash
+      ? (user.mat_khau_hash.startsWith('$2') ? bcrypt.compareSync(mat_khau, user.mat_khau_hash) : user.mat_khau_hash === mat_khau)
+      : false;
+
+    if (!isMatch) {
       return res.status(401).json({ success: false, error: 'Tên đăng nhập hoặc mật khẩu không đúng' });
     }
 
@@ -1865,13 +1880,13 @@ router.get('/auth/me', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT tk.id, tk.ten_dang_nhap, tk.ho_so_id, tk.is_active,
-              vt.ten_vai_tro as vai_tro,
+      `SELECT tk.id, tk.ten_dang_nhap, tk.ho_so_id, tk.trang_thai,
+              vt.ma_vai_tro as vai_tro,
               hs.ho_ten, hs.email, hs.so_dien_thoai, hs.chi_nhanh, hs.loai_ho_so, hs.ma_ho_so
        FROM tai_khoan tk
        JOIN vai_tro vt ON tk.vai_tro_id = vt.id
        LEFT JOIN ho_so hs ON tk.ho_so_id = hs.id
-       WHERE tk.id = $1 AND tk.is_deleted = 0`,
+       WHERE tk.id = $1 AND (tk.is_deleted = 0 OR tk.is_deleted IS NULL)`,
       [tai_khoan_id]
     );
 
@@ -1902,6 +1917,7 @@ router.get('/auth/me', async (req, res) => {
 
 // PUT /api/auth/change-password: Đổi mật khẩu
 router.put('/auth/change-password', async (req, res) => {
+  const bcrypt = require('bcryptjs');
   const tai_khoan_id = req.headers['x-tai-khoan-id'];
   const { mat_khau_cu, mat_khau_moi } = req.body;
 
@@ -1910,14 +1926,17 @@ router.put('/auth/change-password', async (req, res) => {
   if (mat_khau_moi.length < 6) return res.status(400).json({ success: false, error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
 
   try {
-    const result = await pool.query('SELECT mat_khau FROM tai_khoan WHERE id = $1 AND is_deleted = 0', [tai_khoan_id]);
+    const result = await pool.query('SELECT mat_khau_hash FROM tai_khoan WHERE id = $1 AND (is_deleted = 0 OR is_deleted IS NULL)', [tai_khoan_id]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản' });
 
-    if (result.rows[0].mat_khau !== mat_khau_cu) {
+    const hash = result.rows[0].mat_khau_hash;
+    const isMatch = hash?.startsWith('$2') ? bcrypt.compareSync(mat_khau_cu, hash) : hash === mat_khau_cu;
+    if (!isMatch) {
       return res.status(401).json({ success: false, error: 'Mật khẩu hiện tại không đúng' });
     }
 
-    await pool.query('UPDATE tai_khoan SET mat_khau = $1 WHERE id = $2', [mat_khau_moi, tai_khoan_id]);
+    const newHash = bcrypt.hashSync(mat_khau_moi, 12);
+    await pool.query('UPDATE tai_khoan SET mat_khau_hash = $1 WHERE id = $2', [newHash, tai_khoan_id]);
     res.json({ success: true, message: 'Đổi mật khẩu thành công' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
