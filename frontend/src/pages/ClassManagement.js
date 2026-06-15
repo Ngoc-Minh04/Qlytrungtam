@@ -395,8 +395,8 @@ export async function renderClassManagement(container) {
       document.body.appendChild(editModal);
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const itemNgayStr = item.ngay_hoc ? new Date(item.ngay_hoc).toISOString().split('T')[0] : todayStr;
+    const todayStr = new Date().toLocaleDateString('sv-SE');
+    const itemNgayStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10) : todayStr;
 
     // Tính duration cũ của ca học
     let oldDuration = 90;
@@ -679,19 +679,19 @@ export async function renderClassManagement(container) {
         });
       });
 
-      // Sắp xếp: theo giờ bắt đầu sớm nhất (tăng dần), trùng giờ thì ngày học mới nhất (giảm dần)
+      // Sắp xếp: theo ngày học tăng dần (ngày sớm ở trên), nếu trùng ngày sắp xếp theo giờ bắt đầu tăng dần
       allSessions.sort((a, b) => {
-        if (a.gio_bat_dau !== b.gio_bat_dau) {
-          return a.gio_bat_dau.localeCompare(b.gio_bat_dau);
+        const dateAStr = a.ngay_hoc ? a.ngay_hoc.substring(0, 10) : '';
+        const dateBStr = b.ngay_hoc ? b.ngay_hoc.substring(0, 10) : '';
+        if (dateAStr !== dateBStr) {
+          return dateAStr.localeCompare(dateBStr);
         }
-        const dateA = new Date(a.ngay_hoc);
-        const dateB = new Date(b.ngay_hoc);
-        return dateB - dateA;
+        return a.gio_bat_dau.localeCompare(b.gio_bat_dau);
       });
 
       let rows = '';
       allSessions.forEach(item => {
-        const ngayHocStr = item.ngay_hoc ? new Date(item.ngay_hoc).toLocaleDateString('vi-VN') : '—';
+        const ngayHocStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
         const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
         const isGroup = item.type === 'nhom';
 

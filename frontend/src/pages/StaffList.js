@@ -522,11 +522,15 @@ function showStaffDetailModal(nv, container, role) {
         <!-- Profile Banner -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/8 via-emerald-500/3 to-transparent border border-emerald-500/15">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-xl shadow-lg shrink-0 select-none">
-              ${nv.avatar_url ? `<img src="${nv.avatar_url}" class="w-full h-full object-cover">` : (nv.ho_ten ? nv.ho_ten.charAt(0).toUpperCase() : 'N')}
+            <div class="relative w-14 h-14 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-xl shadow-lg shrink-0 select-none cursor-pointer group" id="staff-avatar-container">
+              ${nv.avatar_url ? `<img id="staff-avatar-img" src="${nv.avatar_url}" class="w-full h-full object-cover">` : `<span id="staff-avatar-placeholder">${nv.ho_ten ? nv.ho_ten.charAt(0).toUpperCase() : 'N'}</span>`}
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <span class="material-symbols-outlined text-white text-[16px]">photo_camera</span>
+              </div>
             </div>
+            <input type="file" id="staff-avatar-file-input" accept="image/*" class="hidden">
             <div>
-              <h4 class="font-extrabold text-base text-apple-ink">${nv.ho_ten}</h4>
+              <h4 class="font-extrabold text-base text-apple-ink" id="staff-display-name">${nv.ho_ten}</h4>
               <div class="flex flex-wrap items-center gap-2 mt-1">
                 <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold text-[10px] tracking-wide uppercase">${nv.ma_ho_so}</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
@@ -624,6 +628,38 @@ function showStaffDetailModal(nv, container, role) {
 
   modal.classList.remove('hidden');
 
+  // Lắng nghe click ảnh đại diện để mở chọn file
+  const staffAvatarContainer = modal.querySelector('#staff-avatar-container');
+  const staffAvatarFileInput = modal.querySelector('#staff-avatar-file-input');
+  const staffAvatarImg = modal.querySelector('#staff-avatar-img');
+  const staffAvatarPlaceholder = modal.querySelector('#staff-avatar-placeholder');
+  let base64AvatarData = null;
+
+  staffAvatarContainer?.addEventListener('click', () => {
+    staffAvatarFileInput?.click();
+  });
+
+  staffAvatarFileInput?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        base64AvatarData = reader.result;
+        if (staffAvatarImg) {
+          staffAvatarImg.src = base64AvatarData;
+        } else if (staffAvatarContainer) {
+          if (staffAvatarPlaceholder) staffAvatarPlaceholder.remove();
+          const newImg = document.createElement('img');
+          newImg.id = 'staff-avatar-img';
+          newImg.src = base64AvatarData;
+          newImg.className = 'w-full h-full object-cover';
+          staffAvatarContainer.insertBefore(newImg, staffAvatarContainer.firstChild);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
   // Đóng modal
   const closeModal = () => modal.classList.add('hidden');
   modal.querySelector('#close-staff-detail-modal').addEventListener('click', closeModal);
@@ -650,6 +686,15 @@ function showStaffDetailModal(nv, container, role) {
     }
   });
 
+  modal.querySelector('#s-edit-name')?.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (val) {
+      const disp = modal.querySelector('#staff-display-name');
+      if (disp) disp.textContent = val;
+      if (staffAvatarPlaceholder) staffAvatarPlaceholder.textContent = val.charAt(0).toUpperCase();
+    }
+  });
+
   // Submit form cập nhật
   modal.querySelector('#staff-edit-inplace-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -672,7 +717,8 @@ function showStaffDetailModal(nv, container, role) {
       so_dien_thoai: phoneVal,
       email: emailVal || null,
       chuc_vu: modal.querySelector('#s-edit-role').value,
-      chi_nhanh: modal.querySelector('#s-edit-branch').value
+      chi_nhanh: modal.querySelector('#s-edit-branch').value,
+      avatar_url: base64AvatarData || nv.avatar_url
     };
 
     try {

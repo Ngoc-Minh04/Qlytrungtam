@@ -17,17 +17,21 @@ import { renderTeacherFeedbacks } from './TeacherFeedbacks.js';
 import { renderCourseRegistrations } from './CourseRegistrations.js';
 import { renderStudentRequests } from './StudentRequests.js';
 import { renderRevenueReport } from './RevenueReport.js';
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 
 let currentPage = 'dashboard';
 let currentActiveSubPage = 'dashboard';
 
 // Expose modal helpers ra toàn cục
-window.openCancelModal = function (id) {
+window.openCancelModal = function (id, price = '0') {
   const modal = document.getElementById('cancel-modal');
   const idInput = document.getElementById('modal-dky-id');
+  const moneyInput = document.getElementById('modal-so-tien-hoan');
   if (modal && idInput) {
     idInput.value = id;
+    if (moneyInput) {
+      moneyInput.value = formatCurrencyInput(String(price));
+    }
     modal.classList.remove('hidden');
   }
 };
@@ -461,7 +465,7 @@ export function renderDashboard(role) {
           <input type="hidden" id="modal-dky-id">
           <div>
             <label class="block text-[11.5px] font-semibold text-[#414753] mb-1">Số tiền hoàn trả (VNĐ)</label>
-            <input type="number" id="modal-so-tien-hoan" value="0" min="0" required class="w-full border border-[#e2e2e4] rounded-lg px-3 py-1.5 outline-none focus:border-[#0066cc] transition text-[12.5px]">
+            <input type="text" id="modal-so-tien-hoan" value="0" required class="w-full border border-[#e2e2e4] rounded-lg px-3 py-1.5 outline-none focus:border-[#0066cc] transition text-[12.5px] font-bold">
           </div>
           <div>
             <label class="block text-[11.5px] font-semibold text-[#414753] mb-1">Lý do hủy</label>
@@ -674,12 +678,25 @@ export function renderDashboard(role) {
     } catch (err) { showToast('Không thể kết nối máy chủ', 'error'); }
   });
 
+  // Tự động format số tiền hoàn trả khi nhập liệu
+  document.getElementById('modal-so-tien-hoan')?.addEventListener('input', (e) => {
+    e.target.value = formatCurrencyInput(e.target.value);
+  });
+
   // Gửi form hủy khóa học
   document.getElementById('cancel-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('modal-dky-id').value;
+    const rawMoneyStr = document.getElementById('modal-so-tien-hoan').value;
+    const soTienHoan = parseCurrencyInput(rawMoneyStr);
+
+    if (soTienHoan <= 0) {
+      showToast('Vui lòng nhập số tiền hoàn trả lớn hơn 0', 'error');
+      return;
+    }
+
     const payload = {
-      so_tien_hoan: parseFloat(document.getElementById('modal-so-tien-hoan').value),
+      so_tien_hoan: soTienHoan,
       ly_do_huy: document.getElementById('modal-ly-do-huy').value
     };
     try {

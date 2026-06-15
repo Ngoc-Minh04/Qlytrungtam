@@ -11,6 +11,10 @@ function isValidPhone(phone) {
   return /^0\d{9}$/.test(phone.replace(/\s/g, ''));
 }
 
+let coursePkgs = [];
+let tutoringPkgs = [];
+let teachersList = [];
+
 export async function renderStudentsList(container, role) {
   container.innerHTML = `
     <div class="flex justify-center items-center py-12">
@@ -29,9 +33,9 @@ export async function renderStudentsList(container, role) {
     const result = await studentsRes.json();
     const allStudents = result.data || [];
 
-    const coursePkgs = (await coursePkgsRes.json()).data || [];
-    const tutoringPkgs = (await tutoringPkgsRes.json()).data || [];
-    const teachersList = (await teachersRes.json()).data || [];
+    coursePkgs = (await coursePkgsRes.json()).data || [];
+    tutoringPkgs = (await tutoringPkgsRes.json()).data || [];
+    teachersList = (await teachersRes.json()).data || [];
 
     const statusBadges = {
       con_han: `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-[#10b981]"></div><span class="font-semibold text-slate-800 text-[11px]">Đang hoạt động</span></div>`,
@@ -68,7 +72,7 @@ export async function renderStudentsList(container, role) {
           </td>
           <td class="px-6 py-4">${statusBadges[sv.trang_thai_mau] || statusBadges['chua_dang_ky']}</td>
           <td class="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4 text-right">
-            <button class="btn-cancel-reg px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${sv.id}">
+            <button class="btn-cancel-reg px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${sv.id}" data-price="${sv.goi_dang_ky_gan_nhat_price || 0}">
               Hủy khóa
             </button>
           </td>
@@ -409,7 +413,8 @@ export async function renderStudentsList(container, role) {
         row.addEventListener('click', (e) => {
           if (e.target.closest('.btn-cancel-reg')) {
             const studentId = e.target.closest('.btn-cancel-reg').getAttribute('data-id');
-            window.openCancelModal && window.openCancelModal(studentId);
+            const price = e.target.closest('.btn-cancel-reg').getAttribute('data-price') || '0';
+            window.openCancelModal && window.openCancelModal(studentId, price);
             return;
           }
           const id = row.getAttribute('data-id');
@@ -663,7 +668,7 @@ function showStudentDetailModal(sv) {
       const historyCourses = khoa_hoc.filter(x => x.trang_thai !== 'dang_hoat_dong');
       const historyTutors = hoc_kem.filter(x => x.trang_thai !== 'dang_hoat_dong');
 
-      const dobFormatted = sv.ngay_sinh ? new Date(sv.ngay_sinh).toISOString().split('T')[0] : '';
+      const dobFormatted = sv.ngay_sinh ? sv.ngay_sinh.substring(0, 10) : '';
       const ngayTaoFormatted = sv.ngay_tao ? new Date(sv.ngay_tao).toLocaleString('vi-VN') : '—';
 
       const levelOptions = [
@@ -701,9 +706,13 @@ function showStudentDetailModal(sv) {
               <!-- Header Profile -->
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-[#0066cc]/5 via-[#0066cc]/1 to-transparent border border-[#0066cc]/10">
                 <div class="flex items-center gap-4 w-full">
-                  <div class="w-16 h-16 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-2xl shadow-lg shrink-0 select-none">
-                    ${sv.avatar_url ? `<img src="${sv.avatar_url}" class="w-full h-full object-cover">` : (sv.ho_ten || 'H').charAt(0)}
+                  <div class="relative w-16 h-16 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-2xl shadow-lg shrink-0 select-none cursor-pointer group" id="detail-avatar-container">
+                    ${sv.avatar_url ? `<img id="detail-avatar-img" src="${sv.avatar_url}" class="w-full h-full object-cover">` : `<span id="detail-avatar-placeholder">${(sv.ho_ten || 'H').charAt(0)}</span>`}
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <span class="material-symbols-outlined text-white text-[18px]">photo_camera</span>
+                    </div>
                   </div>
+                  <input type="file" id="detail-avatar-file-input" accept="image/*" class="hidden">
                   <div class="flex-grow space-y-1">
                     <input type="text" id="inplace-fullName" value="${sv.ho_ten || ''}" required 
                            class="font-extrabold text-base text-apple-ink bg-transparent border-b border-transparent hover:border-slate-300 focus:border-apple-blue focus:bg-white px-1.5 py-0.5 outline-none rounded transition w-full">
@@ -823,7 +832,7 @@ function showStudentDetailModal(sv) {
                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                           <p>Thanh toán: <strong class="uppercase">${item.phuong_thuc_tt || 'Tần mặt'}</strong></p>
                         </div>
-                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}">
+                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}">
                           Hủy gói / Hoàn tiền
                         </button>
                       </div>
@@ -890,7 +899,7 @@ function showStudentDetailModal(sv) {
                           <p>Giá thực tế: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                         </div>
-                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}">
+                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}">
                           Hủy gói / Hoàn tiền
                         </button>
                       </div>
@@ -985,7 +994,7 @@ function showStudentDetailModal(sv) {
                   <div id="reg-khoa-hoc-fields" class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Ngày bắt đầu</label>
-                      <input type="date" id="reg-tu-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue" value="${new Date().toISOString().split('T')[0]}">
+                      <input type="date" id="reg-tu-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue" value="${new Date().toLocaleDateString('sv-SE')}">
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Ngày kết thúc</label>
@@ -1204,6 +1213,38 @@ function showStudentDetailModal(sv) {
         });
       });
 
+      // Lắng nghe click ảnh đại diện để mở chọn file
+      const detailAvatarContainer = modal.querySelector('#detail-avatar-container');
+      const detailAvatarFileInput = modal.querySelector('#detail-avatar-file-input');
+      const detailAvatarImg = modal.querySelector('#detail-avatar-img');
+      const detailAvatarPlaceholder = modal.querySelector('#detail-avatar-placeholder');
+      let base64AvatarData = null;
+
+      detailAvatarContainer?.addEventListener('click', () => {
+        detailAvatarFileInput?.click();
+      });
+
+      detailAvatarFileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            base64AvatarData = reader.result;
+            if (detailAvatarImg) {
+              detailAvatarImg.src = base64AvatarData;
+            } else if (detailAvatarContainer) {
+              if (detailAvatarPlaceholder) detailAvatarPlaceholder.remove();
+              const newImg = document.createElement('img');
+              newImg.id = 'detail-avatar-img';
+              newImg.src = base64AvatarData;
+              newImg.className = 'w-full h-full object-cover';
+              detailAvatarContainer.insertBefore(newImg, detailAvatarContainer.firstChild);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
       // Submit cập nhật học viên với validate
       modal.querySelector('#student-inplace-edit-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1227,7 +1268,8 @@ function showStudentDetailModal(sv) {
           so_dien_thoai: phoneVal,
           email: emailVal || null,
           trinh_do_dau_vao: modal.querySelector('#inplace-entryLevel').value,
-          chi_nhanh: sv.chi_nhanh || 'Trung tam chính'
+          chi_nhanh: sv.chi_nhanh || 'Trung tam chính',
+          avatar_url: base64AvatarData || sv.avatar_url
         };
 
         try {
@@ -1278,8 +1320,9 @@ function showStudentDetailModal(sv) {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const regId = btn.getAttribute('data-id');
+          const price = btn.getAttribute('data-price') || '0';
           modal.classList.add('hidden');
-          window.openCancelModal && window.openCancelModal(regId);
+          window.openCancelModal && window.openCancelModal(regId, price);
         });
       });
 
@@ -1360,7 +1403,7 @@ function showStudentDetailModal(sv) {
           const start = new Date(tuNgayInput.value);
           const end = new Date(start);
           end.setMonth(start.getMonth() + months);
-          denNgayInput.value = end.toISOString().split('T')[0];
+          denNgayInput.value = end.toLocaleDateString('sv-SE');
         }
       });
 
@@ -1373,7 +1416,7 @@ function showStudentDetailModal(sv) {
             const start = new Date(tuNgayInput.value);
             const end = new Date(start);
             end.setMonth(start.getMonth() + months);
-            denNgayInput.value = end.toISOString().split('T')[0];
+            denNgayInput.value = end.toLocaleDateString('sv-SE');
           }
         }
       });

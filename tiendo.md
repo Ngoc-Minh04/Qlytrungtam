@@ -1,3 +1,13 @@
+### [15/06/2026 13:35] — Tích hợp Cloudinary Avatar, fix ngày sinh, sort lịch học và định dạng ngày đăng ký
+- **Loại**: Cải tiến tính năng & Sửa bug
+- **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/ClassManagement.js`, `tiendo.md`
+- **Mô tả**:
+  - Đồng bộ hoá logic tính ngày kết thúc gói học đại trà theo định dạng cục bộ `sv-SE` để tránh lệch múi giờ.
+  - Sửa scope các biến `coursePkgs`, `tutoringPkgs`, `teachersList` lên module-level để loại bỏ ReferenceError.
+  - Đảm bảo hiển thị ảnh đại diện và cho phép đổi ảnh trực tiếp khi click vào container ảnh đại diện trong modal chi tiết của Học viên, Giáo viên, Nhân viên.
+  - Sắp xếp lịch sử đặt lịch theo thứ tự ngày tăng dần (ngày sớm ở trên), nếu trùng ngày sắp xếp theo giờ bắt đầu tăng dần.
+- **Kết quả**: Thành công
+
 ### [15/06/2026 10:40] — Sửa lỗi Date Picker, Lớp học SQL 500, Tạo nhân viên trùng SĐT và hiển thị Avatar
 - **Loại**: Sửa bug
 - **File**: `frontend/src/pages/_shared.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/TeachersList.js`, `backend/src/routes/api.js`

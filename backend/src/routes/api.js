@@ -1113,17 +1113,18 @@ router.delete('/staff/:id', verifyAccess(['admin']), async (req, res) => {
 // API PUT /api/staff/:id: Cập nhật nhân viên
 router.put('/staff/:id', verifyAccess(['admin']), async (req, res) => {
   const { id } = req.params;
-  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh } = req.body;
+  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh, avatar_url } = req.body;
   try {
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : avatar_url;
     const updateQuery = `
       UPDATE ho_so
       SET ho_ten = $1, so_dien_thoai = $2, email = $3, chuc_vu = $4,
-          chi_nhanh = $5, ngay_cap_nhat = CURRENT_TIMESTAMP
-      WHERE id = $6 AND loai_ho_so = 'nhan_vien' AND is_deleted = 0
+          chi_nhanh = $5, avatar_url = COALESCE($6, avatar_url), ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $7 AND loai_ho_so = 'nhan_vien' AND is_deleted = 0
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, so_dien_thoai, email, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', id
+      ho_ten, so_dien_thoai, email, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', finalAvatarUrl, id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ nhân viên' });
@@ -1325,7 +1326,14 @@ router.get('/students', async (req, res) => {
           SELECT COALESCE(json_agg(giao_vien_id), '[]'::json) 
           FROM dang_ky_hoc_kem 
           WHERE hoc_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-        ) as active_teacher_ids
+        ) as active_teacher_ids,
+        (
+          SELECT COALESCE(
+            (SELECT so_tien_da_thu FROM dang_ky_khoa_hoc WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong' ORDER BY ngay_tao DESC LIMIT 1),
+            (SELECT so_tien_da_thu FROM dang_ky_hoc_kem WHERE hoc_vien_id = h.id AND trang_thai = 'dang_hoat_dong' ORDER BY ngay_tao DESC LIMIT 1),
+            0
+          )
+        ) as goi_dang_ky_gan_nhat_price
       FROM ho_so h
       LEFT JOIN v_trang_thai_hoi_vien v ON h.id = v.id
       WHERE h.loai_ho_so = 'hoc_vien' AND h.is_deleted = 0
@@ -1835,7 +1843,7 @@ router.get('/students/:id/registrations', async (req, res) => {
 // PUT /api/students/:id: Cập nhật học viên
 router.put('/students/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
-  const { ho_ten, ngay_sinh, gioi_tinh, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh } = req.body;
+  const { ho_ten, ngay_sinh, gioi_tinh, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, avatar_url } = req.body;
   const genderLower = gioi_tinh ? gioi_tinh.toLowerCase() : 'khác';
   let genderDb = 'khac';
   if (genderLower === 'nam') genderDb = 'nam';
@@ -1843,16 +1851,18 @@ router.put('/students/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
   else genderDb = 'khac';
 
   try {
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : avatar_url;
     const updateQuery = `
       UPDATE ho_so
       SET ho_ten = $1, ngay_sinh = $2, gioi_tinh = $3, ten_phu_huynh = $4,
           so_dien_thoai = $5, email = $6, trinh_do_dau_vao = $7, chi_nhanh = $8,
+          avatar_url = COALESCE($9, avatar_url),
           ngay_cap_nhat = CURRENT_TIMESTAMP
-      WHERE id = $9 AND loai_ho_so = 'hoc_vien' AND is_deleted = 0
+      WHERE id = $10 AND loai_ho_so = 'hoc_vien' AND is_deleted = 0
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, ngay_sinh, genderDb, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, id
+      ho_ten, ngay_sinh, genderDb, ten_phu_huynh, so_dien_thoai, email, trinh_do_dau_vao, chi_nhanh, finalAvatarUrl, id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học viên' });
@@ -1908,17 +1918,20 @@ router.delete('/students/:id', verifyAccess(['admin']), async (req, res) => {
 // PUT /api/teachers/:id: Cập nhật giáo viên
 router.put('/teachers/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
-  const { ho_ten, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh } = req.body;
+  const { ho_ten, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, avatar_url } = req.body;
   try {
+    const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : avatar_url;
     const updateQuery = `
       UPDATE ho_so
       SET ho_ten = $1, so_dien_thoai = $2, email = $3, chuyen_mon = $4,
-          kinh_nghiem = $5, chi_nhanh = $6, ngay_cap_nhat = CURRENT_TIMESTAMP
-      WHERE id = $7 AND loai_ho_so = 'giao_vien' AND is_deleted = 0
+          kinh_nghiem = $5, chi_nhanh = $6,
+          avatar_url = COALESCE($7, avatar_url),
+          ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $8 AND loai_ho_so = 'giao_vien' AND is_deleted = 0
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', id
+      ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', finalAvatarUrl, id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ giáo viên' });

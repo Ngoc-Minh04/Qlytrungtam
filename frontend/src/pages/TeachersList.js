@@ -584,9 +584,13 @@ function showTeacherDetailModal(t, container, role) {
         <!-- Profile Banner -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-[#0066cc]/8 via-[#0066cc]/3 to-transparent border border-[#0066cc]/15">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0066cc] to-[#004e9f] text-white flex items-center justify-center font-extrabold text-xl shadow-lg shadow-[#0066cc]/20 shrink-0 select-none" id="teacher-avatar-initial">
-              ${t.ho_ten ? t.ho_ten.charAt(0).toUpperCase() : 'G'}
+            <div class="relative w-14 h-14 rounded-2xl bg-[#f3f3f5] border border-apple-divider/40 text-apple-ink overflow-hidden flex items-center justify-center font-extrabold text-xl shadow-lg shrink-0 select-none cursor-pointer group" id="teacher-avatar-container">
+              ${t.avatar_url ? `<img id="teacher-avatar-img" src="${t.avatar_url}" class="w-full h-full object-cover">` : `<span id="teacher-avatar-placeholder">${t.ho_ten ? t.ho_ten.charAt(0).toUpperCase() : 'G'}</span>`}
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <span class="material-symbols-outlined text-white text-[16px]">photo_camera</span>
+              </div>
             </div>
+            <input type="file" id="teacher-avatar-file-input" accept="image/*" class="hidden">
             <div>
               <h4 class="font-extrabold text-base text-apple-ink" id="teacher-display-name">${t.ho_ten}</h4>
               <div class="flex flex-wrap items-center gap-2 mt-1">
@@ -706,11 +710,43 @@ function showTeacherDetailModal(t, container, role) {
   modal.querySelector('#close-teacher-detail-modal-footer').addEventListener('click', closeModal);
   modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
+  // Lắng nghe click ảnh đại diện để mở chọn file
+  const teacherAvatarContainer = modal.querySelector('#teacher-avatar-container');
+  const teacherAvatarFileInput = modal.querySelector('#teacher-avatar-file-input');
+  const teacherAvatarImg = modal.querySelector('#teacher-avatar-img');
+  const teacherAvatarPlaceholder = modal.querySelector('#teacher-avatar-placeholder');
+  let base64AvatarData = null;
+
+  teacherAvatarContainer?.addEventListener('click', () => {
+    teacherAvatarFileInput?.click();
+  });
+
+  teacherAvatarFileInput?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        base64AvatarData = reader.result;
+        if (teacherAvatarImg) {
+          teacherAvatarImg.src = base64AvatarData;
+        } else if (teacherAvatarContainer) {
+          if (teacherAvatarPlaceholder) teacherAvatarPlaceholder.remove();
+          const newImg = document.createElement('img');
+          newImg.id = 'teacher-avatar-img';
+          newImg.src = base64AvatarData;
+          newImg.className = 'w-full h-full object-cover';
+          teacherAvatarContainer.insertBefore(newImg, teacherAvatarContainer.firstChild);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
   modal.querySelector('#t-edit-name').addEventListener('input', (e) => {
     const val = e.target.value.trim();
     if (val) {
-      modal.querySelector('#teacher-avatar-initial').textContent = val.charAt(0).toUpperCase();
       modal.querySelector('#teacher-display-name').textContent = val;
+      if (teacherAvatarPlaceholder) teacherAvatarPlaceholder.textContent = val.charAt(0).toUpperCase();
     }
   });
 
@@ -738,7 +774,8 @@ function showTeacherDetailModal(t, container, role) {
       kinh_nghiem: parseInt(modal.querySelector('#t-edit-exp').value) || 0,
       so_dien_thoai: phoneVal,
       email: emailVal || null,
-      chi_nhanh: modal.querySelector('#t-edit-branch').value.trim()
+      chi_nhanh: modal.querySelector('#t-edit-branch').value.trim(),
+      avatar_url: base64AvatarData || t.avatar_url
     };
 
     try {
