@@ -707,7 +707,17 @@ export function renderDashboard(role) {
       if (result.success) {
         showToast('Đã hủy khóa học thành công!');
         document.getElementById('cancel-modal')?.classList.add('hidden');
-        renderSubPage(currentActiveSubPage || currentPage, role);
+        await renderSubPage(currentActiveSubPage || currentPage, role);
+        
+        // Mở lại modal chi tiết và nhảy vào Tab Gói học & Đăng ký
+        if (window.showStudentDetailModal && window.currentStudent) {
+          await window.showStudentDetailModal(window.currentStudent);
+          // Kích hoạt tab Gói học ngay lập tức
+          setTimeout(() => {
+            const tabPkg = document.getElementById('btn-tab-packages');
+            if (tabPkg) tabPkg.click();
+          }, 100);
+        }
       } else { showToast(result.error || 'Có lỗi xảy ra', 'error'); }
     } catch (err) { showToast('Không thể kết nối máy chủ', 'error'); }
   });

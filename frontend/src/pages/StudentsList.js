@@ -626,7 +626,9 @@ export async function renderStudentsList(container, role) {
   }
 }
 
-function showStudentDetailModal(sv) {
+export function showStudentDetailModal(sv) {
+  window.showStudentDetailModal = showStudentDetailModal;
+  window.currentStudent = sv;
   let modal = document.getElementById('student-detail-modal');
   if (!modal) {
     modal = document.createElement('div');
@@ -1456,9 +1458,19 @@ function showStudentDetailModal(sv) {
           const regResult = await regRes.json();
           if (regResult.success) {
             showToast('Đăng ký gói học thành công!', 'success');
-            modal.classList.add('hidden');
+            // Tải lại danh sách ngầm
             const contentDiv = document.getElementById('dashboard-content');
-            renderStudentsList(contentDiv, localStorage.getItem('userRole'));
+            await renderStudentsList(contentDiv, localStorage.getItem('userRole'));
+            
+            // Mở lại modal chi tiết và nhảy vào Tab Gói học & Đăng ký
+            if (window.showStudentDetailModal && window.currentStudent) {
+              await window.showStudentDetailModal(window.currentStudent);
+              // Kích hoạt tab Gói học ngay lập tức
+              setTimeout(() => {
+                const tabPkg = document.getElementById('btn-tab-packages');
+                if (tabPkg) tabPkg.click();
+              }, 100);
+            }
           } else {
             showToast(regResult.error || 'Có lỗi xảy ra', 'error');
           }

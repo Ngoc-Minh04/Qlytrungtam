@@ -725,7 +725,7 @@ function showTeacherDetailModal(t, container, role) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         base64AvatarData = reader.result;
         if (teacherAvatarImg) {
           teacherAvatarImg.src = base64AvatarData;
@@ -736,6 +736,35 @@ function showTeacherDetailModal(t, container, role) {
           newImg.src = base64AvatarData;
           newImg.className = 'w-full h-full object-cover';
           teacherAvatarContainer.insertBefore(newImg, teacherAvatarContainer.firstChild);
+        }
+
+        // Tự động lưu ảnh đại diện khi đổi thành công
+        const payload = {
+          ho_ten: modal.querySelector('#t-edit-name').value.trim(),
+          chuyen_mon: modal.querySelector('#t-edit-expertise').value,
+          kinh_nghiem: parseInt(modal.querySelector('#t-edit-exp').value) || 0,
+          so_dien_thoai: modal.querySelector('#t-edit-phone').value.trim(),
+          email: modal.querySelector('#t-edit-email').value.trim() || null,
+          chi_nhanh: modal.querySelector('#t-edit-branch').value.trim(),
+          avatar_url: base64AvatarData
+        };
+
+        try {
+          const putRes = await fetch(`${API_BASE}/teachers/${t.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
+            body: JSON.stringify(payload)
+          });
+          const putResult = await putRes.json();
+          if (putResult.success) {
+            showToast('Cập nhật ảnh đại diện giáo viên thành công!', 'success');
+            closeModal();
+            renderTeachersList(container, role);
+          } else {
+            showToast(putResult.error || 'Có lỗi xảy ra', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi máy chủ', 'error');
         }
       };
       reader.readAsDataURL(file);
@@ -790,13 +819,7 @@ function showTeacherDetailModal(t, container, role) {
       const putResult = await putRes.json();
       if (putResult.success) {
         showToast('Cập nhật hồ sơ giáo viên thành công!', 'success');
-        const statusEl = modal.querySelector('#teacher-save-status');
-        statusEl.classList.remove('hidden');
-        statusEl.classList.add('flex');
-        setTimeout(() => {
-          statusEl.classList.add('hidden');
-          statusEl.classList.remove('flex');
-        }, 3000);
+        closeModal();
         renderTeachersList(container, role);
       } else {
         showToast(putResult.error || 'Có lỗi xảy ra', 'error');

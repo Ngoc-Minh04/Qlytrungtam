@@ -769,7 +769,7 @@ router.get('/classes', async (req, res) => {
     const result = await pool.query(`
       SELECT l.*, h.ho_ten as ten_giao_vien, g.ten_goi as ten_goi_hoc_phi,
              (SELECT COUNT(*) FROM lop_hoc_hoc_vien WHERE lop_hoc_id = l.id) as si_so,
-             lhn.ngay_hoc, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai as trang_thai_lich, lhn.id as lich_hoc_nhom_id
+             lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai as trang_thai_lich, lhn.id as lich_hoc_nhom_id
       FROM lop_hoc l
       LEFT JOIN ho_so h ON l.giao_vien_id = h.id
       LEFT JOIN goi_hoc_phi g ON l.goi_hoc_phi_id = g.id
@@ -1005,7 +1005,7 @@ router.delete('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res
 // GET /api/teachers: Lấy danh sách giáo viên
 router.get('/teachers', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY ho_ten ASC");
+    const result = await pool.query("SELECT * FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0 ORDER BY id DESC");
     res.json({ success: true, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1019,7 +1019,7 @@ router.get('/teachers', async (req, res) => {
 // GET /api/staff: Lấy danh sách nhân viên
 router.get('/staff', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM ho_so WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0 ORDER BY ho_ten ASC");
+    const result = await pool.query("SELECT * FROM ho_so WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0 ORDER BY id DESC");
     res.json({ success: true, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1307,7 +1307,7 @@ router.get('/students', async (req, res) => {
   try {
     const queryStr = `
       SELECT 
-        h.id, h.ma_ho_so, h.ho_ten, h.ngay_sinh, h.gioi_tinh,
+        h.id, h.ma_ho_so, h.ho_ten, h.ngay_sinh::text, h.gioi_tinh,
         h.ten_phu_huynh, h.so_dien_thoai, h.email,
         h.trinh_do_dau_vao, h.chi_nhanh, h.loai_ho_so,
         h.ngay_tao, h.ngay_cap_nhat, h.avatar_url,
@@ -1337,7 +1337,7 @@ router.get('/students', async (req, res) => {
       FROM ho_so h
       LEFT JOIN v_trang_thai_hoi_vien v ON h.id = v.id
       WHERE h.loai_ho_so = 'hoc_vien' AND h.is_deleted = 0
-      ORDER BY h.ho_ten ASC
+      ORDER BY h.id DESC
     `;
     const result = await pool.query(queryStr);
     res.json({ success: true, data: result.rows });
@@ -1391,7 +1391,10 @@ router.get('/schedules', async (req, res) => {
   try {
     const queryStr = `
       SELECT 
-        lh.*, 
+        lh.id, lh.dang_ky_hoc_kem_id, lh.giao_vien_id, lh.hoc_vien_id, 
+        lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, lh.loai_buoi, 
+        lh.trang_thai, lh.da_checkin, lh.pt_xac_nhan, lh.hv_xac_nhan, 
+        lh.ngay_xac_nhan, lh.ghi_chu, lh.ngay_tao, lh.ngay_cap_nhat,
         hs_hv.ho_ten as ten_hoc_vien, 
         hs_gv.ho_ten as ten_giao_vien
       FROM lich_hoc lh

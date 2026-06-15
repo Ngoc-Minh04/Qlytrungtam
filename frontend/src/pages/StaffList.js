@@ -203,7 +203,7 @@ export async function renderStaffList(container, role) {
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
+                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập </label>
                     <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs">
                   </div>
                   <div>
@@ -266,7 +266,7 @@ export async function renderStaffList(container, role) {
       const scrollEl = scrollContainer || document.documentElement;
       const scrolled = scrollContainer ? scrollEl.scrollTop + scrollEl.clientHeight : window.scrollY + window.innerHeight;
       const total = scrollContainer ? scrollEl.scrollHeight : document.documentElement.scrollHeight;
-      
+
       if (scrolled >= total - 50 && !btnLoadMore.hasAttribute('disabled')) {
         btnLoadMore.click();
       }
@@ -350,7 +350,7 @@ export async function renderStaffList(container, role) {
     document.getElementById('btn-add-staff-modal')?.addEventListener('click', () => {
       addModal.classList.remove('hidden');
       document.getElementById('add-staff-modal-form').reset();
-      
+
       const phoneInput = document.getElementById('modal-staff-phone');
       const usernameInput = document.getElementById('modal-staff-username');
       const passwordInput = document.getElementById('modal-staff-password');
@@ -360,7 +360,7 @@ export async function renderStaffList(container, role) {
         avatarPreview.classList.add('hidden');
         avatarPreview.src = '';
       }
-      
+
       if (autoAccCheckbox && autoAccCheckbox.checked) {
         usernameInput.value = phoneInput.value;
         passwordInput.value = '123456';
@@ -643,7 +643,7 @@ function showStaffDetailModal(nv, container, role) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         base64AvatarData = reader.result;
         if (staffAvatarImg) {
           staffAvatarImg.src = base64AvatarData;
@@ -654,6 +654,34 @@ function showStaffDetailModal(nv, container, role) {
           newImg.src = base64AvatarData;
           newImg.className = 'w-full h-full object-cover';
           staffAvatarContainer.insertBefore(newImg, staffAvatarContainer.firstChild);
+        }
+
+        // Tự động lưu ảnh đại diện nhân viên khi đổi thành công
+        const payload = {
+          ho_ten: modal.querySelector('#s-edit-name').value.trim(),
+          so_dien_thoai: modal.querySelector('#s-edit-phone').value.trim(),
+          email: modal.querySelector('#s-edit-email').value.trim() || null,
+          chuc_vu: modal.querySelector('#s-edit-role').value,
+          chi_nhanh: modal.querySelector('#s-edit-branch').value,
+          avatar_url: base64AvatarData
+        };
+
+        try {
+          const putRes = await fetch(`${API_BASE}/staff/${nv.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
+            body: JSON.stringify(payload)
+          });
+          const putResult = await putRes.json();
+          if (putResult.success) {
+            showToast('Cập nhật ảnh đại diện nhân viên thành công!', 'success');
+            closeModal();
+            renderStaffList(container, role);
+          } else {
+            showToast(putResult.error || 'Có lỗi xảy ra', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi máy chủ', 'error');
         }
       };
       reader.readAsDataURL(file);
@@ -733,20 +761,8 @@ function showStaffDetailModal(nv, container, role) {
       const putResult = await putRes.json();
       if (putResult.success) {
         showToast('Cập nhật hồ sơ nhân viên thành công!', 'success');
-        const saveStatus = modal.querySelector('#staff-save-status');
-        if (saveStatus) {
-          saveStatus.classList.remove('hidden');
-          saveStatus.classList.add('flex');
-          setTimeout(() => {
-            saveStatus.classList.add('hidden');
-            saveStatus.classList.remove('flex');
-            closeModal();
-            renderStaffList(container, role);
-          }, 1000);
-        } else {
-          closeModal();
-          renderStaffList(container, role);
-        }
+        closeModal();
+        renderStaffList(container, role);
       } else {
         showToast(putResult.error || 'Có lỗi xảy ra', 'error');
       }

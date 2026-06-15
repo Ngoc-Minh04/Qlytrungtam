@@ -1,3 +1,13 @@
+### [15/06/2026 14:05] — Fix triệt để lệch ngày qua SQL CAST, mới thêm lên đầu danh sách, hoàn thiện luồng Modal
+- **Loại**: Cải tiến tính năng & Sửa bug
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/Dashboard.js`, `tiendo.md`
+- **Mô tả**:
+  - Sắp xếp học viên, giáo viên và nhân viên mới nhất lên đầu danh sách hiển thị (`ORDER BY id DESC`).
+  - Sửa đổi các API SQL SELECT ép kiểu ngày (`ngay_sinh::text`, `ngay_hoc::text`) để PostgreSQL trả về chuỗi ngày thô YYYY-MM-DD không bị timezone offset đổi giờ thành ngày hôm trước.
+  - Khi đổi ảnh đại diện giáo viên, nhân viên thành công: Tự động lưu qua API PUT và đóng modal quay về danh sách.
+  - Khi đăng ký gói học mới hoặc hủy gói hoàn tiền thành công: Tự động làm mới dữ liệu và kích hoạt mở ngay Tab Gói học & Đăng ký của học viên đó.
+- **Kết quả**: Thành công
+
 ### [15/06/2026 13:35] — Tích hợp Cloudinary Avatar, fix ngày sinh, sort lịch học và định dạng ngày đăng ký
 - **Loại**: Cải tiến tính năng & Sửa bug
 - **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/ClassManagement.js`, `tiendo.md`
