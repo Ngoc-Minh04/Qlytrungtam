@@ -1,7 +1,9 @@
 // CourseRegistrations.js - Đăng ký khóa học / Thu phí
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput, setupCustomDatePicker } from './_shared.js';
 
 export async function renderCourseRegistrations(container) {
+  const todayStr = new Date().toISOString().split('T')[0];
+
   container.innerHTML = `
     <div class="space-y-3">
       <div class="bg-white rounded-xl border border-apple-divider overflow-hidden flex flex-col lg:flex-row max-w-3xl mx-auto shadow-sm">
@@ -47,11 +49,15 @@ export async function renderCourseRegistrations(container) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Ngày bắt đầu</label>
-                  <input type="date" id="reg-start" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                  <div id="reg-start-container" class="relative">
+                    <input type="date" id="reg-start" required>
+                  </div>
                 </div>
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Ngày kết thúc</label>
-                  <input type="date" id="reg-end" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                  <div id="reg-end-container" class="relative">
+                    <input type="date" id="reg-end" required>
+                  </div>
                 </div>
               </div>
             </div>
@@ -64,11 +70,11 @@ export async function renderCourseRegistrations(container) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Giá trị khóa học (VNĐ)</label>
-                  <input type="number" id="reg-price" value="4500000" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                  <input type="text" id="reg-price" placeholder="4.500.000" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
                 </div>
                 <div>
                   <label class="block font-semibold text-slate-600 mb-0.5">Thực thu (VNĐ)</label>
-                  <input type="number" id="reg-paid" value="4500000" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                  <input type="text" id="reg-paid" placeholder="4.500.000" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
                 </div>
                 <div class="md:col-span-2">
                   <label class="block font-semibold text-slate-600 mb-0.5">Phương thức thanh toán</label>
@@ -90,6 +96,24 @@ export async function renderCourseRegistrations(container) {
     </div>
   `;
 
+  // Tải Lịch Custom
+  setupCustomDatePicker(document.getElementById('reg-start'), document.getElementById('reg-start-container'), { minDate: todayStr });
+  setupCustomDatePicker(document.getElementById('reg-end'), document.getElementById('reg-end-container'));
+
+  // Format tiền tệ trực quan khi nhập
+  const priceInput = document.getElementById('reg-price');
+  const paidInput = document.getElementById('reg-paid');
+
+  priceInput.value = formatCurrencyInput('4500000');
+  paidInput.value = formatCurrencyInput('4500000');
+
+  priceInput.addEventListener('input', (e) => {
+    e.target.value = formatCurrencyInput(e.target.value);
+  });
+  paidInput.addEventListener('input', (e) => {
+    e.target.value = formatCurrencyInput(e.target.value);
+  });
+
   document.getElementById('btn-refresh-course-registrations')?.addEventListener('click', () => {
     renderCourseRegistrations(container);
   });
@@ -101,8 +125,8 @@ export async function renderCourseRegistrations(container) {
       goi_hoc_phi_id: parseInt(document.getElementById('reg-package-id').value),
       tu_ngay: document.getElementById('reg-start').value,
       den_ngay: document.getElementById('reg-end').value,
-      gia_thuc_te: parseFloat(document.getElementById('reg-price').value),
-      so_tien_da_thu: parseFloat(document.getElementById('reg-paid').value),
+      gia_thuc_te: parseCurrencyInput(priceInput.value),
+      so_tien_da_thu: parseCurrencyInput(paidInput.value),
       phuong_thuc_tt: document.getElementById('reg-pay-method').value
     };
 
@@ -119,6 +143,8 @@ export async function renderCourseRegistrations(container) {
       if (result.success) {
         showToast('Ghi nhận đóng học phí thành công!');
         document.getElementById('reg-course-form').reset();
+        priceInput.value = '';
+        paidInput.value = '';
       } else {
         showToast(result.error || 'Lỗi không xác định', 'error');
       }

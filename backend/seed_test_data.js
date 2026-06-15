@@ -43,37 +43,37 @@ async function seed() {
       {
         tieu_de: 'Quy định về thời gian học tập',
         noi_dung: 'Học viên và giáo viên phải có mặt đúng giờ học đã đăng ký. Học viên đi trễ quá 15 phút sẽ không được vào lớp. Giáo viên có lịch dạy đột xuất cần nghỉ hoặc đổi ca phải thông báo trước 24 giờ cho lễ tân.',
-        ap_dung_cho: 'tất cả',
+        ap_dung_cho: 'tat_ca',
         thu_tu: 1
       },
       {
         tieu_de: 'Quy định về trang phục',
         noi_dung: 'Học viên và giáo viên mặc trang phục lịch sự, chỉnh tề khi đến trung tâm. Không mặc quần đùi, áo ba lỗ hoặc trang phục gây phản cảm.',
-        ap_dung_cho: 'tất cả',
+        ap_dung_cho: 'tat_ca',
         thu_tu: 2
       },
       {
         tieu_de: 'Bảo quản tài sản chung',
         noi_dung: 'Không mang thức ăn, nước uống có màu vào phòng học. Giữ gìn vệ sinh lớp học, không viết bậy lên bàn ghế và bảng đen. Tắt toàn bộ thiết bị điện (máy lạnh, đèn) sau khi kết thúc buổi học.',
-        ap_dung_cho: 'tất cả',
+        ap_dung_cho: 'tat_ca',
         thu_tu: 3
       },
       {
         tieu_de: 'Quy định chuẩn bị bài giảng',
         noi_dung: 'Giáo viên bắt buộc phải chuẩn bị giáo án và tài liệu học tập trước khi lên lớp. Thường xuyên cập nhật nhật ký học tập và sổ liên lạc cho học viên sau mỗi ca học.',
-        ap_dung_cho: 'giáo viên',
+        ap_dung_cho: 'giao_vien',
         thu_tu: 4
       },
       {
         tieu_de: 'Bảo mật thông tin nội bộ',
         noi_dung: 'Nghiêm cấm nhân viên và giáo viên tiết lộ thông tin cá nhân của học viên, phụ huynh hoặc các tài liệu đào tạo độc quyền của trung tâm ra ngoài.',
-        ap_dung_cho: 'nhân viên',
+        ap_dung_cho: 'nhan_vien',
         thu_tu: 5
       },
       {
         tieu_de: 'Chính sách hoàn trả học phí',
         noi_dung: 'Học phí chỉ được xem xét hoàn trả khi học viên chủ động nộp đơn xin dừng học và làm thủ tục hủy khóa trước ngày khai giảng tối thiểu 7 ngày. Phí hoàn trả sẽ tính dựa trên số buổi chưa học thực tế.',
-        ap_dung_cho: 'học viên',
+        ap_dung_cho: 'hoc_vien',
         thu_tu: 6
       }
     ];

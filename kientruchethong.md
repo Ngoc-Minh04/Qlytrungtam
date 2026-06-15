@@ -57,6 +57,10 @@ Hệ thống kế thừa và chuyển đổi từ Paradise Gym SQLite sang Postg
   - Mô tả: Lễ tân hủy đăng ký khóa học và hoàn trả học phí.
   - Body: `{ "so_tien_hoan": 1500000, "ly_do_huy": "Học viên xin rút học phí" }`
   - Logic (Transaction): Bọc câu lệnh UPDATE trạng thái = `'huy'` để trigger `trg_doanh_thu_khoa_hoc_update` hoạt động đồng bộ an toàn trên PostgreSQL.
+- **PUT `/api/registrations/:id`**
+  - Mô tả: Lễ tân cập nhật thông tin hoặc đổi gói khóa học đại trà đang hoạt động của học viên.
+- **PUT `/api/registrations/tutoring/:id`**
+  - Mô tả: Lễ tân cập nhật thông tin hoặc đổi gói dạy học kèm 1-1 đang hoạt động của học viên.
 
 ### 3.4. API Hỗ trợ UI Frontend
 - **GET `/api/students`**: Lấy danh sách học viên từ View `v_trang_thai_hoi_vien`.

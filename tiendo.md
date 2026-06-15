@@ -1,3 +1,72 @@
+### [15/06/2026 10:40] — Sửa lỗi Date Picker, Lớp học SQL 500, Tạo nhân viên trùng SĐT và hiển thị Avatar
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/_shared.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/TeachersList.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - Thêm `e.stopPropagation()` vào các nút chọn năm/tháng của Date Picker trong `_shared.js` để tránh tự đóng popover khi thay đổi chế độ xem.
+  - Sửa câu lệnh UPDATE và DELETE lớp học nhóm trong `api.js` (loại bỏ cột `ngay_cap_nhat` và `ngay_xoa` không tồn tại ở bảng `lop_hoc` gây lỗi 500).
+  - Bổ sung kiểm tra trùng lặp `ten_dang_nhap` trước khi tạo mới tài khoản trong các API để trả về mã lỗi 400 Bad Request rõ ràng thay vì lỗi 500 database.
+  - Chuẩn hóa cột `gioi_tinh` không dấu (`nam`/`nu`/`khac`) khi tạo/sửa học viên để tương thích với PostgreSQL Check Constraint.
+  - Cập nhật hiển thị ảnh đại diện Cloudinary dạng thẻ `<img>` trong bảng danh sách cho Học viên, Giáo viên, và Nhân viên.
+  - Đặt mặc định ngày sinh học viên là ngày hôm nay.
+- **Kết quả**: Thành công
+
+### [15/06/2026 08:10] — Sửa lỗi thiếu import setupCustomDatePicker trong StudentsList.js
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**: Sửa lỗi ReferenceError do thiếu import hàm `setupCustomDatePicker` từ tệp tin `_shared.js` dẫn đến việc tab "Học viên & Tiếp nhận" không hiển thị hoặc bị lỗi khi click nút thêm mới / sửa đổi thông tin.
+- **Kết quả**: Thành công
+
+### [12/06/2026 21:55] — Khắc phục lỗi Syntax do Conflict Merge trong ClassManagement.js và Schedules.js
+- **Loại**: Sửa bug
+- **File**: `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/Schedules.js`
+- **Mô tả**: Dọn dẹp các ký tự xung đột merge Git (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) còn sót lại khiến file JS bị lỗi cú pháp không chạy được trên frontend. Đã chọn giữ các đoạn mã logic đúng đắn tương ứng của phiên bản mới nhất.
+- **Kết quả**: Thành công (Ứng dụng frontend SPA tải và chạy bình thường)
+
+### [12/06/2026 21:44] — Sửa lỗi SQL Check Constraint và hiển thị Nội quy trung tâm
+- **Loại**: Sửa bug
+- **File**: `backend/src/config/db.js`, `backend/seed_test_data.js`, `frontend/src/pages/CenterRules.js`
+- **Mô tả**: Chuẩn hóa dữ liệu cột `ap_dung_cho` trong bảng `noi_quy` thành các giá trị không dấu (`tat_ca`, `hoc_vien`, `giao_vien`, `nhan_vien`) để tương thích với PostgreSQL Check Constraint. Đồng bộ ở cả database seeding và frontend selectbox. Map nhãn tiếng Việt có dấu (`Tất cả`, `Học viên`, `Giáo viên`, `Nhân viên`) trên giao diện người dùng để đảm bảo mặt hiển thị.
+- **Kết quả**: Thành công (Server Backend khởi động tốt không lỗi)
+
+### [12/06/2026 21:30] — Modal Hồ sơ 2 Tab, Sửa/Đổi gói học, Nâng cấp Infinity Scroll & Bộ lọc, Fix ClassManagement
+- **Loại**: Sửa bug + Tính năng mới + Cải tiến giao diện
+- **File**:
+  - `backend/src/routes/api.js` (Thêm API PUT cho registrations và tutoring registrations, nâng giới hạn xếp lịch lên 50 HS, JOIN ngày/giờ vào lớp nhóm)
+  - `frontend/src/pages/StudentsList.js` (Modal chia 2 Tab, tự tính ngày/giá khi chọn gói, sửa/đổi gói đang hoạt động, bộ lọc nâng cao theo gói, giáo viên, giới tính, Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/TeachersList.js` (Đồng bộ Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/StaffList.js` (Đồng bộ Infinity Scroll kiểm soát bằng nút Tải thêm)
+  - `frontend/src/pages/ClassManagement.js` (Mặc định ngày hôm nay, validate bắt buộc gói học cho lớp nhóm, hiển thị ngày giờ lớp nhóm trong lịch sử đặt lịch)
+- **Kết quả**: Thành công
+
+### [12/06/2026 17:00] — Infinity scroll, Đăng ký gói học từ hồ sơ HV, ClassManagement redesign, Schedules zoom calendar
+- **Loại**: Sửa bug + Tính năng mới
+- **File**: 
+  - `backend/src/routes/api.js` (fix GET /students trả đủ trường, max_hoc_vien lớp nhóm = 50)
+  - `frontend/src/pages/StudentsList.js` (đổi sang infinity scroll, thêm form đăng ký/hủy gói học trong modal)
+  - `frontend/src/pages/ClassManagement.js` (viết lại: max 50 HS, chọn tất cả, giờ grid 8h-22h, thời lượng auto, ngày không quá khứ)
+  - `frontend/src/pages/Schedules.js` (viết lại: Calendar 3 cấp Năm→Tháng→Tuần zoom in/out, T2 T3 viết hoa)
+- **Kết quả**: Thành công
+
+### [12/06/2026 15:00] — Validate form, Tab Nhân viên, Fix bug hiển thị
+- **Loại**: Sửa bug + Tính năng mới
+- **File**: 
+  - `frontend/src/pages/StudentsList.js` (viết lại)
+  - `frontend/src/pages/TeachersList.js` (cập nhật)
+  - `frontend/src/pages/StudentRequests.js` (sửa validation cancel)
+  - `frontend/src/pages/StaffList.js` (tạo mới)
+  - `frontend/src/pages/Dashboard.js` (đăng ký route staff-list)
+  - `backend/src/routes/api.js` (thêm API /staff)
+- **Mô tả**:
+  - **Validate email**: Regex `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/` — phải có domain.tld, áp dụng cả học viên lẫn giáo viên/nhân viên
+  - **Validate SĐT 10 số**: Regex `/^0\d{9}$/` bắt buộc, áp dụng toàn bộ form thêm/sửa
+  - **Fix bug trình độ đầu vào**: Thêm đủ 6 cấp (A1→C2), dropdown select đúng value từ DB
+  - **Fix bug cancel hoàn tiền 0đ**: Bắt buộc nhập lý do hủy, nút submit reset sau validation fail
+  - **Bỏ cột Chi nhánh**: Bảng học viên còn 5 cột (bỏ Chi nhánh)
+  - **Tab 3 nút**: Học viên / Giáo viên / Nhân viên hiển thị ở cả 3 trang (StudentsList, TeachersList, StaffList)
+  - **StaffList.js**: Trang nhân viên mới với bảng có phân trang, CRUD, validate
+  - **Dashboard.js**: Thêm tab "Hồ sơ Nhân viên" vào sidebar nhóm Nhân sự, đăng ký route staff-list
+  - **API /staff**: GET/POST /api/staff/create, DELETE /api/staff/:id (dùng bảng ho_so, loai_ho_so='nhan_vien')
+
 ### [12/06/2026 16:20] — Hoàn thiện các trang chấm công, sổ liên lạc, đánh giá giáo viên & API liên quan
 - **Loại**: Hoàn thiện tính năng / Giao diện / API mới
 - **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/LessonDiary.js`, `frontend/src/pages/TeacherFeedbacks.js`, `backend/src/routes/api.js`
@@ -9,6 +78,7 @@
 - **Kết quả**: Thành công
 
 ### [12/06/2026 14:31] — Cấu hình bảo mật Git (.gitignore) tránh lộ API key
+
 - **Loại**: Cấu hình bảo mật hệ thống / Git
 - **File**: `.gitignore`
 - **Mô tả**:
