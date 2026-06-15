@@ -157,7 +157,6 @@ export async function renderAttendanceStaff(container) {
               <thead>
                 <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
                   <th class="py-3 px-5 font-semibold">Nhân viên / Giáo viên</th>
-                  <th class="py-3 px-5 font-semibold">Chi nhánh</th>
                   <th class="py-3 px-5 font-semibold">Ngày quét</th>
                   <th class="py-3 px-5 font-semibold">Giờ quét</th>
                   <th class="py-3 px-5 font-semibold">Phương thức</th>
@@ -178,7 +177,6 @@ export async function renderAttendanceStaff(container) {
                         </div>
                       </div>
                     </td>
-                    <td class="py-3 px-5 text-slate-600 font-medium">${log.chi_nhanh_thuc_hien || 'Trung tâm chính'}</td>
                     <td class="py-3 px-5 text-slate-500 font-medium">${log.dateStr}</td>
                     <td class="py-3 px-5 text-slate-700 font-semibold">${log.timeStr}</td>
                     <td class="py-3 px-5">
@@ -195,7 +193,7 @@ export async function renderAttendanceStaff(container) {
                 `).join('')}
                 ${processedLogs.length === 0 ? `
                   <tr>
-                    <td colspan="6" class="py-10 text-center text-slate-400 text-xs">
+                    <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
                       <span class="material-symbols-outlined text-[32px] text-slate-300 block mb-1">sentiment_dissatisfied</span>
                       Chưa có dữ liệu chấm công giáo viên nào được ghi nhận.
                     </td>
@@ -227,12 +225,10 @@ export async function renderAttendanceStaff(container) {
               </select>
             </div>
 
-            <div class="space-y-1">
+            <div class="space-y-1 hidden">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Chi nhánh</label>
-              <select name="chi_nhanh_thuc_hien" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
-                <option value="Trung tâm chính">Trung tâm chính</option>
-                <option value="Chi nhánh Quận 1">Chi nhánh Quận 1</option>
-                <option value="Chi nhánh Quận 7">Chi nhánh Quận 7</option>
+              <select name="chi_nhanh_thuc_hien" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+                <option value="Trung tâm chính" selected>Trung tâm chính</option>
               </select>
             </div>
 

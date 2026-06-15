@@ -89,10 +89,10 @@ export async function renderAddStudentForm(container) {
                     <option value="Cao cấp C1">C1 Advanced</option>
                   </select>
                 </div>
-                <div>
+                <div class="hidden">
                   <label class="block font-semibold text-slate-600 mb-0.5">Chi nhánh</label>
                   <select id="add-branch" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
-                    <option value="Trung tam chính">Trung tâm chính</option>
+                    <option value="Trung tam chính" selected>Trung tâm chính</option>
                     <option value="Downtown Campus">Downtown Campus</option>
                   </select>
                 </div>

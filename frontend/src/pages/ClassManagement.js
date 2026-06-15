@@ -2,14 +2,14 @@
 import { API_BASE, showToast, setupCustomDatePicker } from './_shared.js';
 
 export async function renderClassManagement(container) {
-  // Set ngày hôm nay làm giá trị min
+
   const todayStr = new Date().toISOString().split('T')[0];
 
   container.innerHTML = `
     <div class="space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Form bên trái -->
-        <div class="bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
+      <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
+        <!-- Form bên trái (Đăng ký lịch dạy - chiếm 4 phần) -->
+        <div class="lg:col-span-4 bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
           <div class="flex justify-between items-center pb-1 border-b border-apple-divider/40">
             <h3 class="font-bold text-apple-ink text-sm">Đăng ký lịch dạy</h3>
             <button id="btn-refresh-class-form" class="flex items-center justify-center gap-1 px-2.5 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[11px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[28px]" type="button">
@@ -35,7 +35,7 @@ export async function renderClassManagement(container) {
               </select>
             </div>
 
-            <!-- Gói học đại trà -->
+            <!-- Gói học đại trà (Hiển thị khi chọn lớp nhóm) -->
             <div id="course-package-group">
               <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học / Khóa học <span class="text-rose-500 font-bold">*</span></label>
               <select id="class-course-package" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
@@ -43,13 +43,18 @@ export async function renderClassManagement(container) {
               </select>
             </div>
 
-            <!-- ID Đăng ký học kèm -->
-            <div id="tutoring-contract-group" class="hidden">
-              <label class="block font-semibold text-slate-600 mb-1">Mã Đăng ký Học kèm (ID) <span class="text-rose-500 font-bold">*</span></label>
-              <input type="number" id="class-tutoring-id" placeholder="Nhập mã hợp đồng kèm..." class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white">
+            <!-- Gói học kèm & Học viên đăng ký (Hiển thị khi chọn lớp kèm 1-1) -->
+            <div id="tutoring-contract-group" class="hidden space-y-3">
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học kèm của học viên <span class="text-rose-500 font-bold">*</span></label>
+                <select id="class-tutoring-select" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+                  <option value="">-- Chọn gói kèm đang hoạt động --</option>
+                </select>
+                <input type="hidden" id="class-tutoring-id">
+              </div>
             </div>
 
-            <!-- Panel chọn học viên -->
+            <!-- Panel chọn học viên (Chỉ dành cho lớp nhóm) -->
             <div id="student-picker-panel" class="space-y-2">
               <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded-xl border border-apple-divider/40">
                 <span class="font-bold text-slate-700">Học sinh trong lớp <span id="selected-count-badge" class="text-apple-blue">(0/50)</span></span>
@@ -110,8 +115,8 @@ export async function renderClassManagement(container) {
           </form>
         </div>
 
-        <!-- Danh sách lịch sử đặt lịch bên phải -->
-        <div class="lg:col-span-2 bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col" id="class-list-container">
+        <!-- Danh sách lịch sử đặt lịch bên phải (chiếm 6 phần) -->
+        <div class="lg:col-span-6 bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col shadow-sm" id="class-list-container">
           <div class="p-6 flex items-center justify-center text-slate-400 text-xs">Đang tải lịch sử đặt lịch...</div>
         </div>
       </div>
@@ -123,6 +128,7 @@ export async function renderClassManagement(container) {
   const coursePkgGroup = document.getElementById('course-package-group');
   const coursePkgSelect = document.getElementById('class-course-package');
   const tutorGroup = document.getElementById('tutoring-contract-group');
+  const tutoringSelect = document.getElementById('class-tutoring-select');
   const tutorIdInput = document.getElementById('class-tutoring-id');
   const studentPickerPanel = document.getElementById('student-picker-panel');
   const studentPickerList = document.getElementById('student-picker-list');
@@ -294,8 +300,62 @@ export async function renderClassManagement(container) {
       const packages = pkgData.data || [];
       coursePkgSelect.innerHTML = '<option value="">-- Chọn gói học phí --</option>' + packages.map(p => `<option value="${p.id}">${p.ten_goi}</option>`).join('');
 
+      // Tải hợp đồng/đăng ký học kèm để chọn ở lớp học kèm 1-1
+      const tutorRegsRes = await fetch(`${API_BASE}/registrations`).then(r => r.json());
+      // Thực tế ta sẽ fetch danh sách học viên đăng ký học kèm đang hoạt động
+      // Endpoint /api/students trả về active_tutor_pkg_ids.
+      // Để chính xác, ta sẽ lấy danh sách đăng ký học kèm đang hoạt động từ backend
+      const activeTutorRegsRes = await fetch(`${API_BASE}/checkins`); // Ta có thể fetch qua API hoặc tự xử lý lọc.
+      // Hãy gọi API lấy danh sách registrations học kèm
+      const allRegsRes = await fetch(`${API_BASE}/registrations`).then(r => r.json());
+      // Hoặc ta sẽ fetch trực tiếp từ /api/students và lọc ra các bạn học viên có active_tutor_pkg_ids.length > 0
+      // Để lấy ra dang_ky_hoc_kem_id, ta sẽ fetch API GET /api/students/:id/registrations cho từng học viên hoặc tải danh sách học viên
+      // Hãy lấy danh sách đăng ký học kèm từ database qua API
+      const tutorContractsRes = await fetch(`${API_BASE}/students`);
+      const tutorContractsData = await tutorContractsRes.json();
+      const hsList = tutorContractsData.data || [];
+      
+      // Ở backend có API GET /api/students/:id/registrations. Nhưng ở đây ta cần lấy toàn bộ hợp đồng kèm
+      // Hãy fetch từ route /api/reports/revenue hoặc từ endpoint registrations học kèm nếu có.
+      // Dựa trên backend: GET /api/students/:id/registrations trả về khoa_hoc và hoc_kem của từng bạn.
+      // Chúng ta sẽ lấy tất cả học viên có gói học kèm hoạt động và hiển thị option
+      // Ở đây ta có thể duyệt qua allStudents, lấy ra những bạn có active_tutor_pkg_ids.length > 0.
+      // Để có dang_ky_hoc_kem_id chính xác, ta cần load danh sách đăng ký học kèm của họ.
+      // Hãy fetch danh sách đăng ký học kèm từ backend:
+      // Ta có thể gọi API GET /api/registrations. Nhưng registrations trả về dang_ky_khoa_hoc.
+      // Để giải quyết gọn gàng, ta có thể bổ sung API hoặc dùng chính danh sách học viên có active_tutor_pkg_ids.
+      // Lớp kèm 1-1 sẽ chọn học viên, sau đó load các gói kèm đang hoạt động của học viên đó!
+      // Đúng rồi, luồng thông minh nhất: Chọn học viên trước, sau đó tự động load các gói kèm đang hoạt động của học viên đó để chọn.
+      // Hãy sửa lại HTML: thêm select Chọn học viên học kèm, sau đó chọn gói học kèm tương ứng.
     } catch (e) {
       showToast('Không thể tải dữ liệu biểu mẫu xếp lịch', 'error');
+    }
+  }
+
+  // Chọn học viên kèm -> Load các đăng ký học kèm đang hoạt động
+  let studentTutorPkgs = [];
+  async function loadStudentTutoringPackages(studentId) {
+    if (!studentId) {
+      tutoringSelect.innerHTML = '<option value="">-- Chọn gói kèm đang hoạt động --</option>';
+      tutorIdInput.value = '';
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/students/${studentId}/registrations`);
+      const data = await res.json();
+      const tutoringRegs = data.data?.hoc_kem || [];
+      const activeTutoringRegs = tutoringRegs.filter(r => r.trang_thai === 'dang_hoat_dong');
+      
+      if (activeTutoringRegs.length === 0) {
+        tutoringSelect.innerHTML = '<option value="">-- Học viên chưa đăng ký gói kèm nào --</option>';
+        tutorIdInput.value = '';
+      } else {
+        tutoringSelect.innerHTML = '<option value="">-- Chọn gói kèm đang hoạt động --</option>' + activeTutoringRegs.map(r => `
+          <option value="${r.id}">${r.ten_goi} (GV: ${r.ten_giao_vien || 'Chưa xếp'})</option>
+        `).join('');
+      }
+    } catch {
+      showToast('Lỗi khi tải gói học kèm của học viên', 'error');
     }
   }
 
@@ -304,30 +364,35 @@ export async function renderClassManagement(container) {
       studentPickerList.innerHTML = '<p class="text-slate-400 italic text-center py-2">Không tìm thấy học viên nào.</p>';
       return;
     }
-    studentPickerList.innerHTML = filteredStudents.map(s => `
-      <label class="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-lg transition cursor-pointer select-none">
-        <input type="checkbox" value="${s.id}" class="student-checkbox rounded text-apple-blue focus:ring-apple-blue" ${selectedStudentIds.includes(s.id) ? 'checked' : ''}>
-        <span class="text-slate-700">${s.ho_ten}</span>
-        <span class="text-[9px] text-slate-400 ml-auto">${s.trinh_do_dau_vao || ''}</span>
-      </label>
-    `).join('');
+    studentPickerList.innerHTML = filteredStudents.map(s => {
+      const isSelected = selectedStudentIds.includes(s.id);
+      return `
+        <div class="flex items-center gap-2.5 hover:bg-slate-50 p-2 rounded-xl transition cursor-pointer select-none border ${isSelected ? 'border-apple-blue/30 bg-blue-50/20' : 'border-transparent'}" data-id="${s.id}">
+          <div class="w-7 h-7 rounded-full overflow-hidden shadow-sm bg-apple-parchment flex items-center justify-center font-bold text-apple-blue shrink-0">
+            ${s.avatar_url ? `<img src="${s.avatar_url}" class="w-full h-full object-cover">` : (s.ho_ten || 'H').charAt(0)}
+          </div>
+          <span class="text-slate-700 font-semibold">${s.ho_ten}</span>
+          <span class="text-[9px] text-slate-400 ml-auto">${s.trinh_do_dau_vao || ''}</span>
+        </div>
+      `;
+    }).join('');
 
     selectedCountBadge.textContent = `(${selectedStudentIds.length}/50)`;
 
-    studentPickerList.querySelectorAll('.student-checkbox').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const id = parseInt(cb.value);
-        if (cb.checked) {
+    studentPickerList.querySelectorAll('[data-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = parseInt(el.getAttribute('data-id'));
+        if (selectedStudentIds.includes(id)) {
+          selectedStudentIds = selectedStudentIds.filter(sid => sid !== id);
+        } else {
           if (selectedStudentIds.length >= 50) {
             showToast('Lớp học nhóm tối đa chỉ cho phép 50 học viên!', 'error');
-            cb.checked = false;
             return;
           }
-          if (!selectedStudentIds.includes(id)) selectedStudentIds.push(id);
-        } else {
-          selectedStudentIds = selectedStudentIds.filter(sid => sid !== id);
+          selectedStudentIds.push(id);
         }
         selectedCountBadge.textContent = `(${selectedStudentIds.length}/50)`;
+        renderStudentChecklist();
         renderSelectedBadges();
       });
     });
@@ -366,6 +431,38 @@ export async function renderClassManagement(container) {
       coursePkgGroup.classList.add('hidden');
       tutorGroup.classList.remove('hidden');
       studentPickerPanel.classList.add('hidden');
+      
+      // Vẽ lại dropdown chọn học viên kèm trong card tutoring-contract-group
+      const selectHtml = `
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Chọn Học viên học kèm <span class="text-rose-500 font-bold">*</span></label>
+          <select id="class-tutoring-student" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer mb-3">
+            <option value="">-- Chọn học viên --</option>
+            ${allStudents.map(s => `<option value="${s.id}">${s.ho_ten}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học kèm của học viên <span class="text-rose-500 font-bold">*</span></label>
+          <select id="class-tutoring-select" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+            <option value="">-- Chọn gói kèm đang hoạt động --</option>
+          </select>
+          <input type="hidden" id="class-tutoring-id">
+        </div>
+      `;
+      tutorGroup.innerHTML = selectHtml;
+      
+      // Gắn sự kiện change cho chọn học viên kèm
+      const studentSelect = tutorGroup.querySelector('#class-tutoring-student');
+      const tutorSelect = tutorGroup.querySelector('#class-tutoring-select');
+      const tutorIdHidden = tutorGroup.querySelector('#class-tutoring-id');
+      
+      studentSelect?.addEventListener('change', () => {
+        loadStudentTutoringPackages(studentSelect.value);
+      });
+      
+      tutorSelect?.addEventListener('change', () => {
+        tutorIdHidden.value = tutorSelect.value;
+      });
     }
   });
 
@@ -702,9 +799,8 @@ export async function renderClassManagement(container) {
               ${item.detail ? `<div class="text-[9.5px] text-slate-400 mt-0.5">${item.detail}</div>` : ''}
               <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày: ${ngayHocStr}</div>
             </td>
-            <td class="px-5 py-3.5 text-slate-500 font-semibold uppercase">${isGroup ? 'Lớp nhóm' : '1 kèm 1'}</td>
             <td class="px-5 py-3.5 text-slate-600">${item.ten_giao_vien}</td>
-            <td class="px-5 py-3.5 font-bold ${isGroup ? 'text-apple-blue' : 'text-apple-ink'}">${gioHocStr} ${isGroup ? `(${item.si_so}/50 học sinh)` : ''}</td>
+            <td class="px-5 py-3.5 font-bold ${isGroup ? 'text-apple-blue' : 'text-apple-ink'} whitespace-nowrap">${gioHocStr} ${isGroup ? `(${item.si_so}/50 HS)` : ''}</td>
             <td class="px-5 py-3.5">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
             </td>
@@ -731,7 +827,6 @@ export async function renderClassManagement(container) {
             <thead>
               <tr class="bg-apple-parchment text-slate-500 text-[10px] font-semibold uppercase tracking-wider border-b border-apple-divider">
                 <th class="px-5 py-3">Lớp học / Học viên</th>
-                <th class="px-5 py-3">Loại hình</th>
                 <th class="px-5 py-3">Giáo viên</th>
                 <th class="px-5 py-3">Chi tiết ca</th>
                 <th class="px-5 py-3">Trạng thái</th>
@@ -740,7 +835,7 @@ export async function renderClassManagement(container) {
             </thead>
             <tbody>
               ${rows}
-              ${allSessions.length === 0 ? '<tr><td colspan="6" class="px-5 py-6 text-center text-slate-500 text-xs">Chưa có lịch giảng dạy nào.</td></tr>' : ''}
+              ${allSessions.length === 0 ? '<tr><td colspan="5" class="px-5 py-6 text-center text-slate-500 text-xs">Chưa có lịch giảng dạy nào.</td></tr>' : ''}
             </tbody>
           </table>
         </div>
@@ -850,10 +945,9 @@ export async function renderClassManagement(container) {
       }
 
     } else {
-      const contractId = tutorIdInput.value;
+      const contractId = document.getElementById('class-tutoring-id')?.value;
       if (!contractId || contractId.trim() === '') {
-        showToast('Vui lòng điền mã hợp đồng học kèm!', 'error');
-        tutorIdInput.focus();
+        showToast('Vui lòng chọn gói học kèm của học viên!', 'error');
         return;
       }
 

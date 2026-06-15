@@ -232,6 +232,31 @@ router.post('/schedule', verifyAccess(['admin', 'le_tan']), async (req, res) => 
       });
     }
 
+    // 5. Chặn trùng lịch học của Học viên (Student Overbooking)
+    const checkHvOverlap1 = `
+      SELECT id FROM lich_hoc
+      WHERE hoc_vien_id = $1
+        AND ngay_hoc = $2
+        AND trang_thai != 'da_huy'
+        AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+    `;
+    const checkHvOverlap2 = `
+      SELECT lhn.id FROM lich_hoc_nhom lhn
+      JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+      WHERE lhv.hoc_vien_id = $1
+        AND lhn.ngay_hoc = $2
+        AND lhn.trang_thai != 'da_huy'
+        AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
+    `;
+    const hvOverlapRes1 = await pool.query(checkHvOverlap1, [contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+    const hvOverlapRes2 = await pool.query(checkHvOverlap2, [contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+    if (hvOverlapRes1.rows.length > 0 || hvOverlapRes2.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Học viên đã có lịch học một ca khác (lớp kèm hoặc lớp nhóm) trong khung giờ này!'
+      });
+    }
+
     // Tiến hành xếp lịch học
     const insertQuery = `
       INSERT INTO lich_hoc (
@@ -304,6 +329,32 @@ router.put('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
       return res.status(400).json({ 
         success: false, 
         error: 'Giáo viên phụ trách đã bị trùng lịch giảng dạy ca khác vào khung giờ mới này!' 
+      });
+    }
+
+    // Kiểm tra học viên trùng lịch
+    const checkHvOverlap1 = `
+      SELECT id FROM lich_hoc
+      WHERE hoc_vien_id = $1
+        AND ngay_hoc = $2
+        AND id != $3
+        AND trang_thai != 'da_huy'
+        AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
+    `;
+    const checkHvOverlap2 = `
+      SELECT lhn.id FROM lich_hoc_nhom lhn
+      JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+      WHERE lhv.hoc_vien_id = $1
+        AND lhn.ngay_hoc = $2
+        AND lhn.trang_thai != 'da_huy'
+        AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
+    `;
+    const hvOverlapRes1 = await pool.query(checkHvOverlap1, [session.hoc_vien_id, newNgay, id, newStart, newEnd]);
+    const hvOverlapRes2 = await pool.query(checkHvOverlap2, [session.hoc_vien_id, newNgay, newStart, newEnd]);
+    if (hvOverlapRes1.rows.length > 0 || hvOverlapRes2.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Học viên đã có lịch học một ca khác (lớp kèm hoặc lớp nhóm) trong khung giờ này!'
       });
     }
 
@@ -823,25 +874,60 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
     await client.query('BEGIN');
 
     // 1. Kiểm tra giáo viên trùng lịch ở cả lich_hoc (1-1) và lich_hoc_nhom
-    const checkOverlap1 = `
+    const checkGvOverlap1 = `
       SELECT id FROM lich_hoc 
       WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
         AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
     `;
-    const checkOverlap2 = `
+    const checkGvOverlap2 = `
       SELECT id FROM lich_hoc_nhom
       WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
         AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
     `;
 
-    const overlap1 = await client.query(checkOverlap1, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
-    const overlap2 = await client.query(checkOverlap2, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+    const gvOverlap1 = await client.query(checkGvOverlap1, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+    const gvOverlap2 = await client.query(checkGvOverlap2, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
 
-    if (overlap1.rows.length > 0 || overlap2.rows.length > 0) {
+    if (gvOverlap1.rows.length > 0 || gvOverlap2.rows.length > 0) {
       throw new Error('Giáo viên đã trùng lịch giảng dạy một ca khác trong cùng khung giờ này!');
     }
 
-    // 2. Tạo lớp học (tối đa 50 học viên)
+    // 2. Kiểm tra từng học viên xem có bị trùng lịch học ca khác (1 kèm 1 hoặc nhóm khác) trong khung giờ này không
+    if (hoc_vien_ids && Array.isArray(hoc_vien_ids)) {
+      const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 50);
+      for (const hvId of uniqueHvs) {
+        // Lấy tên học viên để báo lỗi chi tiết
+        const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
+        const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
+
+        // Trùng lớp học kèm
+        const checkHvOverlap1 = `
+          SELECT id FROM lich_hoc
+          WHERE hoc_vien_id = $1
+            AND ngay_hoc = $2
+            AND trang_thai != 'da_huy'
+            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+        `;
+        const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+
+        // Trùng lớp học nhóm
+        const checkHvOverlap2 = `
+          SELECT lhn.id FROM lich_hoc_nhom lhn
+          JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+          WHERE lhv.hoc_vien_id = $1
+            AND lhn.ngay_hoc = $2
+            AND lhn.trang_thai != 'da_huy'
+            AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
+        `;
+        const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+
+        if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
+          throw new Error(`Học viên "${tenHv}" đã có lịch học trùng ca khác trong khung giờ này!`);
+        }
+      }
+    }
+
+    // 3. Tạo lớp học (tối đa 50 học viên)
     const classRes = await client.query(
       `INSERT INTO lop_hoc (ten_lop, giao_vien_id, loai_lop, goi_hoc_phi_id, max_hoc_vien, trang_thai, is_deleted)
        VALUES ($1, $2, 'nhom', $3, 50, 'dang_hoat_dong', 0) RETURNING *`,
@@ -849,7 +935,7 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
     );
     const lopHoc = classRes.rows[0];
 
-    // 3. Liên kết học viên vào lớp (nếu có, tối đa 50 học viên)
+    // 4. Liên kết học viên vào lớp (nếu có, tối đa 50 học viên)
     if (hoc_vien_ids && Array.isArray(hoc_vien_ids)) {
       const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 50);
       for (const hvId of uniqueHvs) {
@@ -860,14 +946,12 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
       }
     }
 
-    // 4. Xếp lịch học cho lớp học nhóm
+    // 5. Xếp lịch học cho lớp học nhóm
     const schedRes = await client.query(
       `INSERT INTO lich_hoc_nhom (lop_hoc_id, giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, trang_thai)
        VALUES ($1, $2, $3, $4, $5, 'cho_hoc') RETURNING *`,
       [lopHoc.id, giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]
-    );
-
-    await client.query('COMMIT');
+    );    await client.query('COMMIT');
     await createNotification(
       'them_lop_hoc',
       'Mở lớp học nhóm mới',
@@ -946,7 +1030,7 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
           throw new Error('Không thể chỉnh sửa lịch học lùi về thời điểm quá khứ!');
         }
 
-        // Kiểm tra giáo viên overlap
+        // 1. Kiểm tra giáo viên trùng lịch
         const checkOverlap1 = `
           SELECT id FROM lich_hoc 
           WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
@@ -958,11 +1042,45 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
             AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
         `;
 
-        const overlap1 = await client.query(checkOverlap1, [newGvId, updatedNgay, updatedStart, updatedEnd]);
-        const overlap2 = await client.query(checkOverlap2, [newGvId, updatedNgay, activeSched.id, updatedStart, updatedEnd]);
+        const overlapRes1 = await client.query(checkOverlap1, [newGvId, updatedNgay, updatedStart, updatedEnd]);
+        const overlapRes2 = await client.query(checkOverlap2, [newGvId, updatedNgay, activeSched.id, updatedStart, updatedEnd]);
 
-        if (overlap1.rows.length > 0 || overlap2.rows.length > 0) {
+        if (overlapRes1.rows.length > 0 || overlapRes2.rows.length > 0) {
           throw new Error('Giáo viên đã trùng lịch giảng dạy một ca khác trong cùng khung giờ này!');
+        }
+
+        // 2. Kiểm tra học viên trùng lịch (nếu có học viên trong lớp)
+        const currentHvsRes = await client.query('SELECT hoc_vien_id FROM lop_hoc_hoc_vien WHERE lop_hoc_id = $1', [id]);
+        const currentHvIds = currentHvsRes.rows.map(r => r.hoc_vien_id);
+        const targetHvIds = (hoc_vien_ids && Array.isArray(hoc_vien_ids)) ? [...new Set(hoc_vien_ids)].slice(0, 50) : currentHvIds;
+
+        for (const hvId of targetHvIds) {
+          const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
+          const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
+
+          const checkHvOverlap1 = `
+            SELECT id FROM lich_hoc
+            WHERE hoc_vien_id = $1
+              AND ngay_hoc = $2
+              AND trang_thai != 'da_huy'
+              AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+          `;
+          const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, updatedNgay, updatedStart, updatedEnd]);
+
+          const checkHvOverlap2 = `
+            SELECT lhn.id FROM lich_hoc_nhom lhn
+            JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+            WHERE lhv.hoc_vien_id = $1
+              AND lhn.ngay_hoc = $2
+              AND lhn.id != $3
+              AND lhn.trang_thai != 'da_huy'
+              AND NOT (lhn.gio_ket_thuc <= $4 OR lhn.gio_bat_dau >= $5)
+          `;
+          const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, updatedNgay, activeSched.id, updatedStart, updatedEnd]);
+
+          if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
+            throw new Error(`Học viên "${tenHv}" đã có lịch học trùng ca khác trong khung giờ này!`);
+          }
         }
 
         await client.query(
