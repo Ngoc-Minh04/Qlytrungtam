@@ -1,3 +1,15 @@
+### [16/06/2026 16:00] — Tích hợp Bảng chấm công tổng hợp theo tháng cho nhân sự & giáo viên
+- **Loại**: Tính năng mới / UI UX & API mới
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**:
+  - **Backend API**: Viết thêm endpoint `GET /api/attendance/summary` để tổng hợp số ngày có log quét thẻ (`luot_vao_ra`) của từng giáo viên/nhân viên theo tháng/năm chọn lọc.
+  - **Frontend (AttendanceStaff.js)**:
+    - Thiết kế hệ thống Tab chuyển đổi sang trọng: **"Lượt ra vào chi tiết"** và **"Bảng chấm công tháng"**.
+    - Xây dựng giao diện Grid Table chấm công tháng cực đẹp (Apple Bento Style), hàng dọc là danh sách nhân sự, hàng ngang là các ngày từ 1 đến hết tháng (tự động tính số ngày). Các ngày có mặt hiển thị dấu tích xanh lá `✓`. Cột cuối hiển thị tổng số ngày công làm việc thực tế trên tháng.
+    - Tích hợp bộ lọc chọn Tháng/Năm linh hoạt.
+    - Bảo mật phân quyền: Chỉ role `admin` và `le_tan` mới xem được bảng công của toàn bộ nhân sự; tài khoản `giao_vien` chỉ hiển thị duy nhất hàng chấm công của chính mình.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 15:50] — Sửa lỗi đổi giáo viên thành công nhưng giao diện vẫn hiển thị giáo viên cũ
 - **Loại**: Sửa bug / Đồng bộ dữ liệu
 - **File**: `backend/src/routes/api.js`

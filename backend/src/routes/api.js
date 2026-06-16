@@ -2312,6 +2312,55 @@ router.delete('/teachers/:id', verifyAccess(['admin']), async (req, res) => {
   }
 });
 
+// GET /api/attendance/summary: Lấy dữ liệu tổng hợp chấm công theo tháng
+router.get('/attendance/summary', async (req, res) => {
+  const { month, year } = req.query;
+  const now = new Date();
+  const targetMonth = month ? parseInt(month) : (now.getMonth() + 1);
+  const targetYear = year ? parseInt(year) : now.getFullYear();
+
+  try {
+    // 1. Lấy danh sách tất cả nhân sự và giáo viên đang hoạt động
+    const peopleRes = await pool.query(
+      "SELECT id, ma_ho_so, ho_ten, loai_ho_so FROM ho_so WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 ORDER BY loai_ho_so DESC, ho_ten ASC"
+    );
+    const people = peopleRes.rows;
+
+    // 2. Lấy log ra vào trong tháng và năm mục tiêu
+    const logsRes = await pool.query(
+      `SELECT ho_so_id, thoi_diem::date::text as ngay_hoc
+       FROM luot_vao_ra
+       WHERE EXTRACT(MONTH FROM thoi_diem) = $1 AND EXTRACT(YEAR FROM thoi_diem) = $2`,
+      [targetMonth, targetYear]
+    );
+    const logs = logsRes.rows;
+
+    // 3. Gom nhóm ngày làm việc cho từng người
+    const workDaysMap = {};
+    logs.forEach(log => {
+      if (!workDaysMap[log.ho_so_id]) {
+        workDaysMap[log.ho_so_id] = new Set();
+      }
+      workDaysMap[log.ho_so_id].add(log.ngay_hoc);
+    });
+
+    const summary = people.map(person => {
+      const dates = Array.from(workDaysMap[person.id] || []);
+      return {
+        id: person.id,
+        ma_ho_so: person.ma_ho_so,
+        ho_ten: person.ho_ten,
+        loai_ho_so: person.loai_ho_so,
+        work_days: dates
+      };
+    });
+
+    res.json({ success: true, data: summary });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/checkin-logs: Lấy danh sách toàn bộ log check-in/out ra vào
 router.get('/checkin-logs', async (req, res) => {
   try {
