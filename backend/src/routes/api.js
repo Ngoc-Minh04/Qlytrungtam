@@ -1960,9 +1960,7 @@ router.get('/schedules', async (req, res) => {
     if (hoc_vien_id) { params.push(hoc_vien_id); conditions.push(`lh.hoc_vien_id = $${params.length}`); }
     if (giao_vien_id) { params.push(giao_vien_id); conditions.push(`lh.giao_vien_id = $${params.length}`); }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
     const queryStr = `
-<<<<<<< HEAD
       SELECT 
         lh.id, lh.dang_ky_hoc_kem_id, lh.giao_vien_id, lh.hoc_vien_id, 
         lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, lh.loai_buoi, 
@@ -1976,15 +1974,7 @@ router.get('/schedules', async (req, res) => {
       JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
       LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
       LEFT JOIN dang_ky_hoc_kem dk ON lh.dang_ky_hoc_kem_id = dk.id
-=======
-      SELECT lh.*,
-        hs_hv.ho_ten as ten_hoc_vien,
-        hs_gv.ho_ten as ten_giao_vien
-      FROM lich_hoc lh
-      LEFT JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
-      LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
       ${where}
->>>>>>> test-1
       ORDER BY lh.ngay_hoc DESC, lh.gio_bat_dau ASC
     `;
     const result = await pool.query(queryStr, params);
@@ -3204,13 +3194,6 @@ router.post('/chatbot', async (req, res) => {
 // AVATAR UPLOAD — Cloudinary
 // ============================================================
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 const storage = multer.memoryStorage();
 const upload = multer({

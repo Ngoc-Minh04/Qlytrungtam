@@ -1,4 +1,21 @@
-<<<<<<< HEAD
+### [16/06/2026 17:09] — Sửa đường dẫn load cấu hình .env trong db.js
+- **Loại**: Sửa bug / Cấu hình hệ thống
+- **File**: `backend/src/config/db.js`
+- **Mô tả**: Thay đổi đường dẫn load tệp tin cấu hình `.env` từ `../.env` thành `../../.env` để định vị chính xác vị trí tệp môi trường ở thư mục gốc của backend, khắc phục lỗi không load được biến môi trường dẫn đến kết nối database mặc định localhost thất bại.
+- **Kết quả**: Thành công
+
+### [16/06/2026 17:08] — Cài đặt module @google/generative-ai phục vụ chatbot AI
+- **Loại**: Cài package / Bổ sung thư viện
+- **File**: `backend/package.json`
+- **Mô tả**: Tiến hành cài đặt thư viện `@google/generative-ai` bị thiếu bằng tùy chọn `--legacy-peer-deps` để giải quyết lỗi crash server khi khởi chạy chatbot.
+- **Kết quả**: Thành công
+
+### [16/06/2026 17:06] — Dọn dẹp triệt để các ký tự xung đột merge (conflict markers)
+- **Loại**: Sửa bug / Dọn dẹp hệ thống
+- **File**: `tiendo.md`, `frontend/src/pages/Dashboard.js`, `frontend/src/pages/StudentRequests.js`, `backend/src/routes/api.js`
+- **Mô tả**: Dọn dẹp toàn bộ các ký tự xung đột merge Git (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) còn sót lại trong dự án và thực hiện gộp code thủ công chuẩn xác.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 16:53] — Tích hợp tự động nhận diện và đảo chiều Check-in / Check-out
 - **Loại**: Cải tiến tính năng / Trải nghiệm người dùng
 - **File**: `backend/src/routes/api.js`
@@ -193,7 +210,8 @@
   - Sửa scope các biến `coursePkgs`, `tutoringPkgs`, `teachersList` lên module-level để loại bỏ ReferenceError.
   - Đảm bảo hiển thị ảnh đại diện và cho phép đổi ảnh trực tiếp khi click vào container ảnh đại diện trong modal chi tiết của Học viên, Giáo viên, Nhân viên.
   - Sắp xếp lịch sử đặt lịch theo thứ tự ngày tăng dần (ngày sớm ở trên), nếu trùng ngày sắp xếp theo giờ bắt đầu tăng dần.
-=======
+- **Kết quả**: Thành công
+
 ### [15/06/2026 11:00] — Khắc phục lỗi 401/404 Portal Giáo viên và 500 Chatbot AI
 - **Loại**: Sửa bug / Cải tiến hệ thống API
 - **File**: `backend/src/routes/api.js`
@@ -202,7 +220,6 @@
   - **Fallback Cổng Giáo viên**: Tự động lấy giáo viên đầu tiên trong database làm fallback khi người dùng quyền `admin` hoặc `le_tan` truy cập Cổng Giáo viên mà không truyền `ho_so_id` nhằm hỗ trợ chế độ xem thử/giả lập.
   - **Reports API**: Chuyển tham số `:teacherId` của endpoint `/api/reports/teacher/:teacherId` thành tùy chọn (`:teacherId?`) và tự động áp dụng fallback để tránh lỗi 404 khi truy cập không truyền ID.
   - **Offline Chatbot**: Bọc try-catch xung quanh Gemini API trong endpoint `/api/chatbot` và trả về phản hồi offline thông minh, thân thiện thay vì crash lỗi 500 khi API Key gặp sự cố.
->>>>>>> test-1
 - **Kết quả**: Thành công
 
 ### [15/06/2026 10:40] — Sửa lỗi Date Picker, Lớp học SQL 500, Tạo nhân viên trùng SĐT và hiển thị Avatar

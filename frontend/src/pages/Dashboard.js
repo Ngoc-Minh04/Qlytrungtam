@@ -18,13 +18,9 @@ import { renderTeacherFeedbacks } from './TeacherFeedbacks.js';
 import { renderCourseRegistrations } from './CourseRegistrations.js';
 import { renderStudentRequests } from './StudentRequests.js';
 import { renderRevenueReport } from './RevenueReport.js';
-<<<<<<< HEAD
-import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
-=======
 import { renderAccountManagement } from './AccountManagement.js';
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 import { initChatbot, destroyChatbot } from './Chatbot.js';
->>>>>>> test-1
 
 let currentPage = 'dashboard';
 let currentActiveSubPage = 'dashboard';
