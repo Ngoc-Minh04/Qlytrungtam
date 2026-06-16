@@ -12,6 +12,7 @@ import { renderAddStudentForm } from './AddStudentForm.js';
 import { renderTeachersList } from './TeachersList.js';
 import { renderStaffList } from './StaffList.js';
 import { renderAttendanceStaff } from './AttendanceStaff.js';
+import { renderSalaryManagement } from './SalaryManagement.js';
 import { renderLessonDiary } from './LessonDiary.js';
 import { renderTeacherFeedbacks } from './TeacherFeedbacks.js';
 import { renderCourseRegistrations } from './CourseRegistrations.js';
@@ -66,7 +67,8 @@ const GROUP_PAGES = {
     tabs: [
       { page: 'teachers-list', label: 'Hồ sơ Giáo viên' },
       { page: 'staff-list', label: 'Hồ sơ Nhân viên' },
-      { page: 'attendance-staff', label: 'Bảng Chấm công' }
+      { page: 'attendance-staff', label: 'Bảng Chấm công' },
+      { page: 'salary-management', label: 'Tính Lương & Phụ cấp' }
     ]
   },
   'quality-group': {
@@ -132,6 +134,7 @@ function getPageRenderer(page, role) {
     'teachers-list': (c) => renderTeachersList(c, role),
     'staff-list': (c) => renderStaffList(c, role),
     'attendance-staff': (c) => renderAttendanceStaff(c),
+    'salary-management': (c) => renderSalaryManagement(c),
     'lesson-diary': (c) => renderLessonDiary(c, role),
     'teacher-feedbacks': (c) => renderTeacherFeedbacks(c),
     'course-registrations': (c) => renderCourseRegistrations(c),
@@ -493,10 +496,15 @@ export function renderDashboard(role) {
           </button>
         </div>
         <div class="space-y-3">
-          <div class="relative w-full aspect-square bg-[#f5f5f7] rounded-2xl flex items-center justify-center overflow-hidden border border-[#e2e2e4]">
-            <div class="absolute inset-8 border-2 border-dashed border-[#0066cc]/50 rounded-xl"></div>
-            <div class="absolute top-1/2 left-0 w-full h-[2px] bg-[#0066cc]/50 animate-pulse"></div>
-            <span class="material-symbols-outlined text-[56px] text-[#0066cc] opacity-30">qr_code_scanner</span>
+          <div class="relative w-full aspect-square bg-[#f5f5f7] rounded-2xl overflow-hidden border border-[#e2e2e4]">
+            <div id="reader" class="w-full h-full"></div>
+          </div>
+          <div class="flex justify-between items-center gap-2">
+            <button type="button" id="btn-upload-qr" class="flex-grow flex items-center justify-center gap-1.5 py-2 border border-[#e2e2e4] hover:bg-[#f3f3f5] rounded-xl text-[12px] font-semibold transition active:scale-95 text-[#414753]">
+              <span class="material-symbols-outlined text-[17px]">upload_file</span>
+              Chọn ảnh QR
+            </button>
+            <input type="file" id="quick-checkin-file" accept="image/*" class="hidden">
           </div>
           <div class="relative flex items-center">
             <div class="flex-grow border-t border-[#e2e2e4]"></div>
@@ -504,7 +512,7 @@ export function renderDashboard(role) {
             <div class="flex-grow border-t border-[#e2e2e4]"></div>
           </div>
           <form id="quick-checkin-form" class="flex gap-2">
-            <input type="number" id="quick-checkin-input" placeholder="Nhập ID học viên" required
+            <input type="text" id="quick-checkin-input" placeholder="Mã số (VD: HV034, GV001)" required
               class="flex-grow border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition text-[13px] font-bold text-center">
             <button type="submit" class="bg-[#0066cc] hover:bg-[#004e9f] text-white font-semibold px-4 py-2 rounded-xl text-[13px] active:scale-95 transition whitespace-nowrap shadow-sm">
               Xác nhận
@@ -603,16 +611,104 @@ export function renderDashboard(role) {
     window.location.reload();
   });
 
-  // Mở modal Quick Check-in
+  // Mở modal Quick Check-in & kích hoạt Camera quét QR thực tế
+  let html5QrScanner = null;
+
+  async function onScanSuccess(decodedText, decodedResult) {
+    stopScanner();
+    document.getElementById('quick-checkin-modal')?.classList.add('hidden');
+    
+    // Gửi request check-in lên server
+    try {
+      const res = await fetch(`${API_BASE}/checkin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_token: decodedText, current_branch: 'Trung tâm chính' })
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast(result.message || 'Check-in thành công!');
+        if (currentActiveSubPage === 'checkin-logs') renderSubPage('checkin-logs', role);
+      } else {
+        showToast(result.error || 'Check-in thất bại', 'error');
+      }
+    } catch (err) {
+      showToast('Không thể kết nối máy chủ', 'error');
+    }
+  }
+
+  function stopScanner() {
+    if (html5QrScanner) {
+      html5QrScanner.stop().then(() => {
+        html5QrScanner = null;
+      }).catch(err => {
+        console.error("Lỗi giải phóng camera:", err);
+        html5QrScanner = null;
+      });
+    }
+  }
+
   document.getElementById('btn-quick-checkin')?.addEventListener('click', () => {
     const modal = document.getElementById('quick-checkin-modal');
     const input = document.getElementById('quick-checkin-input');
-    if (modal && input) { modal.classList.remove('hidden'); input.value = ''; input.focus(); }
+    if (modal && input) { 
+      modal.classList.remove('hidden'); 
+      input.value = ''; 
+      input.focus(); 
+      
+      // Kích hoạt camera
+      setTimeout(() => {
+        try {
+          html5QrScanner = new Html5Qrcode("reader");
+          html5QrScanner.start(
+            { facingMode: "environment" }, 
+            {
+              fps: 10,
+              qrbox: (width, height) => {
+                return { width: Math.round(width * 0.7), height: Math.round(height * 0.7) };
+              }
+            },
+            onScanSuccess
+          ).catch(err => {
+            console.warn("Không thể khởi động camera quét QR:", err);
+            const readerDiv = document.getElementById('reader');
+            if (readerDiv) readerDiv.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs h-full flex flex-col justify-center items-center select-none">
+              <span class="material-symbols-outlined text-red-400 text-[28px] mb-1">videocam_off</span>
+              Không thể truy cập camera. Vui lòng cấp quyền hoặc nhập ID thủ công.
+            </div>`;
+          });
+        } catch (e) {
+          console.error("Lỗi khởi tạo Html5Qrcode:", e);
+        }
+      }, 100);
+    }
   });
 
   // Đóng modal Quick Check-in
   document.getElementById('close-quick-checkin-modal')?.addEventListener('click', () => {
     document.getElementById('quick-checkin-modal')?.classList.add('hidden');
+    stopScanner();
+  });
+
+  // Trigger chọn ảnh QR
+  document.getElementById('btn-upload-qr')?.addEventListener('click', () => {
+    document.getElementById('quick-checkin-file')?.click();
+  });
+
+  // Xử lý quét mã QR từ tệp tin hình ảnh tải lên
+  document.getElementById('quick-checkin-file')?.addEventListener('change', async (e) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const tempScanner = new Html5Qrcode("reader");
+    try {
+      showToast('Đang quét mã QR từ ảnh...', 'info');
+      const decodedText = await tempScanner.scanFile(file, false);
+      // Gọi onScanSuccess với kết quả quét được
+      await onScanSuccess(decodedText, null);
+    } catch (err) {
+      console.warn("Không tìm thấy mã QR trong ảnh này:", err);
+      showToast('Không tìm thấy mã QR hợp lệ trong hình ảnh này', 'error');
+    }
   });
 
   // Submit Quick Check-in
@@ -620,12 +716,13 @@ export function renderDashboard(role) {
     e.preventDefault();
     const studentId = document.getElementById('quick-checkin-input').value.trim();
     if (!studentId) return;
-    const payload = { ho_so_id: parseInt(studentId), timestamp: new Date().toISOString() };
+    stopScanner();
+    const payload = { ho_so_id: studentId, timestamp: Date.now() };
     const qr_token = btoa(JSON.stringify(payload));
     try {
       const res = await fetch(`${API_BASE}/checkin`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_token, current_branch: 'Trung tam chính' })
+        body: JSON.stringify({ qr_token, current_branch: 'Trung tâm chính' })
       });
       const result = await res.json();
       if (result.success) {

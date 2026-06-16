@@ -2,21 +2,60 @@
 export const API_BASE = 'http://localhost:3006/api';
 
 export function showToast(message, type = 'success') {
-  const container = document.getElementById('toast-container') || document.body;
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none';
+    document.body.appendChild(container);
+  }
+
   const toast = document.createElement('div');
-  toast.className = `toast${type === 'error' ? ' error' : ' success'}`;
-  toast.textContent = message;
+  toast.className = 'flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-lg text-xs font-bold pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 select-none max-w-sm bg-white';
+  
+  let icon = 'check_circle';
+  let iconColor = 'text-emerald-500';
+  let borderColor = 'border-emerald-100';
+  let bgClass = 'bg-emerald-50/20';
+  
+  if (type === 'error') {
+    icon = 'cancel';
+    iconColor = 'text-red-500';
+    borderColor = 'border-red-100';
+    bgClass = 'bg-red-50/20';
+  } else if (type === 'warning') {
+    icon = 'warning';
+    iconColor = 'text-amber-500';
+    borderColor = 'border-amber-100';
+    bgClass = 'bg-amber-50/20';
+  } else if (type === 'info') {
+    icon = 'info';
+    iconColor = 'text-apple-blue';
+    borderColor = 'border-blue-100';
+    bgClass = 'bg-blue-50/20';
+  }
+
+  toast.innerHTML = `
+    <span class="material-symbols-outlined ${iconColor} text-[18px] shrink-0">${icon}</span>
+    <span class="text-slate-800 leading-normal">${message}</span>
+  `;
+  toast.className += ` ${borderColor} ${bgClass}`;
+
   container.appendChild(toast);
 
   // Trigger animation
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => toast.classList.add('show'));
+    requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-2', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+    });
   });
 
   setTimeout(() => {
-    toast.classList.remove('show');
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('translate-y-2', 'opacity-0');
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, 3500);
 }
 
 // Định dạng tiền tệ tự động thêm dấu chấm phân cách hàng nghìn (ví dụ: 1.500.000)

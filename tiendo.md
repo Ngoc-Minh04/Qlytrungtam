@@ -1,3 +1,40 @@
+### [16/06/2026 16:50] — Khôi phục sự kiện đóng modal Quick Check-in
+- **Loại**: Sửa bug / Giao diện & Trải nghiệm
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**: Gắn lại sự kiện lắng nghe click cho nút `close-quick-checkin-modal` để đảm bảo nút dấu (X) góc phải modal hoạt động bình thường, ẩn modal và giải phóng camera đúng cách.
+- **Kết quả**: Thành công
+
+### [16/06/2026 16:44] — Tích hợp Chọn ảnh QR, Tìm kiếm hồ sơ linh hoạt & Chống check-in trùng lặp
+- **Loại**: Tính năng mới / Cải tiến bảo mật & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/Dashboard.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Chọn ảnh QR**: Bổ sung nút "Chọn ảnh QR" trên modal cho phép lễ tân/người dùng tải lên tệp tin ảnh QR có sẵn để quét check-in trực tiếp mà không cần camera.
+  - **Tìm kiếm linh hoạt**: Cải tiến logic truy vấn check-in ở backend. Hỗ trợ tìm kiếm theo Mã số hồ sơ dạng chuỗi (ví dụ: `HV034`, `GV001`) và mã số phụ để tránh nhầm lẫn giữa mã số hiển thị của học viên với khóa chính database của giáo viên.
+  - **Chống check-in trùng lặp**: Chặn ghi nhận check-in liên tục của một thành viên nếu khoảng cách giữa hai lần quét dưới 5 phút, tránh tạo dữ liệu rác.
+- **Kết quả**: Thành công
+
+### [16/06/2026 16:33] — Sửa lỗi 400 Bad Request khi check-in thủ công bằng ID
+- **Loại**: Sửa bug / Đồng bộ định dạng API
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**: Thay đổi định dạng trường `timestamp` gửi lên từ `new Date().toISOString()` (dạng chuỗi ISO) thành `Date.now()` (dạng số mili-giây) để đồng bộ hoàn toàn với bộ lọc chống gian lận kiểm tra thời hạn QR Code của API check-in trên backend.
+- **Kết quả**: Thành công
+
+### [16/06/2026 16:25] — Tối ưu giải phóng camera khi submit check-in thủ công
+- **Loại**: Cải tiến tính năng / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**: Bổ sung lệnh gọi `stopScanner()` ngay khi người dùng submit form check-in nhanh thủ công bằng ID. Việc này giúp tắt camera thiết bị ngay lập tức thay vì để camera hoạt động ngầm gây tốn pin hoặc lỗi thiết bị.
+- **Kết quả**: Thành công
+
+### [16/06/2026 16:10] — Hoàn thiện Module Quản lý Lương, Xuất báo cáo CSV & Nâng cấp Toast realtime
+- **Loại**: Tính năng mới / Cải tiến hệ thống / UI UX & API mới
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/SalaryManagement.js`, `frontend/src/pages/Dashboard.js`, `frontend/src/pages/_shared.js`
+- **Mô tả**:
+  - **Quản lý Lương & Phụ cấp (`SalaryManagement.js`)**: Xây dựng trang tính lương tự động. Cho phép Lễ tân/Admin lọc kỳ lương tháng/năm, xem chi tiết số ngày công, ca dạy (nhóm và học kèm 1-1) và tự động tính toán số tiền thực lĩnh (Giáo viên tính theo ca dạy, nhân viên tính theo ngày công). Hỗ trợ nút **"Thanh toán"** lương bọc thông báo xác nhận và tự động lưu trạng thái chi trả thành công vào database bảng `bang_luong`.
+  - **Xuất báo cáo chấm công CSV**: Tích hợp API xuất file CSV báo cáo chấm công tháng (hỗ trợ mã hóa BOM UTF-8 không lỗi tiếng Việt trong Excel). Tích hợp nút **"Xuất báo cáo (CSV)"** ngay cạnh bộ lọc của Bảng chấm công.
+  - **Toast Notification Premium**: Nâng cấp helper `showToast` trong `_shared.js` để hiển thị các thông báo dạng card Apple Style bo góc tròn cực đẹp, kèm các icon động theo phân loại `success`, `error`, `warning`, `info` giúp nâng cao trải nghiệm người dùng realtime.
+  - **Đăng ký Routing**: Tích hợp trang Lương mới vào menu sidebar và cấu hình route trong `Dashboard.js`.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 16:00] — Tích hợp Bảng chấm công tổng hợp theo tháng cho nhân sự & giáo viên
 - **Loại**: Tính năng mới / UI UX & API mới
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`

@@ -497,7 +497,7 @@ export async function renderAttendanceStaff(container) {
       targetEl.innerHTML = `
         <!-- Bộ lọc tháng / năm -->
         <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3 justify-between">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="material-symbols-outlined text-apple-blue text-[18px]">calendar_month</span>
             <span class="font-bold text-slate-700 text-xs">Chọn kỳ chấm công:</span>
             <select id="select-filter-month" class="border border-slate-200 rounded-full px-3 py-1 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue">
@@ -506,6 +506,12 @@ export async function renderAttendanceStaff(container) {
             <select id="select-filter-year" class="border border-slate-200 rounded-full px-3 py-1 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue">
               ${yearOptions}
             </select>
+            
+            ${(userRole === 'admin' || userRole === 'le_tan') ? `
+              <button id="btn-export-attendance-csv" class="flex items-center justify-center gap-1.5 px-3.5 py-1 border border-emerald-200 hover:bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full transition-all active:scale-95 shadow-sm ml-2 h-[26px]">
+                <span class="material-symbols-outlined text-[14px]">download</span>Xuất báo cáo (CSV)
+              </button>
+            ` : ''}
           </div>
           <div class="text-[10px] text-slate-400 font-semibold italic">
             * Dấu (✓) xanh thể hiện nhân sự có ít nhất một lượt quét check-in/out trong ngày.
@@ -548,6 +554,11 @@ export async function renderAttendanceStaff(container) {
       document.getElementById('select-filter-year')?.addEventListener('change', (e) => {
         filterYear = parseInt(e.target.value);
         loadTabContent();
+      });
+
+      // Gắn sự kiện xuất CSV
+      document.getElementById('btn-export-attendance-csv')?.addEventListener('click', () => {
+        window.location.href = `${API_BASE}/attendance/export?month=${filterMonth}&year=${filterYear}`;
       });
 
     } catch (err) {
