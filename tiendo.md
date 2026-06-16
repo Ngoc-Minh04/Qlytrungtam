@@ -1,3 +1,15 @@
+### [16/06/2026 15:25] — Gộp hiển thị lịch học kèm theo Đăng ký & Thêm API hủy hàng loạt ca chưa học
+- **Loại**: Cải tiến tính năng / API mới
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Backend (api.js)**: Viết thêm API `DELETE /api/schedule/by-contract/:contractId` để xóa nhanh toàn bộ các ca học kèm ở trạng thái `cho_hoc` (chưa học) thuộc một đăng ký học kèm cụ thể. Giữ nguyên các buổi đã học (`da_hoc`) làm lịch sử.
+  - **Frontend (ClassManagement.js)**:
+    - Trong bảng **Lịch sử đặt lịch & Lớp học**, thực hiện group các ca học kèm cá nhân theo từng hợp đồng đăng ký (`dang_ky_hoc_kem_id`) để gộp thành 1 dòng duy nhất cho gọn.
+    - **Lớp học / Học viên**: Hiển thị tên học viên, khoảng ngày học từ buổi đầu tiên đến buổi cuối cùng (Ví dụ: `16/06/2026 - 08/07/2026`), và thống kê số buổi học (Ví dụ: `Đã xếp 10 buổi (Đã học: 2, Chờ học: 8)`).
+    - **Thứ**: Hiển thị gộp các Thứ tương ứng (Ví dụ: `T2, T4, T6`).
+    - **Thao tác Hủy**: Khi bấm hủy dòng gộp học kèm, hệ thống sẽ gọi API hủy hàng loạt các ca chưa học (`cho_hoc`) của đăng ký tương ứng, giúp Lễ tân giải phóng số buổi còn lại để xếp lại lịch mới theo Thứ/Giờ khác dễ dàng.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 15:05] — Cho phép tự chọn Thứ tùy ý khi tự động xếp lịch & Sửa chữ 'vô hạn' ở gói học kèm
 - **Loại**: Cải tiến tính năng / Sửa giao diện
 - **File**: `frontend/src/pages/ClassManagement.js`

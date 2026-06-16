@@ -405,6 +405,81 @@ router.put('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
   }
 });
 
+// API PUT /api/schedule/by-contract/:contractId/update-batch: Cập nhật hàng loạt giáo viên, giờ học cho các ca kèm chưa dạy
+router.put('/schedule/by-contract/:contractId/update-batch', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { contractId } = req.params;
+  const { giao_vien_id, gio_bat_dau, gio_ket_thuc } = req.body;
+
+  if (!gio_bat_dau || !gio_ket_thuc) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp đầy đủ giờ bắt đầu và giờ kết thúc!' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Lấy danh sách các ca chưa dạy của hợp đồng
+    const sessionsRes = await client.query(
+      "SELECT id, ngay_hoc::text FROM lich_hoc WHERE dang_ky_hoc_kem_id = $1 AND trang_thai = 'cho_hoc'",
+      [contractId]
+    );
+    const sessions = sessionsRes.rows;
+
+    if (sessions.length === 0) {
+      throw new Error('Không có ca học kèm chưa học nào để cập nhật!');
+    }
+
+    const newGvId = giao_vien_id ? parseInt(giao_vien_id) : null;
+
+    // 2. Kiểm tra trùng lịch cho từng ca
+    for (const s of sessions) {
+      const d = s.ngay_hoc;
+
+      // Check GV trùng
+      if (newGvId) {
+        const checkGv1 = `
+          SELECT id FROM lich_hoc 
+          WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND id != $3 AND trang_thai != 'da_huy'
+            AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
+        `;
+        const checkGv2 = `
+          SELECT id FROM lich_hoc_nhom 
+          WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
+            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+        `;
+        const resGv1 = await client.query(checkGv1, [newGvId, d, s.id, gio_bat_dau, gio_ket_thuc]);
+        const resGv2 = await client.query(checkGv2, [newGvId, d, gio_bat_dau, gio_ket_thuc]);
+        if (resGv1.rows.length > 0 || resGv2.rows.length > 0) {
+          throw new Error(`Giáo viên giảng dạy đã bị trùng lịch vào ngày ${d.split('-').reverse().join('/')} khung giờ ${gio_bat_dau}-${gio_ket_thuc}!`);
+        }
+      }
+    }
+
+    // 3. Tiến hành cập nhật
+    for (const s of sessions) {
+      await client.query(
+        `UPDATE lich_hoc 
+         SET gio_bat_dau = $1, gio_ket_thuc = $2, giao_vien_id = COALESCE($3, giao_vien_id), ngay_cap_nhat = CURRENT_TIMESTAMP
+         WHERE id = $4`,
+        [gio_bat_dau, gio_ket_thuc, newGvId, s.id]
+      );
+    }
+
+    // Nếu thay đổi giáo viên, tự động cập nhật cả giáo viên phụ trách trong đăng ký học kèm
+    if (newGvId) {
+      await client.query('UPDATE dang_ky_hoc_kem SET giao_vien_id = $1 WHERE id = $2', [newGvId, contractId]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: `Cập nhật thành công ${sessions.length} ca học kèm chưa diễn ra!` });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // API DELETE /api/schedule/:id: Xóa lịch học 1 kèm 1 hoàn toàn khỏi database
 router.delete('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
@@ -414,6 +489,24 @@ router.delete('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, re
       return res.status(404).json({ success: false, error: 'Không tìm thấy buổi học để xóa' });
     }
     res.json({ success: true, message: 'Đã xóa buổi học thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API DELETE /api/schedule/by-contract/:contractId: Hủy hàng loạt các ca học kèm chưa học (trạng thái cho_hoc)
+router.delete('/schedule/by-contract/:contractId', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { contractId } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM lich_hoc WHERE dang_ky_hoc_kem_id = $1 AND trang_thai = 'cho_hoc' RETURNING *",
+      [contractId]
+    );
+    res.json({ 
+      success: true, 
+      message: `Đã hủy thành công ${result.rows.length} ca học kèm chưa diễn ra!`,
+      count: result.rows.length 
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1056,90 +1149,92 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
       }
     }
 
-    // Cập nhật ngày học và giờ
-    if (ngay_hoc || gio_bat_dau || gio_ket_thuc) {
-      const schedCheck = await client.query('SELECT id, ngay_hoc, gio_bat_dau, gio_ket_thuc FROM lich_hoc_nhom WHERE lop_hoc_id = $1 AND trang_thai != \'da_huy\'', [id]);
+    // Cập nhật ngày học và giờ cho các ca chưa học của lớp nhóm
+    if (gio_bat_dau || gio_ket_thuc) {
+      const updatedStart = gio_bat_dau;
+      const updatedEnd = gio_ket_thuc;
+
+      const schedCheck = await client.query(
+        "SELECT id, ngay_hoc::text FROM lich_hoc_nhom WHERE lop_hoc_id = $1 AND trang_thai = 'cho_hoc'", 
+        [id]
+      );
+      
       if (schedCheck.rows.length > 0) {
-        const activeSched = schedCheck.rows[0];
-        const updatedNgay = ngay_hoc || activeSched.ngay_hoc;
-        const updatedStart = gio_bat_dau || activeSched.gio_bat_dau;
-        const updatedEnd = gio_ket_thuc || activeSched.gio_ket_thuc;
+        // 1. Kiểm tra giáo viên trùng lịch cho từng ca chưa học
+        for (const s of schedCheck.rows) {
+          const d = s.ngay_hoc;
+          
+          if (newGvId) {
+            const checkOverlap1 = `
+              SELECT id FROM lich_hoc 
+              WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
+                AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+            `;
+            const checkOverlap2 = `
+              SELECT id FROM lich_hoc_nhom
+              WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND id != $3 AND trang_thai != 'da_huy'
+                AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
+            `;
 
-        // Chặn sửa ngày/giờ quá khứ
-        let ngayHocStr;
-        if (typeof updatedNgay === 'string') {
-          ngayHocStr = updatedNgay.split('T')[0];
-        } else {
-          const y = updatedNgay.getFullYear();
-          const m = String(updatedNgay.getMonth() + 1).padStart(2, '0');
-          const d = String(updatedNgay.getDate()).padStart(2, '0');
-          ngayHocStr = `${y}-${m}-${d}`;
-        }
-        const targetDateTime = new Date(`${ngayHocStr}T${updatedStart}:00`);
-        if (targetDateTime < new Date()) {
-          throw new Error('Không thể chỉnh sửa lịch học lùi về thời điểm quá khứ!');
-        }
+            const overlapRes1 = await client.query(checkOverlap1, [newGvId, d, updatedStart, updatedEnd]);
+            const overlapRes2 = await client.query(checkOverlap2, [newGvId, d, s.id, updatedStart, updatedEnd]);
 
-        // 1. Kiểm tra giáo viên trùng lịch
-        const checkOverlap1 = `
-          SELECT id FROM lich_hoc 
-          WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
-            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-        `;
-        const checkOverlap2 = `
-          SELECT id FROM lich_hoc_nhom
-          WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND id != $3 AND trang_thai != 'da_huy'
-            AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
-        `;
+            if (overlapRes1.rows.length > 0 || overlapRes2.rows.length > 0) {
+              throw new Error(`Giáo viên giảng dạy đã bị trùng lịch vào ngày ${d.split('-').reverse().join('/')} khung giờ ${updatedStart}-${updatedEnd}!`);
+            }
+          }
 
-        const overlapRes1 = await client.query(checkOverlap1, [newGvId, updatedNgay, updatedStart, updatedEnd]);
-        const overlapRes2 = await client.query(checkOverlap2, [newGvId, updatedNgay, activeSched.id, updatedStart, updatedEnd]);
+          // 2. Kiểm tra học viên trùng lịch (nếu có học viên trong lớp)
+          const currentHvsRes = await client.query('SELECT hoc_vien_id FROM lop_hoc_hoc_vien WHERE lop_hoc_id = $1', [id]);
+          const currentHvIds = currentHvsRes.rows.map(r => r.hoc_vien_id);
+          const targetHvIds = (hoc_vien_ids && Array.isArray(hoc_vien_ids)) ? [...new Set(hoc_vien_ids)].slice(0, 50) : currentHvIds;
 
-        if (overlapRes1.rows.length > 0 || overlapRes2.rows.length > 0) {
-          throw new Error('Giáo viên đã trùng lịch giảng dạy một ca khác trong cùng khung giờ này!');
-        }
+          for (const hvId of targetHvIds) {
+            const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
+            const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
 
-        // 2. Kiểm tra học viên trùng lịch (nếu có học viên trong lớp)
-        const currentHvsRes = await client.query('SELECT hoc_vien_id FROM lop_hoc_hoc_vien WHERE lop_hoc_id = $1', [id]);
-        const currentHvIds = currentHvsRes.rows.map(r => r.hoc_vien_id);
-        const targetHvIds = (hoc_vien_ids && Array.isArray(hoc_vien_ids)) ? [...new Set(hoc_vien_ids)].slice(0, 50) : currentHvIds;
+            const checkHvOverlap1 = `
+              SELECT id FROM lich_hoc
+              WHERE hoc_vien_id = $1
+                AND ngay_hoc = $2
+                AND trang_thai != 'da_huy'
+                AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+            `;
+            const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, d, updatedStart, updatedEnd]);
 
-        for (const hvId of targetHvIds) {
-          const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
-          const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
+            const checkHvOverlap2 = `
+              SELECT lhn.id FROM lich_hoc_nhom lhn
+              JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+              WHERE lhv.hoc_vien_id = $1
+                AND lhn.ngay_hoc = $2
+                AND lhn.id != $3
+                AND lhn.trang_thai != 'da_huy'
+                AND NOT (lhn.gio_ket_thuc <= $4 OR lhn.gio_bat_dau >= $5)
+            `;
+            const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, d, s.id, updatedStart, updatedEnd]);
 
-          const checkHvOverlap1 = `
-            SELECT id FROM lich_hoc
-            WHERE hoc_vien_id = $1
-              AND ngay_hoc = $2
-              AND trang_thai != 'da_huy'
-              AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-          `;
-          const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, updatedNgay, updatedStart, updatedEnd]);
-
-          const checkHvOverlap2 = `
-            SELECT lhn.id FROM lich_hoc_nhom lhn
-            JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
-            WHERE lhv.hoc_vien_id = $1
-              AND lhn.ngay_hoc = $2
-              AND lhn.id != $3
-              AND lhn.trang_thai != 'da_huy'
-              AND NOT (lhn.gio_ket_thuc <= $4 OR lhn.gio_bat_dau >= $5)
-          `;
-          const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, updatedNgay, activeSched.id, updatedStart, updatedEnd]);
-
-          if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
-            throw new Error(`Học viên "${tenHv}" đã có lịch học trùng ca khác trong khung giờ này!`);
+            if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
+              throw new Error(`Học viên "${tenHv}" đã bị trùng lịch học ca khác ngày ${d.split('-').reverse().join('/')} khung giờ ${updatedStart}-${updatedEnd}!`);
+            }
           }
         }
 
-        await client.query(
-          `UPDATE lich_hoc_nhom
-           SET ngay_hoc = $1, gio_bat_dau = $2, gio_ket_thuc = $3, giao_vien_id = $4
-           WHERE id = $5`,
-          [updatedNgay, updatedStart, updatedEnd, newGvId, activeSched.id]
-        );
+        // 3. Thực hiện cập nhật toàn bộ ca chưa dạy
+        for (const s of schedCheck.rows) {
+          await client.query(
+            `UPDATE lich_hoc_nhom
+             SET gio_bat_dau = $1, gio_ket_thuc = $2, giao_vien_id = $3
+             WHERE id = $4`,
+            [updatedStart, updatedEnd, newGvId, s.id]
+          );
+        }
       }
+    } else if (newGvId) {
+      // Chỉ đổi giáo viên, không đổi giờ
+      await client.query(
+        "UPDATE lich_hoc_nhom SET giao_vien_id = $1 WHERE lop_hoc_id = $2 AND trang_thai = 'cho_hoc'",
+        [newGvId, id]
+      );
     }
 
     await client.query('COMMIT');

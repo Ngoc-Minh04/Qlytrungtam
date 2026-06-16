@@ -587,12 +587,13 @@ export async function renderClassManagement(container) {
       oldDuration = (eh * 60 + em) - (sh * 60 + sm);
     }
 
+    // Render form sửa đổi
     editModal.innerHTML = `
       <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl p-6 space-y-4 animate-in fade-in duration-150 text-xs">
         <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40">
           <h3 class="font-bold text-apple-ink text-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-apple-blue text-[18px]">edit_calendar</span>
-            Chỉnh sửa ca học (${item.type === 'nhom' ? 'Lớp nhóm' : 'Học kèm'})
+            Chỉnh sửa chuỗi ca học (${item.type === 'nhom' ? 'Lớp nhóm' : 'Học kèm'})
           </h3>
           <button type="button" id="btn-close-edit-session" class="p-1 hover:bg-slate-100 rounded-full flex items-center justify-center">
             <span class="material-symbols-outlined text-[16px] text-slate-400">close</span>
@@ -600,12 +601,16 @@ export async function renderClassManagement(container) {
         </div>
         
         <form id="edit-session-form" class="space-y-4">
-          <!-- Ngày học -->
+          <p class="text-[10px] text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50 font-semibold leading-relaxed">
+            * Lưu ý: Hệ thống sẽ áp dụng giờ học, thời lượng và giáo viên giảng dạy mới cho toàn bộ các ca học <strong>chưa diễn ra (chờ học)</strong> của chuỗi lớp học này.
+          </p>
+
+          <!-- Chọn Giáo viên giảng dạy -->
           <div>
-            <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
-            <div id="edit-class-date-container" class="relative">
-              <input type="date" id="edit-class-date" required min="${todayStr}" value="${itemNgayStr}">
-            </div>
+            <label class="block font-semibold text-slate-600 mb-1">Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+            <select id="edit-class-teacher" required class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+              <option value="">Đang tải danh sách giáo viên...</option>
+            </select>
           </div>
 
           <!-- Giờ bắt đầu -->
@@ -647,12 +652,27 @@ export async function renderClassManagement(container) {
     const form = editModal.querySelector('#edit-session-form');
     const startInput = editModal.querySelector('#edit-class-start');
     const durationInput = editModal.querySelector('#edit-class-duration');
-    const dateInput = editModal.querySelector('#edit-class-date');
     const timeGridEl = editModal.querySelector('#edit-time-grid');
     const endLabel = editModal.querySelector('#edit-class-end-label');
+    const editTeacherSelect = editModal.querySelector('#edit-class-teacher');
 
     let currentSelStart = startInput.value;
     let currentSelDuration = parseInt(durationInput.value) || 90;
+
+    // Load giáo viên lên Modal
+    async function loadEditTeachers() {
+      try {
+        const res = await fetch(`${API_BASE}/teachers`);
+        const data = await res.json();
+        const teachers = data.data || [];
+        editTeacherSelect.innerHTML = teachers.map(t => 
+          `<option value="${t.id}" ${t.id === item.giao_vien_id ? 'selected' : ''}>${t.ho_ten}${t.chuyen_mon ? ' (' + t.chuyen_mon + ')' : ''}</option>`
+        ).join('');
+      } catch (err) {
+        editTeacherSelect.innerHTML = '<option value="">Lỗi tải danh sách giáo viên</option>';
+      }
+    }
+    loadEditTeachers();
 
     // Render duration button active state
     const updateDurationBtns = () => {
@@ -670,11 +690,6 @@ export async function renderClassManagement(container) {
 
     // Render time grid
     const renderEditTimeGrid = () => {
-      const now = new Date();
-      const isToday = dateInput.value === now.toISOString().split('T')[0];
-      const currentH = now.getHours();
-      const currentM = now.getMinutes();
-
       const slots = [];
       for (let h = 8; h <= 22; h++) {
         for (let m = 0; m < 60; m += 30) {
@@ -685,20 +700,18 @@ export async function renderClassManagement(container) {
 
       timeGridEl.innerHTML = slots.map(({ h, m }) => {
         const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        const isPast = isToday && (h < currentH || (h === currentH && m <= currentM));
         const isSelected = label === currentSelStart;
         return `
           <button type="button" 
             class="edit-time-slot-btn py-1.5 rounded-xl text-[10px] font-bold transition text-center border-2 
-              ${isPast ? 'bg-slate-100 border-slate-100 text-slate-300 cursor-not-allowed' : 
-                isSelected ? 'bg-apple-blue border-apple-blue text-white shadow-sm' :
+              ${isSelected ? 'bg-apple-blue border-apple-blue text-white shadow-sm' :
                 'bg-white border-apple-divider text-slate-600 hover:border-apple-blue hover:bg-blue-50'}"
-            data-time="${label}" ${isPast ? 'disabled' : ''}
+            data-time="${label}"
           >${label}</button>
         `;
       }).join('');
 
-      timeGridEl.querySelectorAll('.edit-time-slot-btn:not([disabled])').forEach(btn => {
+      timeGridEl.querySelectorAll('.edit-time-slot-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           currentSelStart = btn.getAttribute('data-time');
           startInput.value = currentSelStart;
@@ -726,21 +739,6 @@ export async function renderClassManagement(container) {
       endLabel.textContent = endStr;
     };
 
-    // Khởi tạo date picker custom
-    setupCustomDatePicker(
-      dateInput,
-      editModal.querySelector('#edit-class-date-container'),
-      {
-        minDate: todayStr,
-        onSelect: (val) => {
-          currentSelStart = '';
-          startInput.value = '';
-          renderEditTimeGrid();
-          updateEndTime();
-        }
-      }
-    );
-
     renderEditTimeGrid();
     updateEndTime();
 
@@ -762,33 +760,28 @@ export async function renderClassManagement(container) {
     // Submit form
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const updatedNgay = dateInput.value;
       const updatedStart = startInput.value;
       const updatedEnd = endLabel.textContent;
+      const updatedGv = editTeacherSelect.value;
 
       if (!updatedStart || updatedEnd === '--:--') {
         showToast('Vui lòng chọn giờ học hợp lệ!', 'error');
         return;
       }
-
-      // Check quá khứ trên frontend
-      const targetDateTime = new Date(`${updatedNgay}T${updatedStart}:00`);
-      if (targetDateTime < new Date()) {
-        showToast('Không được chọn lịch học ở thời điểm quá khứ!', 'error');
+      if (!updatedGv) {
+        showToast('Vui lòng chọn giáo viên giảng dạy!', 'error');
         return;
       }
 
-      const url = item.type === 'nhom' ? `${API_BASE}/classes/${item.id}` : `${API_BASE}/schedule/${item.id}`;
-      const bodyPayload = item.type === 'nhom' ? {
-        ngay_hoc: updatedNgay,
+      const isGroup = item.type === 'nhom';
+      const url = isGroup 
+        ? `${API_BASE}/classes/${item.id}` 
+        : `${API_BASE}/schedule/by-contract/${item.dang_ky_hoc_kem_id}/update-batch`;
+
+      const bodyPayload = {
         gio_bat_dau: updatedStart,
         gio_ket_thuc: updatedEnd,
-        giao_vien_id: item.giao_vien_id
-      } : {
-        ngay_hoc: updatedNgay,
-        gio_bat_dau: updatedStart,
-        gio_ket_thuc: updatedEnd,
-        giao_vien_id: item.giao_vien_id
+        giao_vien_id: parseInt(updatedGv)
       };
 
       try {
@@ -799,7 +792,7 @@ export async function renderClassManagement(container) {
         });
         const result = await editRes.json();
         if (result.success) {
-          showToast(`Cập nhật lịch học thành công!`);
+          showToast(`Cập nhật chuỗi lịch học thành công!`);
           closeModal();
           loadScheduleList();
         } else {
@@ -868,23 +861,72 @@ export async function renderClassManagement(container) {
           den_ngay: item.den_ngay
         });
       });
+
+      // Group các ca học kèm theo dang_ky_hoc_kem_id
+      const tutoringGroups = {};
       schedules.forEach(item => {
+        const key = item.dang_ky_hoc_kem_id || `temp-${Date.now()}-${Math.random()}`;
+        if (!tutoringGroups[key]) {
+          tutoringGroups[key] = [];
+        }
+        tutoringGroups[key].push(item);
+      });
+
+      // Map các group học kèm thành từng dòng lịch gộp duy nhất
+      Object.keys(tutoringGroups).forEach(key => {
+        const group = tutoringGroups[key];
+        if (group.length === 0) return;
+
+        // Tìm MIN, MAX ngày học
+        const sortedGroup = [...group].sort((a, b) => a.ngay_hoc.localeCompare(b.ngay_hoc));
+        const firstSession = sortedGroup[0];
+        const lastSession = sortedGroup[sortedGroup.length - 1];
+
+        const minNgayStr = firstSession.ngay_hoc ? firstSession.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '';
+        const maxNgayStr = lastSession.ngay_hoc ? lastSession.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '';
+        const ngayGopText = minNgayStr === maxNgayStr ? minNgayStr : `${minNgayStr} - ${maxNgayStr}`;
+
+        // Lấy danh sách các thứ duy nhất
+        const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const uniqueDaysSet = new Set();
+        group.forEach(s => {
+          if (s.ngay_hoc) {
+            const d = new Date(s.ngay_hoc);
+            uniqueDaysSet.add(d.getDay()); // 0-6
+          }
+        });
+        const sortedUniqueDays = Array.from(uniqueDaysSet).sort((a, b) => {
+          // Xếp Thứ 2 -> Chủ nhật
+          const valA = a === 0 ? 7 : a;
+          const valB = b === 0 ? 7 : b;
+          return valA - valB;
+        });
+        const thuGopLabel = sortedUniqueDays.map(d => dayLabels[d]).join(', ');
+
+        // Thống kê số buổi đã học, chưa học của đợt xếp này
+        const totalSessions = group.length;
+        const finishedSessions = group.filter(s => s.trang_thai === 'da_hoc').length;
+        const pendingSessions = group.filter(s => s.trang_thai === 'cho_hoc').length;
+
         allSessions.push({
-          id: item.id,
+          id: firstSession.id, // dùng id ca học đầu tiên
+          dang_ky_hoc_kem_id: firstSession.dang_ky_hoc_kem_id,
           type: 'ca_nhan',
-          title: `Học kèm: ${item.ten_hoc_vien}`,
-          detail: '',
-          ngay_hoc: item.ngay_hoc,
-          gio_bat_dau: item.gio_bat_dau || '',
-          gio_ket_thuc: item.gio_ket_thuc || '',
-          ten_giao_vien: item.ten_giao_vien,
-          giao_vien_id: item.giao_vien_id,
+          title: `Học kèm: ${firstSession.ten_hoc_vien}`,
+          detail: `Đã xếp ${totalSessions} buổi (Đã học: ${finishedSessions}, Chờ học: ${pendingSessions})`,
+          ngay_hoc: firstSession.ngay_hoc, // lấy ngày đầu làm mốc sort
+          ngay_hoc_gop: ngayGopText,
+          thu_gop: thuGopLabel || '—',
+          gio_bat_dau: firstSession.gio_bat_dau || '',
+          gio_ket_thuc: firstSession.gio_ket_thuc || '',
+          ten_giao_vien: firstSession.ten_giao_vien,
+          giao_vien_id: firstSession.giao_vien_id,
           si_so: 1,
-          trang_thai: item.trang_thai,
-          trang_thai_label: item.trang_thai === 'da_hoc' ? 'Đã học' : item.trang_thai === 'vang' ? 'Vắng' : 'Chờ học',
-          trang_thai_class: item.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : item.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200',
-          tu_ngay: item.tu_ngay,
-          den_ngay: item.den_ngay
+          trang_thai: pendingSessions > 0 ? 'cho_hoc' : 'da_hoc',
+          trang_thai_label: pendingSessions > 0 ? 'Đang tiến hành' : 'Hoàn thành',
+          trang_thai_class: pendingSessions > 0 ? 'bg-blue-50 text-apple-blue border border-blue-200' : 'bg-emerald-100 text-emerald-800',
+          tu_ngay: firstSession.tu_ngay,
+          den_ngay: firstSession.den_ngay
         });
       });
 
@@ -924,17 +966,17 @@ export async function renderClassManagement(container) {
           dateRangeStr = `<div class="text-[9.5px] text-emerald-600 font-bold mt-0.5">Thời hạn: ${startFmt} - ${endFmt}</div>`;
         }
 
-        const thuLabel = getDayOfWeekLabel(item.ngay_hoc);
-        const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
         const isGroup = item.type === 'nhom';
+        const thuLabel = isGroup ? getDayOfWeekLabel(item.ngay_hoc) : item.thu_gop;
+        const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
 
         rows += `
           <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
             <td class="px-5 py-3.5">
               <div class="font-bold text-apple-ink">${item.title}</div>
-              ${item.detail ? `<div class="text-[9.5px] text-slate-400 mt-0.5">${item.detail}</div>` : ''}
+              ${item.detail ? `<div class="text-[9.5px] text-slate-500 mt-0.5 font-medium">${item.detail}</div>` : ''}
               ${dateRangeStr}
-              <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày dạy: ${ngayHocStr}</div>
+              <div class="text-[9.5px] text-slate-400 mt-0.5">${isGroup ? `Ngày dạy: ${ngayHocStr}` : `Lịch học: ${item.ngay_hoc_gop}`}</div>
             </td>
             <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
             <td class="px-5 py-3.5 font-bold ${isGroup ? 'text-apple-blue' : 'text-apple-ink'} whitespace-nowrap">${gioHocStr} ${isGroup ? `(${item.si_so}/50 HS)` : ''}</td>
@@ -943,7 +985,7 @@ export async function renderClassManagement(container) {
             </td>
             <td class="px-5 py-3.5 text-right whitespace-nowrap">
               <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${allSessions.indexOf(item)}">Sửa</button>
-              <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="${item.type}" data-id="${item.id}">Hủy</button>
+              <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="${item.type}" data-id="${item.id}" data-contract-id="${item.dang_ky_hoc_kem_id || ''}">Hủy</button>
             </td>
           </tr>
         `;
@@ -978,22 +1020,32 @@ export async function renderClassManagement(container) {
         </div>
       `;
 
-      // Gắn sự kiện Xóa
+      // Gắn sự kiện Xóa / Hủy
       schList.querySelectorAll('.btn-delete-session').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const type = btn.getAttribute('data-type');
           const id = btn.getAttribute('data-id');
+          const contractId = btn.getAttribute('data-contract-id');
           const isGroup = type === 'nhom';
-          const msg = isGroup ? 'Bạn có chắc chắn muốn hủy lớp học nhóm và lịch học liên quan không?' : 'Bạn có chắc chắn muốn hủy lịch học kèm này không?';
+          
+          let msg = '';
+          let url = '';
+          if (isGroup) {
+            msg = 'Bạn có chắc chắn muốn hủy lớp học nhóm và toàn bộ lịch học liên quan không?';
+            url = `${API_BASE}/classes/${id}`;
+          } else {
+            msg = 'Bạn có chắc chắn muốn hủy toàn bộ các ca học kèm chưa học (chờ học) của gói học này để xếp lịch lại không?';
+            url = `${API_BASE}/schedule/by-contract/${contractId}`;
+          }
+
           if (!confirm(msg)) return;
 
-          const url = isGroup ? `${API_BASE}/classes/${id}` : `${API_BASE}/schedule/${id}`;
           try {
             const res = await fetch(url, { method: 'DELETE', headers: { 'X-User-Role': 'le_tan' } });
             const result = await res.json();
             if (result.success) {
-              showToast(`Hủy ${isGroup ? 'lớp học nhóm' : 'ca học kèm'} thành công!`);
+              showToast(isGroup ? 'Hủy lớp học nhóm thành công!' : result.message);
               loadScheduleList();
             } else {
               showToast(result.error || 'Lỗi khi hủy', 'error');
