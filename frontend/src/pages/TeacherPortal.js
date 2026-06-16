@@ -1,0 +1,897 @@
+// TeacherPortal.js — Portal giáo viên · Navy gradient · Top tab pills · Glassmorphism
+import { initChatbot } from './Chatbot.js';
+const API_BASE = 'http://localhost:3006/api';
+
+function getAuthHeaders() {
+  return {
+    'x-user-role': localStorage.getItem('userRole') || 'giao_vien',
+    'x-ho-so-id': localStorage.getItem('hoSoId') || '',
+    'x-tai-khoan-id': localStorage.getItem('taiKhoanId') || ''
+  };
+}
+
+function logout() {
+  localStorage.clear();
+  window.history.pushState({}, '', '/login');
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function formatTime(t) { return t ? t.slice(0, 5) : ''; }
+
+const STS_CLS = {
+  da_hoc: 'bg-green-100 text-green-700 border border-green-200',
+  cho_hoc: 'bg-blue-100 text-blue-700 border border-blue-200',
+  vang: 'bg-red-100 text-red-700 border border-red-200',
+  da_huy: 'bg-slate-100 text-slate-500 border border-slate-200',
+};
+const STS_LBL = { da_hoc: 'Đã dạy', cho_hoc: 'Sắp dạy', vang: 'HV Vắng', da_huy: 'Đã hủy' };
+
+const NAV  = '#1a3a5c';
+const NAV2 = '#0a6ebd';
+const GRAD = `linear-gradient(135deg,${NAV} 0%,${NAV2} 100%)`;
+
+const TABS = [
+  { id: 'overview',  label: 'Tổng quan',    icon: 'home' },
+  { id: 'today',     label: 'Hôm nay',      icon: 'today' },
+  { id: 'week',      label: 'Tuần này',     icon: 'calendar_month' },
+  { id: 'students',  label: 'Học viên',     icon: 'group' },
+  { id: 'diary',     label: 'Sổ liên lạc',  icon: 'edit_note' },
+  { id: 'stats',     label: 'Thống kê',     icon: 'bar_chart' },
+  { id: 'profile',   label: 'Hồ sơ',        icon: 'person' },
+];
+
+// Reset về overview mỗi lần vào lại portal
+let _activeTab = 'overview';
+
+export async function renderTeacherPortal() {
+  _activeTab = 'overview';
+  const app   = document.getElementById('app');
+  const hoTen = localStorage.getItem('hoTen') || 'Giáo viên';
+
+  app.innerHTML = `
+    <div class="min-h-screen bg-[#f4f7fb] font-sans" id="tp-root">
+
+      <!-- ── HEADER ─────────────────────────────────────────── -->
+      <header class="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-blue-100/60 shadow-sm shadow-blue-100/30">
+
+        <div class="flex items-center justify-between px-4 md:px-8 h-14">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-2xl flex items-center justify-center shadow-md shadow-blue-600/30"
+                 style="background:${GRAD}">
+              <span class="material-symbols-outlined text-white text-[16px]">school</span>
+            </div>
+            <div class="leading-none">
+              <p class="text-[10px] text-slate-400 font-medium">Stellar Academy</p>
+              <p class="text-xs font-bold text-slate-800">Cổng giáo viên</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <!-- Bell -->
+            <div class="relative" id="bell-wrapper">
+              <button id="bell-btn"
+                class="relative w-9 h-9 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-blue-50 transition-all">
+                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                <span id="bell-badge"
+                  class="hidden absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-0.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center leading-none"></span>
+              </button>
+              <div id="bell-dropdown"
+                class="hidden absolute right-0 top-12 w-80 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-300/40 border border-slate-100 z-50 overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+                  <span class="text-xs font-bold text-slate-800">Thông báo</span>
+                  <button id="mark-all-read-btn" class="text-[10px] font-semibold hover:underline" style="color:${NAV2}">Đọc tất cả</button>
+                </div>
+                <div id="notif-list" class="max-h-72 overflow-y-auto divide-y divide-slate-50">
+                  <div class="p-5 text-xs text-slate-400 text-center">Đang tải...</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-blue-50 rounded-2xl pl-1.5 pr-3 py-1 border border-blue-100">
+              <div class="w-6 h-6 rounded-xl flex items-center justify-center text-white font-bold text-[10px] shadow-sm shadow-blue-400/30"
+                   style="background:${GRAD}">
+                ${hoTen.charAt(0)}
+              </div>
+              <span class="text-xs font-semibold text-slate-700 max-w-[90px] truncate">${hoTen}</span>
+            </div>
+
+            <button onclick="window._tpLogout()"
+              class="w-9 h-9 rounded-2xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Đăng xuất">
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TOP TAB PILLS -->
+        <div class="px-4 md:px-8 pb-3 flex gap-2 overflow-x-auto scrollbar-none" id="tp-tab-bar">
+          ${TABS.map(t => `
+            <button data-tab="${t.id}"
+              class="tp-tab flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
+                ${t.id === _activeTab
+                  ? 'text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-500 bg-slate-100 hover:bg-blue-50 hover:text-blue-700'}"
+              ${t.id === _activeTab ? `style="background:${GRAD}"` : ''}>
+              <span class="material-symbols-outlined text-[14px]">${t.icon}</span>
+              ${t.label}
+            </button>`).join('')}
+        </div>
+      </header>
+
+      <main class="px-4 md:px-8 py-5 pb-10 max-w-3xl mx-auto" id="tp-content">
+        <div class="flex items-center justify-center min-h-[300px]">
+          <div class="animate-spin w-8 h-8 rounded-full border-[3px] border-blue-200 border-t-blue-600"></div>
+        </div>
+      </main>
+    </div>
+  `;
+
+  window._tpLogout = logout;
+  _setupTabs();
+  _setupBell();
+  _renderTab('overview');
+  initChatbot();
+}
+
+function _setupTabs() {
+  document.querySelectorAll('.tp-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _activeTab = btn.dataset.tab;
+      document.querySelectorAll('.tp-tab').forEach(b => {
+        if (b.dataset.tab === _activeTab) {
+          b.className = 'tp-tab flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 text-white shadow-md shadow-blue-600/30';
+          b.style.background = GRAD;
+        } else {
+          b.className = 'tp-tab flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 text-slate-500 bg-slate-100 hover:bg-blue-50 hover:text-blue-700';
+          b.style.background = '';
+        }
+      });
+      _renderTab(_activeTab);
+    });
+  });
+}
+
+async function _setupBell() {
+  const btn = document.getElementById('bell-btn');
+  const dd  = document.getElementById('bell-dropdown');
+  if (!btn) return;
+  await _loadNotifications();
+  btn.addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('hidden'); });
+  document.addEventListener('click', e => {
+    if (!document.getElementById('bell-wrapper')?.contains(e.target)) dd.classList.add('hidden');
+  });
+  document.getElementById('mark-all-read-btn')?.addEventListener('click', async () => {
+    await fetch(`${API_BASE}/notifications/read-all`, { method: 'PUT', headers: getAuthHeaders() });
+    await _loadNotifications();
+  });
+}
+
+async function _loadNotifications() {
+  const badge = document.getElementById('bell-badge');
+  const list  = document.getElementById('notif-list');
+  try {
+    const res  = await fetch(`${API_BASE}/notifications?limit=15`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const ns   = data.data || [];
+    const ur   = data.unread_count || 0;
+    if (badge) { badge.textContent = ur > 9 ? '9+' : ur; badge.classList.toggle('hidden', ur === 0); }
+    if (list) {
+      list.innerHTML = ns.length === 0
+        ? `<div class="p-6 text-xs text-slate-400 text-center">Chưa có thông báo</div>`
+        : ns.map(n => `
+          <div class="flex gap-3 px-5 py-3 ${n.da_doc ? '' : 'bg-blue-50/50'} hover:bg-slate-50 cursor-pointer transition-colors" onclick="window._tpMarkRead(${n.id},this)">
+            <div class="w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm" style="background:${GRAD}">
+              <span class="material-symbols-outlined text-white text-[13px]">notifications</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-slate-800 truncate">${n.tieu_de}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-2">${n.noi_dung}</p>
+              <p class="text-[9px] text-slate-300 mt-1">${formatDate(n.ngay_tao)}</p>
+            </div>
+            ${!n.da_doc ? `<span class="w-2 h-2 rounded-full flex-shrink-0 mt-2" style="background:${NAV2}"></span>` : ''}
+          </div>`).join('');
+    }
+  } catch (_) {}
+}
+window._tpMarkRead = async (id, el) => {
+  await fetch(`${API_BASE}/notifications/${id}/read`, { method: 'PUT', headers: getAuthHeaders() });
+  el.classList.remove('bg-blue-50/50'); el.querySelector('.w-2.h-2')?.remove();
+  await _loadNotifications();
+};
+
+async function _renderTab(tab) {
+  const c = document.getElementById('tp-content');
+  if (!c) return;
+  c.innerHTML = `<div class="flex items-center justify-center min-h-[300px]"><div class="animate-spin w-8 h-8 rounded-full border-[3px] border-blue-200 border-t-blue-600"></div></div>`;
+  switch (tab) {
+    case 'overview':  await _tabOverview(c);  break;
+    case 'today':     await _tabToday(c);     break;
+    case 'week':      await _tabWeek(c);      break;
+    case 'students':  await _tabStudents(c);  break;
+    case 'diary':     await _tabDiary(c);     break;
+    case 'stats':     await _tabStats(c);     break;
+    case 'profile':   await _tabProfile(c);   break;
+  }
+}
+
+/* ── HELPERS ── */
+function _card(content, extra = '') {
+  return `<div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-blue-50 shadow-lg shadow-blue-100/20 overflow-hidden ${extra}">${content}</div>`;
+}
+function _sec(icon, title) {
+  return `<div class="flex items-center gap-2 px-5 py-4 border-b border-slate-50">
+    <span class="material-symbols-outlined text-[18px]" style="color:${NAV2}">${icon}</span>
+    <h2 class="text-xs font-bold text-slate-800">${title}</h2>
+  </div>`;
+}
+function _kpi(icon, lbl, val, sub, color) {
+  return `<div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-blue-50 shadow-lg shadow-blue-100/20 p-4">
+    <div class="w-8 h-8 rounded-2xl flex items-center justify-center mb-2 shadow-sm" style="background:${color}18">
+      <span class="material-symbols-outlined text-[17px]" style="color:${color}">${icon}</span>
+    </div>
+    <p class="text-xl font-black text-slate-800">${val}</p>
+    <p class="text-[10px] text-slate-400 font-medium mt-0.5">${sub} ${lbl}</p>
+  </div>`;
+}
+
+/* ── TAB: TỔNG QUAN ── */
+async function _tabOverview(c) {
+  const hoTen = localStorage.getItem('hoTen') || 'Giáo viên';
+  try {
+    const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const d    = data.data || {};
+    const hn   = d.lich_hom_nay || [];
+    const tk   = d.thong_ke    || {};
+    const dg   = d.danh_gia   || {};
+    const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <!-- Hero -->
+        <div class="relative rounded-3xl overflow-hidden p-6 text-white shadow-xl shadow-blue-400/20"
+             style="background:${GRAD}">
+          <div class="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/5 -translate-y-16 translate-x-16"></div>
+          <div class="absolute bottom-0 left-0 w-28 h-28 rounded-full bg-white/5 translate-y-10 -translate-x-8"></div>
+          <p class="text-xs font-medium opacity-70 relative">Xin chào 👋</p>
+          <h1 class="text-xl font-black mt-0.5 relative">${hoTen}</h1>
+          <p class="text-[11px] opacity-60 mt-1 relative">${today}</p>
+          <div class="flex items-center gap-2 mt-3 relative">
+            <span class="inline-flex items-center gap-1 text-xs font-bold bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <span class="material-symbols-outlined text-[12px]">today</span>
+              ${hn.length} buổi dạy hôm nay
+            </span>
+            ${dg.trung_binh_sao ? `<span class="inline-flex items-center gap-1 text-xs font-bold bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <span class="text-amber-300">★</span> ${dg.trung_binh_sao}
+            </span>` : ''}
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          ${_kpi('check_circle','Đã dạy tháng này', tk.tong_buoi_da_day||0,'buổi','#22c55e')}
+          ${_kpi('event_busy','HV Vắng tháng này', tk.tong_buoi_hoc_vien_vang||0,'buổi','#f59e0b')}
+          ${_kpi('upcoming','Sắp dạy', tk.buoi_sap_toi||0,'buổi',NAV2)}
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-blue-50 shadow-lg shadow-blue-100/20 p-4">
+            <div class="w-8 h-8 rounded-2xl flex items-center justify-center mb-2 shadow-sm bg-amber-50">
+              <span class="material-symbols-outlined text-[17px] text-amber-500">star</span>
+            </div>
+            <div class="flex items-end gap-1">
+              <p class="text-xl font-black text-slate-800">${dg.trung_binh_sao||'—'}</p>
+              <span class="text-amber-400 text-xs mb-0.5">★</span>
+            </div>
+            <p class="text-[10px] text-slate-400 font-medium">${dg.tong_danh_gia||0} đánh giá</p>
+          </div>
+        </div>
+
+        <!-- Lịch hôm nay -->
+        ${_card(`
+          ${_sec('today','Lịch dạy hôm nay')}
+          <div class="divide-y divide-slate-50">
+            ${hn.length === 0
+              ? `<div class="py-10 text-center"><span class="material-symbols-outlined text-4xl text-slate-200">today</span><p class="text-xs text-slate-400 mt-2">Hôm nay không có buổi dạy</p></div>`
+              : hn.map(l => `
+                <div class="flex items-center gap-3.5 px-5 py-3">
+                  <div class="w-11 h-11 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}18">
+                    <span class="text-xs font-black leading-none" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                    <span class="text-[8px] font-medium" style="color:${NAV}80">${formatTime(l.gio_ket_thuc)}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien || '—'}</p>
+                    <p class="text-[10px] text-slate-400">${l.sdt_hoc_vien || ''}</p>
+                  </div>
+                  <div class="flex flex-col items-end gap-1.5">
+                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                    ${l.trang_thai === 'cho_hoc' ? `
+                    <div class="flex gap-1">
+                      <button onclick="window._tpAttend(${l.id},'da_hoc')"
+                        class="text-[9px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-2 py-0.5 font-bold transition">✓ Đã học</button>
+                      <button onclick="window._tpAttend(${l.id},'vang')"
+                        class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
+                    </div>` : ''}
+                  </div>
+                </div>`).join('')}
+          </div>`)}
+      </div>`;
+
+    window._tpAttend = async (id, ts) => {
+      try {
+        const r = await fetch(`${API_BASE}/attendance/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ trang_thai: ts })
+        });
+        if ((await r.json()).success) await _renderTab('overview');
+      } catch (_) {}
+    };
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: HÔM NAY ── */
+async function _tabToday(c) {
+  const hoSoId = localStorage.getItem('hoSoId');
+  try {
+    const res  = await fetch(`${API_BASE}/schedule/today`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const all  = (data.data || []).filter(l => String(l.giao_vien_id) === String(hoSoId));
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black text-slate-800">Lịch dạy hôm nay</h2>
+          <span class="text-[10px] text-slate-400 font-medium">${new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit'})}</span>
+        </div>
+        ${_card(`
+          <div class="divide-y divide-slate-50">
+            ${all.length === 0
+              ? `<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">today</span><p class="text-xs text-slate-400 mt-2">Hôm nay không có buổi dạy</p></div>`
+              : all.map(l => `
+                <div class="flex items-start gap-3.5 px-5 py-4">
+                  <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
+                    <span class="text-xs font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                    <span class="text-[8px]" style="color:${NAV}70">${formatTime(l.gio_ket_thuc)}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-800">${l.ten_hoc_vien||l.ho_ten||'—'}</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">#${l.id}</p>
+                    ${l.ghi_chu ? `<p class="text-[9px] text-amber-600 mt-1">${l.ghi_chu}</p>` : ''}
+                    ${l.trang_thai === 'cho_hoc' ? `
+                    <div class="flex gap-2 mt-2.5">
+                      <button onclick="window._tpQuick(${l.id},'da_hoc')"
+                        class="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-3 py-1.5 font-bold transition">
+                        <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
+                      <button onclick="window._tpQuick(${l.id},'vang')"
+                        class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
+                        <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
+                    </div>` : ''}
+                  </div>
+                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                </div>`).join('')}
+          </div>`)}
+      </div>`;
+
+    window._tpQuick = async (id, ts) => {
+      try {
+        const r = await fetch(`${API_BASE}/attendance/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ trang_thai: ts })
+        });
+        if ((await r.json()).success) await _renderTab('today');
+      } catch (_) {}
+    };
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: TUẦN NÀY ── */
+async function _tabWeek(c) {
+  try {
+    const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const list = data.data?.lich_tuan_nay || [];
+
+    const grp = {};
+    list.forEach(l => {
+      const k = new Date(l.ngay_hoc).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' });
+      if (!grp[k]) grp[k] = [];
+      grp[k].push(l);
+    });
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <h2 class="text-sm font-black text-slate-800">Lịch dạy tuần này</h2>
+        ${list.length === 0
+          ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">calendar_month</span><p class="text-xs text-slate-400 mt-2">Tuần này không có buổi dạy</p></div>`)
+          : Object.entries(grp).map(([day, items]) => _card(`
+              <div class="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">${day}</p>
+              </div>
+              <div class="divide-y divide-slate-50">
+                ${items.map(l => `
+                  <div class="flex items-center gap-3.5 px-5 py-3">
+                    <div class="w-10 h-10 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
+                      <span class="text-[11px] font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien||'—'}</p>
+                      <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
+                    </div>
+                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                  </div>`).join('')}
+              </div>`)).join('')}
+      </div>`;
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: HỌC VIÊN CỦA TÔI ── */
+async function _tabStudents(c) {
+  try {
+    const res  = await fetch(`${API_BASE}/teacher-portal/my-students`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const list = data.data || [];
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black text-slate-800">Học viên của tôi</h2>
+          <span class="text-[10px] font-semibold text-slate-400 bg-blue-50 rounded-full px-3 py-1">${list.length} học viên</span>
+        </div>
+
+        ${list.length === 0
+          ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">group</span><p class="text-xs text-slate-400 mt-2">Chưa có học viên nào</p></div>`)
+          : _card(`
+              <div class="divide-y divide-slate-50">
+                ${list.map(s => `
+                  <div class="flex items-center gap-3.5 px-5 py-3.5 hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="window._tpOpenStudent(${s.id},'${s.ho_ten}')">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm text-white font-bold text-sm"
+                         style="background:${GRAD}">
+                      ${(s.ho_ten||'?').charAt(0)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-bold text-slate-800">${s.ho_ten}</p>
+                      <p class="text-[10px] text-slate-400">${s.ma_ho_so || ''} · ${s.so_dien_thoai || '—'}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                      <div class="flex items-center gap-1.5 text-[9px] text-slate-500">
+                        <span class="text-green-500 font-bold">${s.da_hoc||0}</span>học
+                        <span class="text-red-400 font-bold">${s.vang||0}</span>vắng
+                      </div>
+                      <p class="text-[8px] text-slate-300 mt-0.5">Gần nhất: ${formatDate(s.buoi_hoc_gan_nhat)}</p>
+                    </div>
+                  </div>`).join('')}
+              </div>`)}
+      </div>
+
+      <!-- Modal chi tiết học viên -->
+      <div id="student-modal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4" style="background:rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-sm max-h-[80vh] overflow-y-auto" id="student-modal-content">
+          <div class="p-5 text-center text-xs text-slate-400">Đang tải...</div>
+        </div>
+      </div>`;
+
+    window._tpOpenStudent = async (id, name) => {
+      document.getElementById('student-modal').classList.remove('hidden');
+      const mc = document.getElementById('student-modal-content');
+      mc.innerHTML = `<div class="p-8 text-center"><div class="animate-spin w-6 h-6 rounded-full border-2 border-blue-200 border-t-blue-600 mx-auto"></div></div>`;
+
+      try {
+        const [schRes, histRes] = await Promise.all([
+          fetch(`${API_BASE}/schedules?hoc_vien_id=${id}&giao_vien_id=${localStorage.getItem('hoSoId')}`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/reports/teacher/${localStorage.getItem('hoSoId')}?hoc_vien_id=${id}`, { headers: getAuthHeaders() })
+        ]);
+        const schs = (await schRes.json()).data || [];
+        const hist = (await histRes.json()).data || [];
+        const upcoming = schs.filter(s => s.trang_thai === 'cho_hoc').slice(0, 3);
+        const done = schs.filter(s => s.trang_thai === 'da_hoc').length;
+        const absent = schs.filter(s => s.trang_thai === 'vang').length;
+
+        mc.innerHTML = `
+          <div class="p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm" style="background:${GRAD}">${name.charAt(0)}</div>
+                <div>
+                  <p class="text-sm font-black text-slate-800">${name}</p>
+                  <p class="text-[10px] text-slate-400 flex gap-2">
+                    <span class="text-green-600 font-bold">${done} đã học</span>
+                    <span class="text-red-400 font-bold">${absent} vắng</span>
+                  </p>
+                </div>
+              </div>
+              <button onclick="document.getElementById('student-modal').classList.add('hidden')"
+                class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+
+            ${upcoming.length > 0 ? `
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-2">Lịch học sắp tới</p>
+              <div class="space-y-1.5 mb-4">
+                ${upcoming.map(s => `
+                  <div class="flex items-center justify-between bg-blue-50 rounded-2xl px-3.5 py-2.5">
+                    <p class="text-xs font-semibold text-slate-700">${formatDate(s.ngay_hoc)}</p>
+                    <p class="text-[10px] text-slate-500">${formatTime(s.gio_bat_dau)} – ${formatTime(s.gio_ket_thuc)}</p>
+                  </div>`).join('')}
+              </div>` : ''}
+
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-2">Sổ liên lạc gần đây</p>
+            ${hist.length === 0
+              ? `<p class="text-xs text-slate-400 text-center py-4">Chưa có nhật ký nào</p>`
+              : hist.slice(0,3).map(h => `
+                <div class="bg-slate-50 rounded-2xl p-3 mb-2">
+                  <p class="text-[9px] text-slate-400 mb-1">${formatDate(h.ngay_tao)}</p>
+                  ${h.noi_dung_bai_hoc ? `<p class="text-xs text-slate-700 line-clamp-2">${h.noi_dung_bai_hoc}</p>` : ''}
+                  ${h.nhan_xet_buoi_hoc ? `<p class="text-[10px] text-amber-600 mt-0.5 line-clamp-1">${h.nhan_xet_buoi_hoc}</p>` : ''}
+                </div>`).join('')}
+
+            <!-- Ghi chú dặn dò -->
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-2 mt-3">Ghi chú dặn dò nhanh</p>
+            <form id="note-form-${id}" class="flex gap-2">
+              <input type="text" id="note-input-${id}" placeholder="Nhập dặn dò cho học viên..."
+                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none focus:border-blue-400 transition">
+              <button type="submit" class="px-3 py-2 rounded-2xl text-white text-xs font-bold transition hover:opacity-90 flex-shrink-0"
+                style="background:${GRAD}">Gửi</button>
+            </form>
+            <p id="note-msg-${id}" class="text-[9px] mt-1 hidden"></p>
+          </div>`;
+
+        document.getElementById(`note-form-${id}`)?.addEventListener('submit', async e => {
+          e.preventDefault();
+          const val = document.getElementById(`note-input-${id}`).value.trim();
+          const msg = document.getElementById(`note-msg-${id}`);
+          if (!val) return;
+          try {
+            const r = await fetch(`${API_BASE}/notes`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+              body: JSON.stringify({ hoc_vien_id: id, noi_dung: val })
+            });
+            const res = await r.json();
+            msg.textContent = res.success ? '✓ Đã gửi dặn dò!' : (res.error || 'Thất bại');
+            msg.className = `text-[9px] mt-1 ${res.success ? 'text-green-600' : 'text-red-500'}`;
+            msg.classList.remove('hidden');
+            if (res.success) document.getElementById(`note-input-${id}`).value = '';
+          } catch (_) {}
+        });
+      } catch (_) {
+        mc.innerHTML = `<div class="p-6 text-xs text-red-500 text-center">Lỗi tải dữ liệu</div>`;
+      }
+    };
+
+    // Đóng modal khi click ngoài
+    document.getElementById('student-modal')?.addEventListener('click', e => {
+      if (e.target === document.getElementById('student-modal'))
+        document.getElementById('student-modal').classList.add('hidden');
+    });
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: SỔ LIÊN LẠC ── */
+async function _tabDiary(c) {
+  const hoSoId = localStorage.getItem('hoSoId');
+  try {
+    const [stdRes, histRes] = await Promise.all([
+      fetch(`${API_BASE}/students`, { headers: getAuthHeaders() }),
+      fetch(`${API_BASE}/reports/teacher/${hoSoId}`, { headers: getAuthHeaders() })
+    ]);
+    const stds = ((await stdRes.json()).data || []).filter(s => s.loai_ho_so === 'hoc_vien' || !s.loai_ho_so);
+    const hist = (await histRes.json()).data || [];
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <h2 class="text-sm font-black text-slate-800">Sổ liên lạc</h2>
+
+        <!-- Form viết mới -->
+        ${_card(`
+          ${_sec('edit_note','Viết nhật ký buổi học')}
+          <div class="px-5 py-4">
+            <form id="diary-form" class="space-y-3">
+              <div>
+                <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Học viên</label>
+                <select id="d-student" required class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 transition" style="--tw-ring-color:${NAV2}40">
+                  <option value="">— Chọn học viên —</option>
+                  ${stds.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
+                </select>
+              </div>
+              ${[
+                ['d-content','Nội dung bài học','Nội dung bài học hôm nay...'],
+                ['d-comment','Nhận xét buổi học','Nhận xét về tiến độ, thái độ học tập...'],
+                ['d-hw','Bài tập về nhà','Bài tập giao về nhà...'],
+              ].map(([id, lbl, ph]) => `
+                <div>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${lbl}</label>
+                  <textarea id="${id}" rows="2" placeholder="${ph}"
+                    class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none transition resize-none"></textarea>
+                </div>`).join('')}
+              <p id="d-msg" class="text-[10px] hidden"></p>
+              <button type="submit" class="w-full text-white text-xs font-bold py-2.5 rounded-2xl transition shadow-md hover:opacity-90 active:scale-[.98] flex items-center justify-center gap-2"
+                style="background:${GRAD}">
+                <span class="material-symbols-outlined text-[14px]">send</span> Gửi sổ liên lạc
+              </button>
+            </form>
+          </div>`)}
+
+        <!-- Lịch sử đã viết -->
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-black text-slate-700">Lịch sử đã viết</h3>
+          <span class="text-[10px] text-slate-400">${hist.length} bản ghi</span>
+        </div>
+        ${hist.length === 0
+          ? _card(`<div class="py-10 text-center text-xs text-slate-400">Chưa viết sổ liên lạc nào</div>`)
+          : hist.map(h => _card(`
+              <div class="px-5 py-4 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-xl flex items-center justify-center text-white text-[10px] font-bold" style="background:${GRAD}">${(h.ten_hoc_vien||'?').charAt(0)}</div>
+                    <p class="text-xs font-bold text-slate-800">${h.ten_hoc_vien || '—'}</p>
+                  </div>
+                  <p class="text-[9px] text-slate-400">${formatDate(h.ngay_tao)}</p>
+                </div>
+                ${h.noi_dung_bai_hoc ? `<div class="bg-slate-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-slate-400 mb-1">NỘI DUNG</p><p class="text-xs text-slate-700">${h.noi_dung_bai_hoc}</p></div>` : ''}
+                ${h.nhan_xet_buoi_hoc ? `<div class="rounded-2xl p-3" style="background:linear-gradient(135deg,#eff6ff,#dbeafe)"><p class="text-[8px] font-bold text-blue-400 mb-1">NHẬN XÉT</p><p class="text-xs text-blue-800">${h.nhan_xet_buoi_hoc}</p></div>` : ''}
+                ${h.bai_tap_ve_nha ? `<div class="bg-amber-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-amber-500 mb-1">BÀI TẬP</p><p class="text-xs text-amber-800">${h.bai_tap_ve_nha}</p></div>` : ''}
+              </div>`)).join('')}
+      </div>`;
+
+    document.getElementById('d-student')?.addEventListener('change', async e => {
+      const sid = e.target.value; if (!sid) return;
+      // Cập nhật preview lịch sử ngay khi chọn học viên
+    });
+
+    document.getElementById('diary-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = document.getElementById('d-msg');
+      const sid = document.getElementById('d-student').value;
+      if (!sid) { msg.textContent = 'Vui lòng chọn học viên'; msg.className = 'text-[10px] text-red-500'; msg.classList.remove('hidden'); return; }
+      try {
+        const r = await fetch(`${API_BASE}/reports`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({
+            hoc_vien_id: sid,
+            giao_vien_id: hoSoId,
+            nguoi_gui_id: hoSoId,
+            lich_hoc_id: null,
+            noi_dung_bai_hoc: document.getElementById('d-content').value.trim(),
+            nhan_xet_buoi_hoc: document.getElementById('d-comment').value.trim(),
+            bai_tap_ve_nha: document.getElementById('d-hw').value.trim(),
+            vai_tro_gui: 'giao_vien'
+          })
+        });
+        const res = await r.json();
+        msg.textContent = res.success ? '✓ Đã gửi sổ liên lạc thành công!' : (res.error || 'Gửi thất bại');
+        msg.className   = `text-[10px] ${res.success ? 'text-green-600' : 'text-red-500'}`;
+        msg.classList.remove('hidden');
+        if (res.success) {
+          document.getElementById('diary-form').reset();
+          setTimeout(() => _renderTab('diary'), 1000);
+        }
+      } catch (_) { msg.textContent = 'Lỗi kết nối'; msg.className = 'text-[10px] text-red-500'; msg.classList.remove('hidden'); }
+    });
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: THỐNG KÊ ── */
+async function _tabStats(c) {
+  const now = new Date();
+  let selMonth = now.getMonth() + 1;
+  let selYear  = now.getFullYear();
+
+  async function loadStats(m, y) {
+    const res  = await fetch(`${API_BASE}/teacher-portal/stats?thang=${m}&nam=${y}`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    return data.data || {};
+  }
+
+  async function render() {
+    const d = await loadStats(selMonth, selYear);
+    const t = d.tong || {};
+    const days = d.theo_ngay || [];
+    const dg = d.danh_gia || {};
+    const maxBuoi = Math.max(...days.map(d => Number(d.da_day||0) + Number(d.hv_vang||0)), 1);
+
+    const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        <!-- Chọn tháng -->
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black text-slate-800">Thống kê cá nhân</h2>
+          <div class="flex items-center gap-2">
+            <button id="prev-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+              <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+            </button>
+            <span class="text-xs font-bold text-slate-700">${monthNames[selMonth-1]} ${selYear}</span>
+            <button id="next-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+              <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPIs tháng -->
+        <div class="grid grid-cols-2 gap-3">
+          ${[
+            ['check_circle', 'Buổi đã dạy', t.tong_da_day||0, '#22c55e'],
+            ['event_busy',   'HV Vắng mặt', t.tong_hv_vang||0, '#f59e0b'],
+            ['group',        'Số học viên',  t.so_hoc_vien||0, NAV2],
+            ['star',         'Đánh giá TB',  dg.trung_binh || '—', '#f59e0b'],
+          ].map(([ic,lb,vl,cl]) => `
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-blue-50 shadow-lg shadow-blue-100/20 p-4">
+              <div class="w-8 h-8 rounded-2xl flex items-center justify-center mb-2 shadow-sm" style="background:${cl}18">
+                <span class="material-symbols-outlined text-[17px]" style="color:${cl}">${ic}</span>
+              </div>
+              <p class="text-xl font-black text-slate-800">${vl}</p>
+              <p class="text-[10px] text-slate-400 font-medium">${lb}</p>
+            </div>`).join('')}
+        </div>
+
+        <!-- Biểu đồ cột đơn giản -->
+        ${days.length > 0 ? _card(`
+          ${_sec('bar_chart','Hoạt động theo ngày')}
+          <div class="px-5 py-4">
+            <div class="flex items-end gap-1 h-24 overflow-x-auto pb-2">
+              ${days.map(d => {
+                const total = Number(d.da_day||0) + Number(d.hv_vang||0);
+                const pct   = Math.round((total / maxBuoi) * 100);
+                const date  = new Date(d.ngay).toLocaleDateString('vi-VN',{day:'2-digit'});
+                return `<div class="flex flex-col items-center gap-1 flex-shrink-0" style="min-width:22px">
+                  <div class="w-4 rounded-t-lg transition-all" style="height:${Math.max(4,pct * 0.7)}px;background:${pct > 50 ? GRAD : `${NAV2}40`}" title="${total} buổi ngày ${d.ngay}"></div>
+                  <span class="text-[7px] text-slate-400 font-medium">${date}</span>
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="flex items-center gap-1 text-[9px] text-slate-500"><span class="w-2 h-2 rounded-sm inline-block" style="background:${GRAD}"></span>≥ 50% tháng</span>
+              <span class="flex items-center gap-1 text-[9px] text-slate-500"><span class="w-2 h-2 rounded-sm inline-block" style="background:${NAV2}40"></span>< 50% tháng</span>
+            </div>
+          </div>`) : ''}
+
+        ${days.length === 0 ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">bar_chart</span><p class="text-xs text-slate-400 mt-2">Không có dữ liệu trong tháng này</p></div>`) : ''}
+      </div>`;
+
+    document.getElementById('prev-month')?.addEventListener('click', async () => {
+      selMonth--; if (selMonth < 1) { selMonth = 12; selYear--; }
+      await render();
+    });
+    document.getElementById('next-month')?.addEventListener('click', async () => {
+      selMonth++; if (selMonth > 12) { selMonth = 1; selYear++; }
+      await render();
+    });
+  }
+
+  try {
+    c.innerHTML = `<div class="flex items-center justify-center min-h-[200px]"><div class="animate-spin w-6 h-6 rounded-full border-2 border-blue-200 border-t-blue-600"></div></div>`;
+    await render();
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}
+
+/* ── TAB: HỒ SƠ ── */
+async function _tabProfile(c) {
+  const hoSoId = localStorage.getItem('hoSoId');
+  if (!hoSoId) { c.innerHTML = _card(`<div class="py-12 text-center text-xs text-slate-400">Không tìm thấy hồ sơ</div>`); return; }
+  try {
+    const res  = await fetch(`${API_BASE}/teachers/${hoSoId}`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    const gv   = data.data || {};
+
+    c.innerHTML = `
+      <div class="space-y-4">
+        ${_card(`
+          <div class="h-28 relative" style="background:${GRAD}">
+            <div class="absolute inset-0 opacity-20" style="background:radial-gradient(circle at 80% 50%,white,transparent)"></div>
+            <div class="absolute -bottom-7 left-5 group cursor-pointer" id="tp-avatar-wrap">
+              <div class="w-14 h-14 rounded-2xl bg-white shadow-xl shadow-blue-200/50 flex items-center justify-center border-2 border-blue-50 overflow-hidden relative">
+                ${gv.avatar_url
+                  ? `<img id="tp-avatar-img" src="${gv.avatar_url}" class="w-full h-full object-cover" alt="avatar">`
+                  : `<span id="tp-avatar-letter" class="text-2xl font-black" style="color:${NAV}">${(gv.ho_ten||'?').charAt(0)}</span>`
+                }
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                  <span class="material-symbols-outlined text-white text-[16px]">photo_camera</span>
+                </div>
+              </div>
+              <input type="file" id="tp-avatar-input" accept="image/*" class="hidden">
+            </div>
+          </div>
+          <div class="pt-10 px-5 pb-5">
+            <h3 class="text-base font-black text-slate-800">${gv.ho_ten||'—'}</h3>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">${gv.ma_ho_so||''} · Giáo viên</p>
+            <div class="mt-4 grid grid-cols-2 gap-2.5">
+              ${[
+                ['Chuyên môn', gv.chuyen_mon||'—'],
+                ['Kinh nghiệm', gv.kinh_nghiem ? `${gv.kinh_nghiem} năm` : '—'],
+                ['SĐT', gv.so_dien_thoai||'—'],
+                ['Email', gv.email||'—'],
+                ['Chi nhánh', gv.chi_nhanh||'—'],
+                ['Ngày gia nhập', formatDate(gv.ngay_tao)],
+              ].map(([l,v]) => `
+                <div class="bg-slate-50/80 rounded-2xl p-3">
+                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${l}</p>
+                  <p class="text-xs font-semibold text-slate-800 mt-0.5 break-words">${v}</p>
+                </div>`).join('')}
+            </div>
+          </div>`)}
+
+        ${_card(`
+          <div class="px-5 py-4">
+            <h3 class="text-xs font-black text-slate-800 mb-3">Đổi mật khẩu</h3>
+            <form id="pw-form" class="space-y-2.5">
+              ${['pw-old:Mật khẩu hiện tại','pw-new:Mật khẩu mới (≥6 ký tự)','pw-cfm:Xác nhận mật khẩu mới'].map(s => {
+                const [id, lbl] = s.split(':');
+                return `<div>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${lbl}</label>
+                  <input type="password" id="${id}" required class="mt-1 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none transition">
+                </div>`;
+              }).join('')}
+              <p id="pw-msg" class="text-[10px] hidden mt-1"></p>
+              <button type="submit" class="w-full text-white text-xs font-bold py-2.5 rounded-2xl shadow-md hover:opacity-90 active:scale-[.98] transition"
+                style="background:${GRAD}">Cập nhật mật khẩu</button>
+            </form>
+          </div>`)}
+      </div>`;
+
+    // Avatar upload (teacher)
+    document.getElementById('tp-avatar-wrap')?.addEventListener('click', () => {
+      document.getElementById('tp-avatar-input')?.click();
+    });
+    document.getElementById('tp-avatar-input')?.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const wrap = document.getElementById('tp-avatar-wrap');
+      if (wrap) wrap.style.opacity = '0.5';
+      try {
+        const r = await fetch(`${API_BASE}/upload/avatar`, {
+          method: 'POST', headers: getAuthHeaders(), body: formData
+        });
+        const result = await r.json();
+        if (result.success) {
+          const img = document.getElementById('tp-avatar-img');
+          const letter = document.getElementById('tp-avatar-letter');
+          if (img) { img.src = result.avatar_url; }
+          else if (letter) {
+            const newImg = document.createElement('img');
+            newImg.id = 'tp-avatar-img'; newImg.src = result.avatar_url;
+            newImg.className = 'w-full h-full object-cover';
+            letter.replaceWith(newImg);
+          }
+        }
+      } catch (_) {}
+      finally { if (wrap) wrap.style.opacity = '1'; }
+    });
+
+    document.getElementById('pw-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const old = document.getElementById('pw-old').value;
+      const nw  = document.getElementById('pw-new').value;
+      const cfm = document.getElementById('pw-cfm').value;
+      const msg = document.getElementById('pw-msg');
+      if (nw !== cfm) { msg.textContent = 'Mật khẩu xác nhận không khớp'; msg.className = 'text-[10px] text-red-500 mt-1'; msg.classList.remove('hidden'); return; }
+      if (nw.length < 6) { msg.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự'; msg.className = 'text-[10px] text-red-500 mt-1'; msg.classList.remove('hidden'); return; }
+      try {
+        const r = await fetch(`${API_BASE}/auth/change-password`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ mat_khau_cu: old, mat_khau_moi: nw })
+        });
+        const res = await r.json();
+        msg.textContent = res.success ? '✓ Đổi mật khẩu thành công!' : (res.error||'Thất bại');
+        msg.className   = `text-[10px] mt-1 ${res.success ? 'text-green-600' : 'text-red-500'}`;
+        msg.classList.remove('hidden');
+        if (res.success) document.getElementById('pw-form').reset();
+      } catch (_) { msg.textContent = 'Lỗi kết nối'; msg.className = 'text-[10px] text-red-500 mt-1'; msg.classList.remove('hidden'); }
+    });
+  } catch (err) {
+    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+  }
+}

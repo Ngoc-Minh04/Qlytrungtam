@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, 'src/.env') });
 
 const { pool } = require('./src/config/db');
 const apiRouter = require('./src/routes/api');
@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3005;
 app.use(cors({
   origin: '*', // Cho phép tất cả các nguồn hoặc cấu hình chi tiết nếu cần thiết
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'X-User-Branch', 'x-user-role', 'x-user-branch']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'X-User-Branch', 'x-user-role', 'x-user-branch', 'x-tai-khoan-id', 'x-ho-so-id', 'X-Tai-Khoan-Id', 'X-Ho-So-Id', 'x-ho-ten', 'X-Ho-Ten']
 }));
 
 // Middleware parser body

@@ -1,9 +1,9 @@
 // LessonDiary.js - Nhật ký học tập & Sổ liên lạc điện tử
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:3006/api';
 
 export async function renderLessonDiary(container) {
   const userRole = localStorage.getItem('userRole') || 'hoc_vien';
-  const userId = localStorage.getItem('userId') || '1'; // Giả lập id người dùng đăng nhập
+  const hoSoId   = localStorage.getItem('hoSoId') || localStorage.getItem('userId') || '';
 
   container.innerHTML = `
     <div class="flex items-center justify-center min-h-[300px]">
@@ -11,24 +11,116 @@ export async function renderLessonDiary(container) {
     </div>
   `;
 
-  try {
-    let students = [];
-    let selectedStudentId = null;
+  // Tab switcher ở đầu trang
+  let activeTab = 'diary';
 
-    // Phân quyền tải dữ liệu ban đầu
-    if (userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') {
-      const stdRes = await fetch(`${API_BASE}/students`);
-      const stdData = await stdRes.json();
-      students = stdData.data || [];
-      if (students.length > 0) {
-        selectedStudentId = students[0].id;
+  async function renderWrapper() {
+    container.innerHTML = `
+      <div class="space-y-5">
+        <!-- Tab pills -->
+        <div class="flex gap-2">
+          <button data-lt="diary" class="lt-tab flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all
+            ${activeTab === 'diary' ? 'bg-[#0066cc] text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+            <span class="material-symbols-outlined text-[14px]">menu_book</span> Sổ liên lạc
+          </button>
+          <button data-lt="notes" class="lt-tab flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all
+            ${activeTab === 'notes' ? 'bg-[#0066cc] text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+            <span class="material-symbols-outlined text-[14px]">sticky_note_2</span> Ghi chú dặn dò GV
+          </button>
+        </div>
+        <div id="lt-content"></div>
+      </div>`;
+
+    container.querySelectorAll('.lt-tab').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        activeTab = btn.dataset.lt;
+        await renderWrapper();
+      });
+    });
+
+    if (activeTab === 'diary') await _loadDiaryTab();
+    else await _loadNotesTab();
+  }
+
+  async function _loadDiaryTab() {
+    const content = document.getElementById('lt-content');
+    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div></div>`;
+    try {
+      let students = [];
+      let selectedStudentId = null;
+      if (userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') {
+        const stdData = await (await fetch(`${API_BASE}/students`, {
+          headers: { 'x-user-role': userRole, 'x-ho-so-id': hoSoId }
+        })).json();
+        students = stdData.data || [];
+        if (students.length > 0) selectedStudentId = students[0].id;
+      } else {
+        selectedStudentId = parseInt(hoSoId);
       }
-    } else {
-      // Đối với Học viên, dùng thẳng userId của họ làm studentId
-      selectedStudentId = parseInt(userId);
+      await loadDiaryData(content, userRole, students, selectedStudentId);
+    } catch (err) {
+      content.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs"><strong>Lỗi:</strong> ${err.message}</div>`;
     }
+  }
 
-    await loadDiaryData(container, userRole, students, selectedStudentId);
+  async function _loadNotesTab() {
+    const content = document.getElementById('lt-content');
+    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div></div>`;
+    try {
+      const [stdRes, notesRes] = await Promise.all([
+        fetch(`${API_BASE}/students`, { headers: { 'x-user-role': userRole, 'x-ho-so-id': hoSoId } }),
+        fetch(`${API_BASE}/notes`, { headers: { 'x-user-role': 'admin', 'x-ho-so-id': hoSoId } })
+      ]);
+      const students = (await stdRes.json()).data || [];
+      let notes = (await notesRes.json()).data || [];
+      let filterStudentId = '';
+
+      function renderNotes(list) {
+        if (list.length === 0) return `<div class="py-12 text-center text-xs text-slate-400"><span class="material-symbols-outlined text-4xl text-slate-200 block mb-2">sticky_note_2</span>Chưa có ghi chú dặn dò nào</div>`;
+        return list.map(n => `
+          <div class="flex gap-3 p-4 bg-amber-50/40 border border-amber-100/60 rounded-2xl">
+            <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-amber-600 text-[17px]">sticky_note_2</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <p class="text-xs font-bold text-slate-800">GV: ${n.ten_giao_vien || '—'} → HV: ${n.ten_hoc_vien || '—'}</p>
+                <p class="text-[9px] text-slate-400 flex-shrink-0">${new Date(n.ngay_tao).toLocaleDateString('vi-VN')}</p>
+              </div>
+              <p class="text-xs text-slate-700 leading-relaxed">${n.noi_dung}</p>
+            </div>
+          </div>`).join('');
+      }
+
+      content.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-sm">
+            <span class="material-symbols-outlined text-[#0066cc]">filter_list</span>
+            <select id="notes-filter-student" class="border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all w-full sm:w-64">
+              <option value="">Tất cả học viên</option>
+              ${students.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
+            </select>
+            <span class="text-[10px] text-slate-400 ml-auto">${notes.length} ghi chú</span>
+          </div>
+          <div id="notes-list" class="space-y-3">${renderNotes(notes)}</div>
+        </div>`;
+
+      document.getElementById('notes-filter-student')?.addEventListener('change', async e => {
+        filterStudentId = e.target.value;
+        const url = filterStudentId
+          ? `${API_BASE}/notes?hoc_vien_id=${filterStudentId}`
+          : `${API_BASE}/notes`;
+        const filtered = await (await fetch(url, { headers: { 'x-user-role': 'admin', 'x-ho-so-id': hoSoId } })).json();
+        const list = filtered.data || [];
+        document.getElementById('notes-list').innerHTML = renderNotes(list);
+      });
+    } catch (err) {
+      content.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs"><strong>Lỗi:</strong> ${err.message}</div>`;
+    }
+  }
+
+  try {
+    await renderWrapper();
 
   } catch (err) {
     container.innerHTML = `
@@ -259,7 +351,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
       const nhan_xet_buoi_hoc = formData.get('nhan_xet_buoi_hoc');
       const bai_tap_ve_nha = formData.get('bai_tap_ve_nha');
       const dan_do_giao_vien = formData.get('dan_do_giao_vien');
-      const gvId = parseInt(localStorage.getItem('userId')) || 2; // Giả định ID giáo viên
+      const gvId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('userId')) || 2;
 
       try {
         const res = await fetch(`${API_BASE}/reports`, {

@@ -1,9 +1,11 @@
-// TeacherFeedbacks.js - Đánh giá Giáo viên từ Học viên & Phụ huynh
-const API_BASE = '/api';
+// TeacherFeedbacks.js - Đánh giá Giáo viên từ Học viên (API thật)
+import { API_BASE, showToast } from './_shared.js';
+
+let _selectedTeacherId = 'all';
 
 export async function renderTeacherFeedbacks(container) {
-  const userRole = localStorage.getItem('userRole') || 'hoc_vien';
-  const userId = localStorage.getItem('userId') || '1';
+  const userRole = localStorage.getItem('userRole') || 'admin';
+  const hoSoId = localStorage.getItem('hoSoId') || '1';
 
   container.innerHTML = `
     <div class="flex items-center justify-center min-h-[300px]">
@@ -12,52 +14,23 @@ export async function renderTeacherFeedbacks(container) {
   `;
 
   try {
-    // Tải danh sách giáo viên để hiển thị hoặc lọc
-    const teachersRes = await fetch(`${API_BASE}/teachers`);
+    const [teachersRes, ratingsRes] = await Promise.all([
+      fetch(`${API_BASE}/teachers`, { headers: { 'X-User-Role': userRole, 'X-Ho-So-Id': hoSoId } }),
+      fetch(`${API_BASE}/ratings`, { headers: { 'X-User-Role': 'admin', 'X-Ho-So-Id': hoSoId } })
+    ]);
+
     const teachersData = await teachersRes.json();
+    const ratingsData = await ratingsRes.json();
+
     const teachers = teachersData.data || [];
+    const allRatings = ratingsData.data || [];
+    // Convert stats array → map keyed by giao_vien_id
+    const statsMap = {};
+    (ratingsData.stats || []).forEach(s => {
+      statsMap[s.giao_vien_id] = { avg: s.trung_binh, count: parseInt(s.tong) };
+    });
 
-    // Tạo mock data đánh giá giáo viên cao cấp
-    const mockFeedbacks = [
-      {
-        id: 1,
-        teacherId: teachers[0]?.id || 1,
-        teacherName: teachers[0]?.ho_ten || 'Nguyễn Văn A',
-        studentName: 'HV Nguyễn Hoàng Nam',
-        rating: 5,
-        comment: 'Thầy dạy cực kỳ nhiệt tình, dễ hiểu và sửa phát âm rất kỹ. Em tiến bộ rõ rệt sau 1 tháng học kèm.',
-        date: '12/06/2026'
-      },
-      {
-        id: 2,
-        teacherId: teachers[0]?.id || 1,
-        teacherName: teachers[0]?.ho_ten || 'Nguyễn Văn A',
-        studentName: 'Phụ huynh bé Mai Anh',
-        rating: 5,
-        comment: 'Cô rất quan tâm đến các con. Có báo cáo chi tiết sau mỗi buổi học nên gia đình rất an tâm.',
-        date: '11/06/2026'
-      },
-      {
-        id: 3,
-        teacherId: teachers[1]?.id || 2,
-        teacherName: teachers[1]?.ho_ten || 'Trần Thị B',
-        studentName: 'HV Lê Minh Triết',
-        rating: 4,
-        comment: 'Phương pháp dạy hiện đại, tương tác nhiều. Đôi lúc bài tập hơi nhiều một chút nhưng rất hiệu quả.',
-        date: '10/06/2026'
-      },
-      {
-        id: 4,
-        teacherId: teachers[2]?.id || 3,
-        teacherName: teachers[2]?.ho_ten || 'Phạm Thanh C',
-        studentName: 'HV Vũ Thu Hà',
-        rating: 5,
-        comment: 'Thầy giáo siêu hài hước, học không bị áp lực. Kiến thức chuyên môn của thầy rất vững vàng.',
-        date: '08/06/2026'
-      }
-    ];
-
-    await renderFeedbacksUI(container, userRole, teachers, mockFeedbacks);
+    renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, statsMap, _selectedTeacherId);
 
   } catch (err) {
     container.innerHTML = `
@@ -68,77 +41,84 @@ export async function renderTeacherFeedbacks(container) {
   }
 }
 
-async function renderFeedbacksUI(container, userRole, teachers, feedbacks) {
-  // Tính toán số sao trung bình và phân bố sao
-  const totalFeedbacks = feedbacks.length;
-  const avgRating = totalFeedbacks > 0 
-    ? (feedbacks.reduce((sum, f) => sum + f.rating, 0) / totalFeedbacks).toFixed(1)
-    : '5.0';
+function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, statsMap, filterTeacherId) {
+  const filtered = filterTeacherId === 'all'
+    ? allRatings
+    : allRatings.filter(r => String(r.giao_vien_id) === String(filterTeacherId));
+
+  const totalFeedbacks = filtered.length;
+  const avgRating = totalFeedbacks > 0
+    ? (filtered.reduce((sum, f) => sum + (f.so_sao || 0), 0) / totalFeedbacks).toFixed(1)
+    : '0.0';
 
   const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  feedbacks.forEach(f => {
-    if (distribution[f.rating] !== undefined) {
-      distribution[f.rating]++;
-    }
+  filtered.forEach(f => {
+    const s = f.so_sao;
+    if (s >= 1 && s <= 5) distribution[s]++;
+  });
+
+  // Tính stats theo từng GV từ statsMap hoặc từ allRatings
+  const teacherStats = teachers.map(t => {
+    const st = statsMap[t.id] || {};
+    return {
+      id: t.id,
+      ho_ten: t.ho_ten,
+      avg: st.avg ? parseFloat(st.avg).toFixed(1) : '—',
+      count: st.count || 0
+    };
   });
 
   container.innerHTML = `
     <div class="space-y-6 animate-fadeIn">
-      
-      <!-- Header Action Row -->
+
+      <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 class="text-xl font-bold tracking-tight text-slate-800">Đánh giá & Phản hồi Giáo viên</h2>
-          <p class="text-xs text-slate-500">Khảo sát chất lượng giảng dạy từ phụ huynh và học viên định kỳ.</p>
+          <p class="text-xs text-slate-500">Dữ liệu thực từ học viên sau các buổi học.</p>
         </div>
-        
         <div class="flex items-center gap-2 w-full sm:w-auto">
-          <!-- Nút Tải lại đồng bộ thiết kế -->
+          <select id="filter-teacher" class="border border-[#e2e2e4] rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white shadow-sm outline-none focus:border-apple-blue transition h-[32px]">
+            <option value="all" ${filterTeacherId === 'all' ? 'selected' : ''}>Tất cả giáo viên</option>
+            ${teachers.map(t => `<option value="${t.id}" ${String(filterTeacherId) === String(t.id) ? 'selected' : ''}>${t.ho_ten}</option>`).join('')}
+          </select>
           <button id="btn-refresh-feedbacks" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
             <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
           </button>
-          
-          ${userRole === 'hoc_vien' ? `
-            <button id="btn-add-feedback" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
-              <span class="material-symbols-outlined text-[16px]">star</span>Gửi đánh giá
-            </button>
-          ` : ''}
         </div>
       </div>
 
-      <!-- Overview Grid (Bento Style) -->
+      <!-- Overview Stats -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <!-- Bento Card 1: Điểm trung bình -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:border-[#0066cc]/50 transition-all duration-300">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Đánh giá chung</span>
+
+        <!-- Điểm TB tổng / GV được chọn -->
+        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+            ${filterTeacherId === 'all' ? 'Điểm TB toàn trung tâm' : 'Điểm TB giáo viên'}
+          </span>
           <span class="text-5xl font-extrabold text-slate-800 tracking-tight block">${avgRating}</span>
-          
-          <!-- Stars Render -->
-          <div class="flex items-center gap-0.5 mt-3 text-amber-400">
+          <div class="flex items-center gap-0.5 mt-3">
             ${Array.from({ length: 5 }).map((_, i) => `
               <span class="material-symbols-outlined fill-current text-[20px] ${i < Math.round(parseFloat(avgRating)) ? 'text-amber-400' : 'text-slate-200'}">star</span>
             `).join('')}
           </div>
-          
-          <span class="text-[10px] text-slate-400 mt-4 block">Dựa trên ${totalFeedbacks} lượt phản hồi học viên</span>
+          <span class="text-[10px] text-slate-400 mt-4 block">Từ ${totalFeedbacks} lượt đánh giá</span>
         </div>
 
-        <!-- Bento Card 2: Biểu đồ phân bố sao -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm hover:border-[#0066cc]/50 transition-all duration-300 md:col-span-2 space-y-3">
+        <!-- Phân bổ sao -->
+        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm md:col-span-2 space-y-3">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Phân bổ xếp hạng</span>
-          
           <div class="space-y-2">
             ${[5, 4, 3, 2, 1].map(star => {
               const count = distribution[star];
               const pct = totalFeedbacks > 0 ? (count / totalFeedbacks) * 100 : 0;
               return `
                 <div class="flex items-center text-xs gap-3">
-                  <span class="w-10 font-semibold text-slate-600 shrink-0 text-right">${star} sao</span>
+                  <span class="w-10 font-semibold text-slate-600 shrink-0 text-right">${star} ★</span>
                   <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                    <div class="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div>
                   </div>
-                  <span class="w-8 text-slate-400 font-medium shrink-0 text-left">${count}</span>
+                  <span class="w-8 text-slate-400 font-medium shrink-0">${count}</span>
                 </div>
               `;
             }).join('')}
@@ -147,161 +127,111 @@ async function renderFeedbacksUI(container, userRole, teachers, feedbacks) {
 
       </div>
 
-      <!-- Feedbacks List Section -->
-      <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm space-y-4">
-        <div class="border-b border-[#f3f3f5] pb-3 flex justify-between items-center bg-slate-50/20">
-          <h3 class="font-bold text-slate-800 text-sm">Tất cả ý kiến & Nhận xét</h3>
-          <span class="text-[10px] text-slate-400">Sắp xếp theo thời gian mới nhất</span>
+      ${filterTeacherId === 'all' && teacherStats.length > 0 ? `
+      <!-- Bảng điểm từng GV -->
+      <div class="bg-white border border-[#e2e2e4] rounded-2xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-[#f3f3f5]">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined text-apple-blue text-[18px]">leaderboard</span>
+            Xếp hạng chất lượng giảng dạy
+          </h3>
         </div>
-
-        <div id="feedbacks-container" class="space-y-4">
-          ${feedbacks.map(item => `
-            <div class="border-b border-[#f3f3f5] last:border-0 pb-4 last:pb-0 space-y-2">
-              <div class="flex justify-between items-start flex-wrap gap-2">
-                <div>
-                  <span class="font-bold text-slate-800 text-xs block">${item.studentName}</span>
-                  <span class="text-[10px] text-slate-400 block">Đánh giá GV: <strong class="text-slate-600">${item.teacherName}</strong></span>
-                </div>
-                <div class="flex flex-col items-end gap-1">
-                  <div class="flex gap-0.5 text-amber-400">
-                    ${Array.from({ length: 5 }).map((_, i) => `
-                      <span class="material-symbols-outlined text-[14px] ${i < item.rating ? 'fill-current' : 'text-slate-200'}">star</span>
-                    `).join('')}
-                  </div>
-                  <span class="text-[9px] text-slate-400 block">${item.date}</span>
-                </div>
-              </div>
-              <p class="text-xs text-slate-600 leading-relaxed bg-[#fafafc] border border-slate-100 rounded-xl p-3 font-medium">
-                ${item.comment}
-              </p>
-            </div>
-          `).join('')}
-
-          ${feedbacks.length === 0 ? `
-            <div class="py-8 text-center text-slate-400 text-xs">
-              Chưa có ý kiến phản hồi nào được ghi nhận.
-            </div>
-          ` : ''}
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Modal gửi đánh giá giáo viên (dành cho Học viên) -->
-    <div id="feedback-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-      <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-          <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Gửi phản hồi chất lượng dạy học</h3>
-          <button id="close-feedback-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-            <span class="material-symbols-outlined text-[18px]">close</span>
-          </button>
-        </div>
-        
-        <form id="create-feedback-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
-          <div class="space-y-1">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Chọn Giáo viên muốn đánh giá</label>
-            <select name="teacher_id" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
-              <option value="">-- Chọn Giáo viên --</option>
-              ${teachers.map(t => `<option value="${t.id}">${t.ho_ten} (${t.chuyen_mon})</option>`).join('')}
-            </select>
-          </div>
-
-          <!-- Rating Stars Selector -->
-          <div class="space-y-1">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Số sao đánh giá</label>
-            <div class="flex items-center gap-1 text-slate-300 mt-1" id="star-selector">
-              ${[1, 2, 3, 4, 5].map(val => `
-                <button type="button" data-val="${val}" class="star-btn hover:scale-110 active:scale-95 transition-transform">
-                  <span class="material-symbols-outlined text-[28px] pointer-events-none">star</span>
-                </button>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead class="bg-[#f3f3f5]">
+              <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-[#e2e2e4]">
+                <th class="px-5 py-3 text-left">Giáo viên</th>
+                <th class="px-5 py-3 text-center">Điểm TB</th>
+                <th class="px-5 py-3 text-center">Số đánh giá</th>
+                <th class="px-5 py-3 text-center">Sao</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${teacherStats.sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg)).map((t, idx) => `
+                <tr class="border-b border-[#f3f3f5] hover:bg-slate-50 transition">
+                  <td class="px-5 py-3">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold
+                        ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-100 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-[#f3f3f5] text-slate-500'}">
+                        ${idx + 1}
+                      </span>
+                      <span class="font-semibold text-slate-800">${t.ho_ten}</span>
+                    </div>
+                  </td>
+                  <td class="px-5 py-3 text-center">
+                    <span class="font-extrabold text-lg ${t.avg === '—' ? 'text-slate-400' : parseFloat(t.avg) >= 4.5 ? 'text-emerald-600' : parseFloat(t.avg) >= 3.5 ? 'text-amber-600' : 'text-red-500'}">${t.avg}</span>
+                  </td>
+                  <td class="px-5 py-3 text-center text-slate-500">${t.count}</td>
+                  <td class="px-5 py-3 text-center">
+                    <div class="flex justify-center gap-0.5">
+                      ${Array.from({ length: 5 }).map((_, i) => `
+                        <span class="material-symbols-outlined fill-current text-[13px] ${i < Math.round(parseFloat(t.avg) || 0) ? 'text-amber-400' : 'text-slate-200'}">star</span>
+                      `).join('')}
+                    </div>
+                  </td>
+                </tr>
               `).join('')}
-            </div>
-            <input type="hidden" name="rating" id="input-rating-value" value="5" />
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ý kiến đóng góp / Phản hồi chi tiết</label>
-            <textarea name="comment" required rows="4" placeholder="Nhập những góp ý về phương pháp giảng dạy, thái độ, nội dung bài học..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
-          </div>
-
-          <div class="pt-2 shrink-0">
-            <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
-              Xác nhận gửi phản hồi
-            </button>
-          </div>
-        </form>
+            </tbody>
+          </table>
+        </div>
       </div>
+      ` : ''}
+
+      <!-- Danh sách đánh giá -->
+      <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm space-y-4">
+        <div class="border-b border-[#f3f3f5] pb-3 flex justify-between items-center">
+          <h3 class="font-bold text-slate-800 text-sm">Tất cả nhận xét</h3>
+          <span class="text-[10px] text-slate-400">Mới nhất trước</span>
+        </div>
+
+        <div class="space-y-4">
+          ${filtered.length === 0 ? `
+            <div class="py-10 text-center text-slate-400 text-xs">
+              <span class="material-symbols-outlined text-[32px] opacity-30 block mb-2">rate_review</span>
+              Chưa có đánh giá nào${filterTeacherId !== 'all' ? ' cho giáo viên này' : ''}.
+            </div>
+          ` : filtered.map(item => {
+            const ngay = item.ngay_tao ? new Date(item.ngay_tao).toLocaleDateString('vi-VN') : '—';
+            const hvName = item.hoc_vien_ten || item.ten_hoc_vien || `HV #${item.hoc_vien_id}`;
+            const gvName = item.giao_vien_ten || item.ten_giao_vien || `GV #${item.giao_vien_id}`;
+            return `
+              <div class="border-b border-[#f3f3f5] last:border-0 pb-4 last:pb-0 space-y-2">
+                <div class="flex justify-between items-start flex-wrap gap-2">
+                  <div>
+                    <span class="font-bold text-slate-800 text-xs block">${hvName}</span>
+                    <span class="text-[10px] text-slate-400 block">Đánh giá GV: <strong class="text-slate-600">${gvName}</strong></span>
+                  </div>
+                  <div class="flex flex-col items-end gap-1">
+                    <div class="flex gap-0.5">
+                      ${Array.from({ length: 5 }).map((_, i) => `
+                        <span class="material-symbols-outlined fill-current text-[14px] ${i < (item.so_sao || 0) ? 'text-amber-400' : 'text-slate-200'}">star</span>
+                      `).join('')}
+                    </div>
+                    <span class="text-[9px] text-slate-400">${ngay}</span>
+                  </div>
+                </div>
+                ${item.nhan_xet ? `
+                  <p class="text-xs text-slate-600 leading-relaxed bg-[#fafafc] border border-slate-100 rounded-xl p-3">
+                    ${item.nhan_xet}
+                  </p>
+                ` : `<p class="text-[10px] text-slate-400 italic">Không có nhận xét.</p>`}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
     </div>
   `;
 
-  // Đăng ký sự kiện
+  // Events
   document.getElementById('btn-refresh-feedbacks')?.addEventListener('click', () => {
+    _selectedTeacherId = 'all';
     renderTeacherFeedbacks(container);
   });
 
-  const modal = document.getElementById('feedback-modal');
-  document.getElementById('btn-add-feedback')?.addEventListener('click', () => {
-    modal.classList.remove('hidden');
-  });
-
-  document.getElementById('close-feedback-modal')?.addEventListener('click', () => {
-    modal.classList.add('hidden');
-  });
-
-  // Selector Star Logic
-  const starBtns = document.querySelectorAll('.star-btn');
-  const ratingInput = document.getElementById('input-rating-value');
-  
-  function highlightStars(val) {
-    starBtns.forEach(btn => {
-      const btnVal = parseInt(btn.getAttribute('data-val'));
-      const icon = btn.querySelector('span');
-      if (btnVal <= val) {
-        icon.classList.add('fill-current', 'text-amber-400');
-        icon.classList.remove('text-slate-300');
-      } else {
-        icon.classList.remove('fill-current', 'text-amber-400');
-        icon.classList.add('text-slate-300');
-      }
-    });
-  }
-  
-  highlightStars(5); // Mặc định 5 sao
-
-  starBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const val = parseInt(btn.getAttribute('data-val'));
-      ratingInput.value = val;
-      highlightStars(val);
-    });
-  });
-
-  // Gửi feedback
-  document.getElementById('create-feedback-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const teacherId = parseInt(formData.get('teacher_id'));
-    const rating = parseInt(formData.get('rating'));
-    const comment = formData.get('comment');
-    
-    const selectedTeacher = teachers.find(t => t.id === teacherId);
-    
-    // Thêm feedback mới vào danh sách đầu
-    const newFeedback = {
-      id: Date.now(),
-      teacherId,
-      teacherName: selectedTeacher ? selectedTeacher.ho_ten : 'Giáo viên',
-      studentName: 'HV (Tôi)',
-      rating,
-      comment,
-      date: new Date().toLocaleDateString('vi-VN')
-    };
-
-    feedbacks.unshift(newFeedback);
-    showToast('Cảm ơn bạn đã gửi đánh giá giáo viên!');
-    modal.classList.add('hidden');
-    
-    // Render lại UI với danh sách mới
-    renderFeedbacksUI(container, userRole, teachers, feedbacks);
+  document.getElementById('filter-teacher')?.addEventListener('change', (e) => {
+    _selectedTeacherId = e.target.value;
+    renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, statsMap, _selectedTeacherId);
   });
 }
