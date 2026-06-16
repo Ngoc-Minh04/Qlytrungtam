@@ -1,3 +1,21 @@
+### [16/06/2026 15:05] — Cho phép tự chọn Thứ tùy ý khi tự động xếp lịch & Sửa chữ 'vô hạn' ở gói học kèm
+- **Loại**: Cải tiến tính năng / Sửa giao diện
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Tự động xếp lịch**: Thay đổi giao diện từ 2 khung radio cố định (T2-4-6 hoặc T3-5-7) thành danh sách checkbox các thứ từ Thứ 2 đến Chủ Nhật. Người dùng có thể chọn tổ hợp Thứ học tùy ý (Ví dụ: T2-4-6, T3-5-7 hoặc bất kỳ tổ hợp nào khác) để hệ thống tự động sinh các ngày học tương ứng cho đến khi đủ số buổi của gói học kèm / số tháng của khóa học nhóm.
+  - **Thời hạn gói kèm**: Sửa lỗi hiển thị thời hạn từ "vô hạn" thành "Theo số buổi" đối với lớp học kèm 1 kèm 1 khi ngày kết thúc (`den_ngay`) của hợp đồng bị null, giúp thông tin rõ ràng và đúng bản chất.
+- **Kết quả**: Thành công
+
+### [16/06/2026 14:50] — Thay đổi hiển thị Thứ học và khoảng thời hạn khóa học/học kèm
+- **Loại**: Cải tiến giao diện / API mới
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật SQL query của API `GET /api/classes` và `GET /api/schedules` để lấy thêm ngày bắt đầu (`tu_ngay`) và ngày kết thúc (`den_ngay`) từ hợp đồng hoạt động (lớp học nhóm / gói kèm 1-1).
+  - **Frontend (ClassManagement.js)**:
+    - Trong bảng lịch sử xếp lịch: Đổi tên cột "Giáo viên" thành cột "Thứ", tự động phân tích ngày học để chuyển thành thứ tương ứng (ví dụ: `Thứ 2`, `Thứ 4`, `Chủ Nhật`).
+    - Bổ sung khoảng thời hạn hợp đồng (Ví dụ: `16/06/2026 - 16/07/2026`) vào dưới cột thông tin Lớp học / Học viên để lễ tân dễ dàng đối chiếu tiến trình và thời gian khóa học.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 14:25] — Sửa hiển thị thời hạn gói kèm, tối ưu Infinite Scroll và bỏ GV hướng dẫn lúc sửa gói
 - **Loại**: Sửa bug / Cải tiến giao diện
 - **File**: `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`

@@ -857,7 +857,9 @@ router.get('/classes', async (req, res) => {
     const result = await pool.query(`
       SELECT l.*, h.ho_ten as ten_giao_vien, g.ten_goi as ten_goi_hoc_phi,
              (SELECT COUNT(*) FROM lop_hoc_hoc_vien WHERE lop_hoc_id = l.id) as si_so,
-             lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai as trang_thai_lich, lhn.id as lich_hoc_nhom_id
+             lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai as trang_thai_lich, lhn.id as lich_hoc_nhom_id,
+             (SELECT MIN(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = l.id AND trang_thai != 'da_huy') as tu_ngay,
+             (SELECT MAX(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = l.id AND trang_thai != 'da_huy') as den_ngay
       FROM lop_hoc l
       LEFT JOIN ho_so h ON l.giao_vien_id = h.id
       LEFT JOIN goi_hoc_phi g ON l.goi_hoc_phi_id = g.id
@@ -1562,10 +1564,13 @@ router.get('/schedules', async (req, res) => {
         lh.trang_thai, lh.da_checkin, lh.pt_xac_nhan, lh.hv_xac_nhan, 
         lh.ngay_xac_nhan, lh.ghi_chu, lh.ngay_tao, lh.ngay_cap_nhat,
         hs_hv.ho_ten as ten_hoc_vien, 
-        hs_gv.ho_ten as ten_giao_vien
+        hs_gv.ho_ten as ten_giao_vien,
+        dk.tu_ngay::text as tu_ngay,
+        dk.den_ngay::text as den_ngay
       FROM lich_hoc lh
       JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
-      JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
+      LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
+      LEFT JOIN dang_ky_hoc_kem dk ON lh.dang_ky_hoc_kem_id = dk.id
       ORDER BY lh.ngay_hoc DESC, lh.gio_bat_dau ASC
     `;
     const result = await pool.query(queryStr);

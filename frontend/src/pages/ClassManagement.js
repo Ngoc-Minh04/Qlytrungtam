@@ -82,20 +82,43 @@ export async function renderClassManagement(container) {
               </div>
             </div>
 
-            <!-- Tự động xếp lịch cả tháng -->
+            <!-- Tự động xếp lịch cả tháng/theo gói -->
             <div class="space-y-2 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
               <div class="flex items-center gap-2">
                 <input type="checkbox" id="auto-schedule-month" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer">
-                <label for="auto-schedule-month" class="font-bold text-slate-700 cursor-pointer select-none text-[11px]">Tự động xếp lịch cả tháng</label>
+                <label for="auto-schedule-month" class="font-bold text-slate-700 cursor-pointer select-none text-[11px]">Tự động xếp lịch</label>
               </div>
-              <div id="auto-schedule-options" class="hidden pl-6 space-y-1.5">
-                <div class="flex items-center gap-2">
-                  <input type="radio" id="schedule-frame-246" name="schedule-frame" value="246" class="text-apple-blue focus:ring-apple-blue w-3.5 h-3.5 cursor-pointer" checked>
-                  <label for="schedule-frame-246" class="text-slate-600 cursor-pointer select-none text-[10.5px]">Khung Thứ 2, 4, 6</label>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input type="radio" id="schedule-frame-357" name="schedule-frame" value="357" class="text-apple-blue focus:ring-apple-blue w-3.5 h-3.5 cursor-pointer">
-                  <label for="schedule-frame-357" class="text-slate-600 cursor-pointer select-none text-[10.5px]">Khung Thứ 3, 5, 7</label>
+              <div id="auto-schedule-options" class="hidden pl-2 space-y-1.5">
+                <span class="block font-semibold text-slate-500 text-[10px]">Chọn các Thứ học cố định:</span>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="1" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
+                    T2
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="2" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
+                    T3
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="3" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
+                    T4
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="4" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
+                    T5
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="5" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
+                    T6
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="6" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
+                    T7
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                    <input type="checkbox" name="schedule-days" value="0" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
+                    CN
+                  </label>
                 </div>
               </div>
             </div>
@@ -264,20 +287,22 @@ export async function renderClassManagement(container) {
   });
 
   // Hàm lấy danh sách các ngày học hợp lệ theo khung (hỗ trợ sinh đủ số buổi học hoặc số tháng học)
-  function getScheduleDates(startDateStr, frameType, limitType, limitVal) {
+  function getScheduleDates(startDateStr, allowedDays, limitType, limitVal) {
     const dates = [];
     const start = new Date(startDateStr);
     
-    // Khung 2-4-6 (Thứ 2 = 1, Thứ 4 = 3, Thứ 6 = 5)
-    // Khung 3-5-7 (Thứ 3 = 2, Thứ 5 = 4, Thứ 7 = 6)
-    const allowedDays = frameType === '246' ? [1, 3, 5] : [2, 4, 6];
+    // Check nếu allowedDays rỗng hoặc null, mặc định Thứ 2, 4, 6
+    const days = (allowedDays && Array.isArray(allowedDays) && allowedDays.length > 0) 
+      ? allowedDays.map(Number) 
+      : [1, 3, 5];
+      
     const currentDate = new Date(start);
 
     if (limitType === 'sessions') {
       const maxSessions = parseInt(limitVal) || 10;
       while (dates.length < maxSessions) {
         const dayOfWeek = currentDate.getDay(); // 0-6 (0 là Chủ nhật, 1 là Thứ 2...)
-        if (allowedDays.includes(dayOfWeek)) {
+        if (days.includes(dayOfWeek)) {
           dates.push(currentDate.toLocaleDateString('sv-SE'));
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -292,7 +317,7 @@ export async function renderClassManagement(container) {
       
       while (currentDate <= end) {
         const dayOfWeek = currentDate.getDay();
-        if (allowedDays.includes(dayOfWeek)) {
+        if (days.includes(dayOfWeek)) {
           dates.push(currentDate.toLocaleDateString('sv-SE'));
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -838,7 +863,9 @@ export async function renderClassManagement(container) {
           si_so: item.si_so || 0,
           trang_thai: item.trang_thai_lich || 'cho_hoc',
           trang_thai_label: label,
-          trang_thai_class: cssClass
+          trang_thai_class: cssClass,
+          tu_ngay: item.tu_ngay,
+          den_ngay: item.den_ngay
         });
       });
       schedules.forEach(item => {
@@ -855,7 +882,9 @@ export async function renderClassManagement(container) {
           si_so: 1,
           trang_thai: item.trang_thai,
           trang_thai_label: item.trang_thai === 'da_hoc' ? 'Đã học' : item.trang_thai === 'vang' ? 'Vắng' : 'Chờ học',
-          trang_thai_class: item.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : item.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+          trang_thai_class: item.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : item.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200',
+          tu_ngay: item.tu_ngay,
+          den_ngay: item.den_ngay
         });
       });
 
@@ -869,9 +898,33 @@ export async function renderClassManagement(container) {
         return a.gio_bat_dau.localeCompare(b.gio_bat_dau);
       });
 
+      // Hàm helper xác định thứ trong tuần dựa trên ngày yyyy-mm-dd
+      function getDayOfWeekLabel(dateStr) {
+        if (!dateStr) return '—';
+        const date = new Date(dateStr);
+        const day = date.getDay(); // 0: Chủ nhật, 1: Thứ 2...
+        if (day === 0) return 'Chủ Nhật';
+        return `Thứ ${day + 1}`;
+      }
+
       let rows = '';
       allSessions.forEach(item => {
         const ngayHocStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
+        
+        // Tính khoảng ngày bắt đầu - kết thúc
+        let dateRangeStr = '';
+        if (item.tu_ngay) {
+          const startFmt = item.tu_ngay.substring(0, 10).split('-').reverse().join('/');
+          let endFmt = 'vô hạn';
+          if (item.den_ngay) {
+            endFmt = item.den_ngay.substring(0, 10).split('-').reverse().join('/');
+          } else if (item.type === 'ca_nhan') {
+            endFmt = 'Theo số buổi';
+          }
+          dateRangeStr = `<div class="text-[9.5px] text-emerald-600 font-bold mt-0.5">Thời hạn: ${startFmt} - ${endFmt}</div>`;
+        }
+
+        const thuLabel = getDayOfWeekLabel(item.ngay_hoc);
         const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
         const isGroup = item.type === 'nhom';
 
@@ -880,9 +933,10 @@ export async function renderClassManagement(container) {
             <td class="px-5 py-3.5">
               <div class="font-bold text-apple-ink">${item.title}</div>
               ${item.detail ? `<div class="text-[9.5px] text-slate-400 mt-0.5">${item.detail}</div>` : ''}
-              <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày: ${ngayHocStr}</div>
+              ${dateRangeStr}
+              <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày dạy: ${ngayHocStr}</div>
             </td>
-            <td class="px-5 py-3.5 text-slate-600">${item.ten_giao_vien}</td>
+            <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
             <td class="px-5 py-3.5 font-bold ${isGroup ? 'text-apple-blue' : 'text-apple-ink'} whitespace-nowrap">${gioHocStr} ${isGroup ? `(${item.si_so}/50 HS)` : ''}</td>
             <td class="px-5 py-3.5">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
@@ -910,7 +964,7 @@ export async function renderClassManagement(container) {
             <thead>
               <tr class="bg-apple-parchment text-slate-500 text-[10px] font-semibold uppercase tracking-wider border-b border-apple-divider">
                 <th class="px-5 py-3">Lớp học / Học viên</th>
-                <th class="px-5 py-3">Giáo viên</th>
+                <th class="px-5 py-3">Thứ</th>
                 <th class="px-5 py-3">Chi tiết ca</th>
                 <th class="px-5 py-3">Trạng thái</th>
                 <th class="px-5 py-3 text-right">Thao tác</th>
@@ -989,7 +1043,17 @@ export async function renderClassManagement(container) {
     if (!ketThuc) { showToast('Không thể tính giờ kết thúc, vui lòng kiểm tra lại', 'error'); return; }
 
     const isAutoSchedule = autoScheduleCheck && autoScheduleCheck.checked;
-    const frameType = isAutoSchedule ? document.querySelector('input[name="schedule-frame"]:checked').value : null;
+    
+    // Lấy các Thứ được check
+    let selectedDays = [];
+    if (isAutoSchedule) {
+      const checkedBoxes = document.querySelectorAll('input[name="schedule-days"]:checked');
+      selectedDays = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+      if (selectedDays.length === 0) {
+        showToast('Vui lòng chọn ít nhất một Thứ để xếp lịch tự động!', 'error');
+        return;
+      }
+    }
 
     if (type === 'nhom') {
       const pkgId = coursePkgSelect.value;
@@ -1007,9 +1071,9 @@ export async function renderClassManagement(container) {
       if (isAutoSchedule) {
         const selectedOpt = coursePkgSelect.options[coursePkgSelect.selectedIndex];
         const months = selectedOpt ? parseInt(selectedOpt.getAttribute('data-months')) : 1;
-        ngay_hoc_list = getScheduleDates(ngayHoc, frameType, 'months', months || 1);
+        ngay_hoc_list = getScheduleDates(ngayHoc, selectedDays, 'months', months || 1);
         if (ngay_hoc_list.length === 0) {
-          showToast('Không tìm thấy ngày học nào phù hợp với khung đã chọn trong thời hạn của gói!', 'error');
+          showToast('Không tìm thấy ngày học nào phù hợp với Thứ đã chọn trong thời hạn của gói!', 'error');
           return;
         }
       }
@@ -1064,9 +1128,9 @@ export async function renderClassManagement(container) {
         const usedSes = parseInt(tutorIdInput.getAttribute('data-used-sessions')) || 0;
         const sessionsToSchedule = Math.max(1, totalSes - usedSes);
 
-        ngay_hoc_list = getScheduleDates(ngayHoc, frameType, 'sessions', sessionsToSchedule);
+        ngay_hoc_list = getScheduleDates(ngayHoc, selectedDays, 'sessions', sessionsToSchedule);
         if (ngay_hoc_list.length === 0) {
-          showToast('Không tìm thấy ngày học nào phù hợp với khung đã chọn!', 'error');
+          showToast('Không tìm thấy ngày học nào phù hợp với Thứ đã chọn!', 'error');
           return;
         }
       }
