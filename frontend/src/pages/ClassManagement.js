@@ -589,7 +589,7 @@ export async function renderClassManagement(container) {
 
     // Render form sửa đổi
     editModal.innerHTML = `
-      <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl p-6 space-y-4 animate-in fade-in duration-150 text-xs">
+      <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl p-6 space-y-4 animate-in fade-in duration-150 text-xs max-h-[85vh] overflow-y-auto">
         <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40">
           <h3 class="font-bold text-apple-ink text-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-apple-blue text-[18px]">edit_calendar</span>

@@ -1130,11 +1130,19 @@ router.put('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res) =
 
     // Cập nhật thông tin lớp
     const newGvId = giao_vien_id || oldClass.giao_vien_id;
+    let finalTenLop = ten_lop || oldClass.ten_lop;
+    if (newGvId !== oldClass.giao_vien_id && (!ten_lop || ten_lop.startsWith('Lớp nhóm - GV'))) {
+      const gvNameRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [newGvId]);
+      if (gvNameRes.rows.length > 0) {
+        finalTenLop = `Lớp nhóm - GV ${gvNameRes.rows[0].ho_ten}`;
+      }
+    }
+
     await client.query(
       `UPDATE lop_hoc 
        SET ten_lop = $1, giao_vien_id = $2, goi_hoc_phi_id = $3
        WHERE id = $4`,
-      [ten_lop || oldClass.ten_lop, newGvId, goi_hoc_phi_id !== undefined ? goi_hoc_phi_id : oldClass.goi_hoc_phi_id, id]
+      [finalTenLop, newGvId, goi_hoc_phi_id !== undefined ? goi_hoc_phi_id : oldClass.goi_hoc_phi_id, id]
     );
 
     // Cập nhật học viên

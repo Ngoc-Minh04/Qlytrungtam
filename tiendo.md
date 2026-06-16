@@ -1,3 +1,18 @@
+### [16/06/2026 15:50] — Sửa lỗi đổi giáo viên thành công nhưng giao diện vẫn hiển thị giáo viên cũ
+- **Loại**: Sửa bug / Đồng bộ dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - Phát hiện nguyên nhân: Cột "Lớp học / Học viên" hiển thị `item.title` (chính là tên lớp học nhóm `ten_lop`). Tên này được sinh mặc định theo dạng `Lớp nhóm - GV [Tên Giáo Viên]`. Khi sửa đổi giáo viên của lớp học nhóm, backend cập nhật cột `giao_vien_id` nhưng giữ nguyên `ten_lop` chứa tên giáo viên cũ.
+  - Giải pháp: Cập nhật logic API `PUT /api/classes/:id` ở backend. Nếu phát hiện thay đổi giáo viên (`newGvId !== oldClass.giao_vien_id`), hệ thống sẽ tự động tra cứu tên giáo viên mới và cập nhật lại `ten_lop` theo format tương ứng để đồng bộ hiển thị chuẩn xác giáo viên mới lên giao diện tức thì.
+- **Kết quả**: Thành công
+
+### [16/06/2026 15:40] — Sửa lỗi tràn layout Modal sửa lịch học
+- **Loại**: Sửa giao diện / Fix CSS Layout
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - Gán thêm class `max-h-[85vh] overflow-y-auto` cho container Modal sửa ca học nhằm giới hạn chiều cao tối đa của form, tự động xuất hiện thanh cuộn đứng bên trong khi màn hình có độ phân giải thấp, giúp tránh tình trạng nút lưu/hủy bị che khuất và không bấm được.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 15:35] — Hỗ trợ xem chi tiết ca học kèm & Sửa/Hủy ca đơn lẻ linh hoạt
 - **Loại**: Cải tiến tính năng / UI UX
 - **File**: `frontend/src/pages/ClassManagement.js`
