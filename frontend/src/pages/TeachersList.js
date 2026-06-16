@@ -42,7 +42,7 @@ export async function renderTeachersList(container, role) {
               </div>
             </div>
           </td>
-          <td class="px-6 py-4">
+          <td class="px-6 py-4 hidden">
             <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f3f3f5] text-apple-ink font-bold text-[10px] border border-[#e2e2e4]">
               ${t.chuyen_mon || 'Dạy tiếng Anh'}
             </span>
@@ -93,8 +93,8 @@ export async function renderTeachersList(container, role) {
             <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
             <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
           </div>
-          <!-- Bộ lọc Chuyên môn -->
-          <select id="filter-expertise" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <!-- Bộ lọc Chuyên môn (Ẩn) -->
+          <select id="filter-expertise" class="hidden border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
             <option value="">Tất cả chuyên môn</option>
             <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
             <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
@@ -128,7 +128,7 @@ export async function renderTeachersList(container, role) {
               <thead>
                 <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <th class="px-6 py-4">GIÁO VIÊN</th>
-                  <th class="px-6 py-4">CHUYÊN MÔN</th>
+                  <th class="px-6 py-4 hidden">CHUYÊN MÔN</th>
                   <th class="px-6 py-4">SỐ ĐIỆN THOẠI</th>
                   <th class="px-6 py-4">EMAIL</th>
                   <th class="px-6 py-4">KINH NGHIỆM</th>
@@ -147,6 +147,7 @@ export async function renderTeachersList(container, role) {
               <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
             </button>
           </div>
+          <div id="infinite-scroll-sentinel" class="h-4 w-full"></div>
         </div>
       </div>
 
@@ -200,10 +201,10 @@ export async function renderTeachersList(container, role) {
                 <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
-              <div class="sm:col-span-2">
+              <div class="sm:col-span-2 hidden">
                 <label class="block font-semibold text-slate-600 mb-1">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-teacher-expertise" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
+                  <option value="Dạy tiếng Anh" selected>Dạy tiếng Anh</option>
                   <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
                   <option value="Luyện thi IELTS">Luyện thi IELTS</option>
                   <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
@@ -244,19 +245,15 @@ export async function renderTeachersList(container, role) {
     const btnLoadMore = document.getElementById('btn-load-more');
     const spinnerLoadMore = document.getElementById('load-more-spinner');
 
+    // IntersectionObserver Infinite Scroll Setup
     let displayCount = 20;
     let filteredList = [...allTeachers];
+    let isPageLoadingMore = false;
 
     function renderInfinityRows(list) {
       const rowsHtml = renderTableRows(list.slice(0, displayCount));
       tableBody.innerHTML = rowsHtml;
       attachRowEvents(list.slice(0, displayCount));
-
-      if (displayCount < list.length) {
-        loadMoreContainer.classList.remove('hidden');
-      } else {
-        loadMoreContainer.classList.add('hidden');
-      }
     }
 
     function updateTableInfinity(list) {
@@ -265,30 +262,32 @@ export async function renderTeachersList(container, role) {
       renderInfinityRows(filteredList);
     }
 
-    btnLoadMore?.addEventListener('click', () => {
-      spinnerLoadMore.classList.remove('hidden');
-      btnLoadMore.setAttribute('disabled', 'true');
-      setTimeout(() => {
-        displayCount = Math.min(displayCount + 20, filteredList.length);
-        renderInfinityRows(filteredList);
-        spinnerLoadMore.classList.add('hidden');
-        btnLoadMore.removeAttribute('disabled');
-      }, 400);
-    });
-
-    const scrollContainer = tableBody.closest('.overflow-x-auto') || tableBody.closest('.overflow-y-auto');
-    const onScroll = () => {
-      if (displayCount >= filteredList.length) return;
-      const scrollEl = scrollContainer || document.documentElement;
-      const scrolled = scrollContainer ? scrollEl.scrollTop + scrollEl.clientHeight : window.scrollY + window.innerHeight;
-      const total = scrollContainer ? scrollEl.scrollHeight : document.documentElement.scrollHeight;
-      
-      if (scrolled >= total - 50 && !btnLoadMore.hasAttribute('disabled')) {
-        btnLoadMore.click();
-      }
-    };
-    if (scrollContainer) scrollContainer.addEventListener('scroll', onScroll, { passive: true });
-    else window.addEventListener('scroll', onScroll, { passive: true });
+    // Thiết lập IntersectionObserver theo dõi sentinel
+    if (window.teachersObserver) {
+      window.teachersObserver.disconnect();
+    }
+    const sentinel = document.getElementById('infinite-scroll-sentinel');
+    if (sentinel) {
+      window.teachersObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && displayCount < filteredList.length && !isPageLoadingMore) {
+          isPageLoadingMore = true;
+          if (loadMoreContainer) {
+            loadMoreContainer.classList.remove('hidden');
+            spinnerLoadMore?.classList.remove('hidden');
+          }
+          setTimeout(() => {
+            displayCount = Math.min(displayCount + 20, filteredList.length);
+            renderInfinityRows(filteredList);
+            isPageLoadingMore = false;
+            if (loadMoreContainer) {
+              loadMoreContainer.classList.add('hidden');
+              spinnerLoadMore?.classList.add('hidden');
+            }
+          }, 150);
+        }
+      }, { rootMargin: '100px' });
+      window.teachersObserver.observe(sentinel);
+    }
 
     const filterExperience = document.getElementById('filter-experience');
     const filterGender = document.getElementById('filter-gender');
@@ -628,8 +627,8 @@ function showTeacherDetailModal(t, container, role) {
                 class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
             </div>
 
-            <!-- Chuyên môn -->
-            <div class="space-y-1">
+            <!-- Chuyên môn (Ẩn) -->
+            <div class="space-y-1 hidden">
               <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
                 <span class="material-symbols-outlined text-[14px]">school</span> Chuyên môn
               </label>

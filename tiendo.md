@@ -1,3 +1,59 @@
+### [16/06/2026 13:45] — Hoàn tất sửa đổi các lỗi liên quan đến Gói học, Học kèm, Hủy gói hoàn tiền và Xếp lịch đủ buổi
+- **Loại**: Sửa bug / Cải tiến tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/Dashboard.js`
+- **Mô tả**:
+  - **TutoringPackages**: Sửa lỗi 500 khi thêm/sửa gói học kèm 1-1 bằng cách tự động gán `so_thang` thành `null` khi `loai_goi = 'theo_buoi'` để pass check constraint `chk_loai_goi` ở backend, đồng thời cho phép trường Thời hạn để trống trên UI.
+  - **StudentsList**:
+    - Sửa Infinite Scroll bằng cách giảm `rootMargin` từ `100px` thành `10px` để tránh trigger tải liên tục.
+    - Form đăng ký gói kèm 1-1: Để trống số buổi đăng ký mặc định khi chưa chọn gói và tự động điền đúng theo gói khi chọn.
+    - Form in-place edit gói kèm: Thêm option `-- Chưa xếp --` mặc định nếu hợp đồng chưa xếp giáo viên (tránh tự gán gv233).
+    - Đổi nút "Hủy khóa" ngoài danh sách học viên thành lối tắt mở modal chi tiết học viên và kích hoạt tab Gói học.
+  - **ClassManagement**:
+    - Chặn và ẩn nút "Chọn tất cả học sinh" khi loại hình lớp học là 1 kèm 1.
+    - Truyền `giao_vien_id` được chọn trên form lên payload xếp lịch học kèm.
+    - Sửa thuật toán tự động xếp lịch để sinh đủ số ca (cho gói kèm 1-1) hoặc sinh đủ số tháng (cho gói đại trà) thay vì bị giới hạn trong tháng hiện tại.
+  - **Dashboard & Backend API**:
+    - Viết API `PUT /api/registrations/tutoring/:id/cancel` cho phép hủy gói học kèm hoàn tiền thành công (tránh gọi nhầm API hủy khóa học đại trà gây lỗi 500).
+    - Cập nhật backend `POST /api/schedule` tự động gán `giao_vien_id` vào hợp đồng học kèm nếu hợp đồng chưa có giáo viên.
+- **Kết quả**: Thành công
+
+### [16/06/2026 12:00] — Đồng bộ Infinite Scroll và nâng cấp Xếp lịch cả tháng
+- **Loại**: Cải tiến giao diện / Trải nghiệm người dùng / Tính năng mới
+- **File**: `frontend/src/pages/StaffList.js`, `frontend/src/pages/ClassManagement.js`, `tiendo.md`
+- **Mô tả**:
+  - **StaffList**: Đồng bộ hóa cơ chế Infinite Scroll bằng `IntersectionObserver` thay thế sự kiện cuộn window (`scroll`) để tối ưu hóa hiệu suất hiển thị.
+  - **ClassManagement**: Thêm tùy chọn "Tự động xếp lịch cả tháng" theo khung Thứ 2-4-6 hoặc Thứ 3-5-7. Triển khai thuật toán tính ngày tự động gửi lên backend. Khi đặt lịch thành công, chỉ gọi `loadScheduleList()` để cập nhật bảng lịch sử đặt lịch bên phải tức thì, giữ nguyên form đang nhập bên trái.
+- **Kết quả**: Thành công
+
+### [16/06/2026 11:39] — Cập nhật API Backend cho phép xếp lịch hàng loạt và giao_vien_id nullable
+- **Loại**: Cải tiến tính năng / API mới / Di cư Database
+- **File**: `backend/src/routes/api.js`, `database`
+- **Mô tả**:
+  - Chuyển đổi cột `giao_vien_id` trong bảng `dang_ky_hoc_kem` thành nullable và sửa API `POST /api/registrations/tutoring` tương thích.
+  - Cập nhật định nghĩa View `v_trang_thai_hoi_vien` để kết hợp kiểm tra trạng thái hoạt động dựa trên cả gói đại trà và gói học kèm 1 kèm 1.
+  - Nâng cấp API `POST /api/classes` và `POST /api/schedule` hỗ trợ nhận mảng `ngay_hoc_list` để xếp lịch hàng loạt cả tháng bọc trong 1 Transaction duy nhất.
+- **Kết quả**: Thành công
+
+### [16/06/2026 10:03] — Cải tiến giao diện Lớp học, Infinite Scroll và Cập nhật Gói học
+- **Loại**: Cải tiến giao diện / Trải nghiệm người dùng / Sửa bug
+- **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/ClassManagement.js`, `tiendo.md`
+- **Mô tả**:
+  - **StudentsList**: Thay thế nút bấm "Tải thêm" bằng cơ chế tự động Infinite Scroll dựa trên hành vi cuộn dọc của window. Khắc phục lệch múi giờ date picker khi sửa gói học bằng `.toLocaleDateString('sv-SE')`. Đổi input tiền tệ sang text có dấu chấm tự động, chặn chọn ngày quá khứ và tự động giữ modal + chuyển về Tab Gói học khi lưu sửa thành công.
+  - **ClassManagement**: Lọc danh sách học viên lớp nhóm chỉ khi đã chọn gói học tương ứng. Cập nhật logic hiển thị trạng thái lớp học nhóm quá hạn dựa trên ngày hiện tại (hiển thị "Chưa điểm danh"). Đổi luồng xếp lớp kèm 1-1 tương tự lớp nhóm: Chọn gói học kèm -> hiện học sinh có gói tương ứng -> giới hạn chọn duy nhất 1 học sinh và tự động tra cứu ID hợp đồng.
+- **Kết quả**: Thành công
+
+### [16/06/2026 10:02] — Phân quyền xóa gói học phí và gói học kèm cho Lễ tân
+- **Loại**: Cải tiến tính năng / Phân quyền
+- **File**: `backend/src/routes/api.js`, `tiendo.md`
+- **Mô tả**: Cập nhật phân quyền endpoint DELETE của gói học phí (`/api/course-packages/:id`) và gói học kèm (`/api/tutoring-packages/:id`) để cho phép cả vai trò `le_tan` thực hiện thao tác xóa trực tiếp từ giao diện.
+- **Kết quả**: Thành công
+
+### [15/06/2026 16:50] — Phân quyền API check-in cho Giáo viên tự chấm công
+- **Loại**: Cải tiến tính năng
+- **File**: `backend/src/routes/api.js`, `tiendo.md`
+- **Mô tả**: Thêm vai trò 'giao_vien' vào middleware verifyAccess của API POST /api/checkin-logs, cho phép tài khoản giáo viên tự chấm công thủ công khi quên quét mã QR.
+- **Kết quả**: Thành công
+
 ### [15/06/2026 14:05] — Fix triệt để lệch ngày qua SQL CAST, mới thêm lên đầu danh sách, hoàn thiện luồng Modal
 - **Loại**: Cải tiến tính năng & Sửa bug
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`, `frontend/src/pages/Dashboard.js`, `tiendo.md`

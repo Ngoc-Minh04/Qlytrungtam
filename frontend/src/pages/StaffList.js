@@ -129,6 +129,7 @@ export async function renderStaffList(container, role) {
               <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
             </button>
           </div>
+          <div id="infinite-scroll-sentinel" class="h-4 w-full"></div>
         </div>
       </div>
 
@@ -260,19 +261,19 @@ export async function renderStaffList(container, role) {
       }, 400);
     });
 
-    const scrollContainer = tableBody.closest('.overflow-x-auto') || tableBody.closest('.overflow-y-auto');
-    const onScroll = () => {
-      if (displayCount >= filteredList.length) return;
-      const scrollEl = scrollContainer || document.documentElement;
-      const scrolled = scrollContainer ? scrollEl.scrollTop + scrollEl.clientHeight : window.scrollY + window.innerHeight;
-      const total = scrollContainer ? scrollEl.scrollHeight : document.documentElement.scrollHeight;
-
-      if (scrolled >= total - 50 && !btnLoadMore.hasAttribute('disabled')) {
-        btnLoadMore.click();
-      }
-    };
-    if (scrollContainer) scrollContainer.addEventListener('scroll', onScroll, { passive: true });
-    else window.addEventListener('scroll', onScroll, { passive: true });
+    // Thiết lập IntersectionObserver theo dõi sentinel
+    if (window.staffObserver) {
+      window.staffObserver.disconnect();
+    }
+    const sentinel = document.getElementById('infinite-scroll-sentinel');
+    if (sentinel) {
+      window.staffObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && displayCount < filteredList.length && !btnLoadMore.hasAttribute('disabled')) {
+          btnLoadMore.click();
+        }
+      }, { rootMargin: '100px' });
+      window.staffObserver.observe(sentinel);
+    }
 
     function applyFilters() {
       const q = searchInput.value.toLowerCase();

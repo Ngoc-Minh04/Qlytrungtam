@@ -82,6 +82,24 @@ export async function renderClassManagement(container) {
               </div>
             </div>
 
+            <!-- Tự động xếp lịch cả tháng -->
+            <div class="space-y-2 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="auto-schedule-month" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer">
+                <label for="auto-schedule-month" class="font-bold text-slate-700 cursor-pointer select-none text-[11px]">Tự động xếp lịch cả tháng</label>
+              </div>
+              <div id="auto-schedule-options" class="hidden pl-6 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <input type="radio" id="schedule-frame-246" name="schedule-frame" value="246" class="text-apple-blue focus:ring-apple-blue w-3.5 h-3.5 cursor-pointer" checked>
+                  <label for="schedule-frame-246" class="text-slate-600 cursor-pointer select-none text-[10.5px]">Khung Thứ 2, 4, 6</label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="radio" id="schedule-frame-357" name="schedule-frame" value="357" class="text-apple-blue focus:ring-apple-blue w-3.5 h-3.5 cursor-pointer">
+                  <label for="schedule-frame-357" class="text-slate-600 cursor-pointer select-none text-[10.5px]">Khung Thứ 3, 5, 7</label>
+                </div>
+              </div>
+            </div>
+
             <!-- Giờ bắt đầu: Grid button 8h-22h -->
             <div>
               <label class="block font-semibold text-slate-600 mb-1">Giờ bắt đầu <span class="text-rose-500 font-bold">*</span></label>
@@ -234,6 +252,57 @@ export async function renderClassManagement(container) {
   // Khởi tạo time grid với ngày hôm nay
   renderTimeGrid(todayStr);
 
+  // Toggle hiển thị khung tự động xếp lịch cả tháng
+  const autoScheduleCheck = document.getElementById('auto-schedule-month');
+  const autoScheduleOptions = document.getElementById('auto-schedule-options');
+  autoScheduleCheck?.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      autoScheduleOptions.classList.remove('hidden');
+    } else {
+      autoScheduleOptions.classList.add('hidden');
+    }
+  });
+
+  // Hàm lấy danh sách các ngày học hợp lệ theo khung (hỗ trợ sinh đủ số buổi học hoặc số tháng học)
+  function getScheduleDates(startDateStr, frameType, limitType, limitVal) {
+    const dates = [];
+    const start = new Date(startDateStr);
+    
+    // Khung 2-4-6 (Thứ 2 = 1, Thứ 4 = 3, Thứ 6 = 5)
+    // Khung 3-5-7 (Thứ 3 = 2, Thứ 5 = 4, Thứ 7 = 6)
+    const allowedDays = frameType === '246' ? [1, 3, 5] : [2, 4, 6];
+    const currentDate = new Date(start);
+
+    if (limitType === 'sessions') {
+      const maxSessions = parseInt(limitVal) || 10;
+      while (dates.length < maxSessions) {
+        const dayOfWeek = currentDate.getDay(); // 0-6 (0 là Chủ nhật, 1 là Thứ 2...)
+        if (allowedDays.includes(dayOfWeek)) {
+          dates.push(currentDate.toLocaleDateString('sv-SE'));
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+        // Chặn an toàn vòng lặp vô hạn (không quá 1 năm)
+        if (dates.length >= 150 || (currentDate - start) > 365 * 24 * 60 * 60 * 1000) break;
+      }
+    } else {
+      // limitType === 'months'
+      const months = parseInt(limitVal) || 1;
+      const end = new Date(start);
+      end.setMonth(start.getMonth() + months);
+      
+      while (currentDate <= end) {
+        const dayOfWeek = currentDate.getDay();
+        if (allowedDays.includes(dayOfWeek)) {
+          dates.push(currentDate.toLocaleDateString('sv-SE'));
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+        // Chặn an toàn
+        if (dates.length >= 150) break;
+      }
+    }
+    return dates;
+  }
+
   // Chọn thời lượng
   document.querySelectorAll('.duration-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -264,13 +333,15 @@ export async function renderClassManagement(container) {
 
   // Chọn tất cả / bỏ chọn tất cả
   selectAllBtn?.addEventListener('click', () => {
+    if (classTypeSelect.value === 'ca_nhan') {
+      showToast('Lớp học kèm 1 kèm 1 chỉ cho phép chọn duy nhất 1 học viên', 'warning');
+      return;
+    }
     const visibleIds = filteredStudents.map(s => s.id);
     const allSelected = visibleIds.every(id => selectedStudentIds.includes(id));
     if (allSelected) {
-      // Bỏ chọn tất cả visible
       selectedStudentIds = selectedStudentIds.filter(id => !visibleIds.includes(id));
     } else {
-      // Chọn tất cả visible (tối đa 50)
       visibleIds.forEach(id => {
         if (!selectedStudentIds.includes(id) && selectedStudentIds.length < 50) {
           selectedStudentIds.push(id);
@@ -292,78 +363,37 @@ export async function renderClassManagement(container) {
       const hsRes = await fetch(`${API_BASE}/students`);
       const hsData = await hsRes.json();
       allStudents = hsData.data || [];
-      filteredStudents = [...allStudents];
+      filteredStudents = [];
       renderStudentChecklist();
 
       const pkgRes = await fetch(`${API_BASE}/course-packages`);
       const pkgData = await pkgRes.json();
       const packages = pkgData.data || [];
-      coursePkgSelect.innerHTML = '<option value="">-- Chọn gói học phí --</option>' + packages.map(p => `<option value="${p.id}">${p.ten_goi}</option>`).join('');
+      coursePkgSelect.innerHTML = '<option value="">-- Chọn gói học phí --</option>' + packages.map(p => `<option value="${p.id}" data-months="${p.so_thang}">${p.ten_goi}</option>`).join('');
 
-      // Tải hợp đồng/đăng ký học kèm để chọn ở lớp học kèm 1-1
-      const tutorRegsRes = await fetch(`${API_BASE}/registrations`).then(r => r.json());
-      // Thực tế ta sẽ fetch danh sách học viên đăng ký học kèm đang hoạt động
-      // Endpoint /api/students trả về active_tutor_pkg_ids.
-      // Để chính xác, ta sẽ lấy danh sách đăng ký học kèm đang hoạt động từ backend
-      const activeTutorRegsRes = await fetch(`${API_BASE}/checkins`); // Ta có thể fetch qua API hoặc tự xử lý lọc.
-      // Hãy gọi API lấy danh sách registrations học kèm
-      const allRegsRes = await fetch(`${API_BASE}/registrations`).then(r => r.json());
-      // Hoặc ta sẽ fetch trực tiếp từ /api/students và lọc ra các bạn học viên có active_tutor_pkg_ids.length > 0
-      // Để lấy ra dang_ky_hoc_kem_id, ta sẽ fetch API GET /api/students/:id/registrations cho từng học viên hoặc tải danh sách học viên
-      // Hãy lấy danh sách đăng ký học kèm từ database qua API
-      const tutorContractsRes = await fetch(`${API_BASE}/students`);
-      const tutorContractsData = await tutorContractsRes.json();
-      const hsList = tutorContractsData.data || [];
-      
-      // Ở backend có API GET /api/students/:id/registrations. Nhưng ở đây ta cần lấy toàn bộ hợp đồng kèm
-      // Hãy fetch từ route /api/reports/revenue hoặc từ endpoint registrations học kèm nếu có.
-      // Dựa trên backend: GET /api/students/:id/registrations trả về khoa_hoc và hoc_kem của từng bạn.
-      // Chúng ta sẽ lấy tất cả học viên có gói học kèm hoạt động và hiển thị option
-      // Ở đây ta có thể duyệt qua allStudents, lấy ra những bạn có active_tutor_pkg_ids.length > 0.
-      // Để có dang_ky_hoc_kem_id chính xác, ta cần load danh sách đăng ký học kèm của họ.
-      // Hãy fetch danh sách đăng ký học kèm từ backend:
-      // Ta có thể gọi API GET /api/registrations. Nhưng registrations trả về dang_ky_khoa_hoc.
-      // Để giải quyết gọn gàng, ta có thể bổ sung API hoặc dùng chính danh sách học viên có active_tutor_pkg_ids.
-      // Lớp kèm 1-1 sẽ chọn học viên, sau đó load các gói kèm đang hoạt động của học viên đó!
-      // Đúng rồi, luồng thông minh nhất: Chọn học viên trước, sau đó tự động load các gói kèm đang hoạt động của học viên đó để chọn.
-      // Hãy sửa lại HTML: thêm select Chọn học viên học kèm, sau đó chọn gói học kèm tương ứng.
+      const tutorPkgRes = await fetch(`${API_BASE}/tutoring-packages`);
+      const tutorPkgData = await tutorPkgRes.json();
+      const tutoringPkgs = tutorPkgData.data || [];
+      tutoringSelect.innerHTML = '<option value="">-- Chọn gói học kèm --</option>' + tutoringPkgs.map(p => `<option value="${p.id}">${p.ten_goi}</option>`).join('');
     } catch (e) {
       showToast('Không thể tải dữ liệu biểu mẫu xếp lịch', 'error');
     }
   }
 
-  // Chọn học viên kèm -> Load các đăng ký học kèm đang hoạt động
-  let studentTutorPkgs = [];
-  async function loadStudentTutoringPackages(studentId) {
-    if (!studentId) {
-      tutoringSelect.innerHTML = '<option value="">-- Chọn gói kèm đang hoạt động --</option>';
-      tutorIdInput.value = '';
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/students/${studentId}/registrations`);
-      const data = await res.json();
-      const tutoringRegs = data.data?.hoc_kem || [];
-      const activeTutoringRegs = tutoringRegs.filter(r => r.trang_thai === 'dang_hoat_dong');
-      
-      if (activeTutoringRegs.length === 0) {
-        tutoringSelect.innerHTML = '<option value="">-- Học viên chưa đăng ký gói kèm nào --</option>';
-        tutorIdInput.value = '';
-      } else {
-        tutoringSelect.innerHTML = '<option value="">-- Chọn gói kèm đang hoạt động --</option>' + activeTutoringRegs.map(r => `
-          <option value="${r.id}">${r.ten_goi} (GV: ${r.ten_giao_vien || 'Chưa xếp'})</option>
-        `).join('');
-      }
-    } catch {
-      showToast('Lỗi khi tải gói học kèm của học viên', 'error');
-    }
-  }
-
   function renderStudentChecklist() {
-    if (filteredStudents.length === 0) {
-      studentPickerList.innerHTML = '<p class="text-slate-400 italic text-center py-2">Không tìm thấy học viên nào.</p>';
+    const isGroup = classTypeSelect.value === 'nhom';
+    const pkgId = isGroup ? parseInt(coursePkgSelect.value) : parseInt(tutoringSelect.value);
+
+    if (!pkgId) {
+      studentPickerList.innerHTML = '<p class="text-slate-400 italic text-center py-2">Vui lòng chọn Gói học để hiển thị danh sách học viên.</p>';
       return;
     }
+
+    if (filteredStudents.length === 0) {
+      studentPickerList.innerHTML = '<p class="text-slate-400 italic text-center py-2">Không tìm thấy học viên nào sở hữu gói học này.</p>';
+      return;
+    }
+
     studentPickerList.innerHTML = filteredStudents.map(s => {
       const isSelected = selectedStudentIds.includes(s.id);
       return `
@@ -377,21 +407,52 @@ export async function renderClassManagement(container) {
       `;
     }).join('');
 
-    selectedCountBadge.textContent = `(${selectedStudentIds.length}/50)`;
+    selectedCountBadge.textContent = isGroup ? `(${selectedStudentIds.length}/50)` : `(${selectedStudentIds.length}/1)`;
 
     studentPickerList.querySelectorAll('[data-id]').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', async () => {
         const id = parseInt(el.getAttribute('data-id'));
-        if (selectedStudentIds.includes(id)) {
-          selectedStudentIds = selectedStudentIds.filter(sid => sid !== id);
-        } else {
-          if (selectedStudentIds.length >= 50) {
-            showToast('Lớp học nhóm tối đa chỉ cho phép 50 học viên!', 'error');
-            return;
+        const isGroup = classTypeSelect.value === 'nhom';
+        
+        if (isGroup) {
+          if (selectedStudentIds.includes(id)) {
+            selectedStudentIds = selectedStudentIds.filter(sid => sid !== id);
+          } else {
+            if (selectedStudentIds.length >= 50) {
+              showToast('Lớp học nhóm tối đa chỉ cho phép 50 học viên!', 'error');
+              return;
+            }
+            selectedStudentIds.push(id);
           }
-          selectedStudentIds.push(id);
+        } else {
+          if (selectedStudentIds.includes(id)) {
+            selectedStudentIds = [];
+            tutorIdInput.value = '';
+          } else {
+            selectedStudentIds = [id];
+            const pkgId = parseInt(tutoringSelect.value);
+            try {
+              const res = await fetch(`${API_BASE}/students/${id}/registrations`);
+              const data = await res.json();
+              const activeReg = data.data?.hoc_kem?.find(r => r.goi_hoc_kem_id === pkgId && r.trang_thai === 'dang_hoat_dong');
+              if (activeReg) {
+                tutorIdInput.value = activeReg.id;
+                tutorIdInput.setAttribute('data-total-sessions', activeReg.so_buoi_dang_ky || 10);
+                tutorIdInput.setAttribute('data-used-sessions', activeReg.so_buoi_da_hoc || 0);
+              } else {
+                showToast('Học viên không có gói học kèm này đang hoạt động!', 'error');
+                selectedStudentIds = [];
+                tutorIdInput.value = '';
+              }
+            } catch (err) {
+              showToast('Lỗi tải thông tin đăng ký của học viên', 'error');
+              selectedStudentIds = [];
+              tutorIdInput.value = '';
+            }
+          }
         }
-        selectedCountBadge.textContent = `(${selectedStudentIds.length}/50)`;
+        
+        selectedCountBadge.textContent = isGroup ? `(${selectedStudentIds.length}/50)` : `(${selectedStudentIds.length}/1)`;
         renderStudentChecklist();
         renderSelectedBadges();
       });
@@ -414,6 +475,9 @@ export async function renderClassManagement(container) {
       btn.addEventListener('click', () => {
         const id = parseInt(btn.getAttribute('data-id'));
         selectedStudentIds = selectedStudentIds.filter(sid => sid !== id);
+        if (classTypeSelect.value !== 'nhom') {
+          tutorIdInput.value = '';
+        }
         renderStudentChecklist();
         renderSelectedBadges();
       });
@@ -423,46 +487,24 @@ export async function renderClassManagement(container) {
   // Chuyển đổi giao diện khi thay đổi loại lớp
   classTypeSelect?.addEventListener('change', () => {
     const val = classTypeSelect.value;
+    selectedStudentIds = [];
+    filteredStudents = [];
+    tutorIdInput.value = '';
+    renderStudentChecklist();
+    renderSelectedBadges();
+
     if (val === 'nhom') {
       coursePkgGroup.classList.remove('hidden');
       tutorGroup.classList.add('hidden');
       studentPickerPanel.classList.remove('hidden');
+      selectAllBtn?.classList.remove('hidden');
+      coursePkgSelect.value = '';
     } else {
       coursePkgGroup.classList.add('hidden');
       tutorGroup.classList.remove('hidden');
-      studentPickerPanel.classList.add('hidden');
-      
-      // Vẽ lại dropdown chọn học viên kèm trong card tutoring-contract-group
-      const selectHtml = `
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Chọn Học viên học kèm <span class="text-rose-500 font-bold">*</span></label>
-          <select id="class-tutoring-student" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer mb-3">
-            <option value="">-- Chọn học viên --</option>
-            ${allStudents.map(s => `<option value="${s.id}">${s.ho_ten}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học kèm của học viên <span class="text-rose-500 font-bold">*</span></label>
-          <select id="class-tutoring-select" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
-            <option value="">-- Chọn gói kèm đang hoạt động --</option>
-          </select>
-          <input type="hidden" id="class-tutoring-id">
-        </div>
-      `;
-      tutorGroup.innerHTML = selectHtml;
-      
-      // Gắn sự kiện change cho chọn học viên kèm
-      const studentSelect = tutorGroup.querySelector('#class-tutoring-student');
-      const tutorSelect = tutorGroup.querySelector('#class-tutoring-select');
-      const tutorIdHidden = tutorGroup.querySelector('#class-tutoring-id');
-      
-      studentSelect?.addEventListener('change', () => {
-        loadStudentTutoringPackages(studentSelect.value);
-      });
-      
-      tutorSelect?.addEventListener('change', () => {
-        tutorIdHidden.value = tutorSelect.value;
-      });
+      studentPickerPanel.classList.remove('hidden');
+      selectAllBtn?.classList.add('hidden');
+      tutoringSelect.value = '';
     }
   });
 
@@ -471,10 +513,27 @@ export async function renderClassManagement(container) {
     const pkgId = parseInt(coursePkgSelect.value);
     selectedStudentIds = []; // Reset danh sách chọn
     if (!pkgId) {
-      filteredStudents = [...allStudents];
+      filteredStudents = [];
     } else {
       filteredStudents = allStudents.filter(s => {
         const pkgIds = s.active_course_pkg_ids || [];
+        return pkgIds.includes(pkgId);
+      });
+    }
+    renderStudentChecklist();
+    renderSelectedBadges();
+  });
+
+  // Lọc học viên theo gói học kèm đã chọn
+  tutoringSelect?.addEventListener('change', () => {
+    const pkgId = parseInt(tutoringSelect.value);
+    selectedStudentIds = []; // Reset danh sách chọn
+    tutorIdInput.value = '';
+    if (!pkgId) {
+      filteredStudents = [];
+    } else {
+      filteredStudents = allStudents.filter(s => {
+        const pkgIds = s.active_tutor_pkg_ids || [];
         return pkgIds.includes(pkgId);
       });
     }
@@ -742,6 +801,30 @@ export async function renderClassManagement(container) {
       // Gộp các ca học
       const allSessions = [];
       classesList.forEach(item => {
+        const today = new Date().toLocaleDateString('sv-SE');
+        const ngayHocStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10) : '';
+        let label = 'Chờ học';
+        let cssClass = 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+        
+        if (item.trang_thai_lich === 'da_hoc') {
+          label = 'Đã học';
+          cssClass = 'bg-emerald-100 text-emerald-800';
+        } else if (item.trang_thai_lich === 'vang') {
+          label = 'Vắng';
+          cssClass = 'bg-rose-100 text-rose-800';
+        } else if (item.trang_thai_lich === 'da_huy') {
+          label = 'Đã hủy';
+          cssClass = 'bg-slate-100 text-slate-600 border border-slate-200';
+        } else {
+          if (ngayHocStr < today) {
+            label = 'Chưa điểm danh';
+            cssClass = 'bg-amber-100 text-amber-800';
+          } else if (ngayHocStr === today) {
+            label = 'Hôm nay';
+            cssClass = 'bg-blue-100 text-blue-800';
+          }
+        }
+
         allSessions.push({
           id: item.id,
           type: 'nhom',
@@ -753,9 +836,9 @@ export async function renderClassManagement(container) {
           ten_giao_vien: item.ten_giao_vien,
           giao_vien_id: item.giao_vien_id,
           si_so: item.si_so || 0,
-          trang_thai: 'dang_hoc',
-          trang_thai_label: 'Đang học',
-          trang_thai_class: 'bg-emerald-100 text-emerald-800'
+          trang_thai: item.trang_thai_lich || 'cho_hoc',
+          trang_thai_label: label,
+          trang_thai_class: cssClass
         });
       });
       schedules.forEach(item => {
@@ -905,6 +988,9 @@ export async function renderClassManagement(container) {
     if (!selectedDuration) { showToast('Vui lòng chọn thời lượng buổi học', 'error'); return; }
     if (!ketThuc) { showToast('Không thể tính giờ kết thúc, vui lòng kiểm tra lại', 'error'); return; }
 
+    const isAutoSchedule = autoScheduleCheck && autoScheduleCheck.checked;
+    const frameType = isAutoSchedule ? document.querySelector('input[name="schedule-frame"]:checked').value : null;
+
     if (type === 'nhom') {
       const pkgId = coursePkgSelect.value;
       if (!pkgId) {
@@ -917,6 +1003,17 @@ export async function renderClassManagement(container) {
         return;
       }
 
+      let ngay_hoc_list = null;
+      if (isAutoSchedule) {
+        const selectedOpt = coursePkgSelect.options[coursePkgSelect.selectedIndex];
+        const months = selectedOpt ? parseInt(selectedOpt.getAttribute('data-months')) : 1;
+        ngay_hoc_list = getScheduleDates(ngayHoc, frameType, 'months', months || 1);
+        if (ngay_hoc_list.length === 0) {
+          showToast('Không tìm thấy ngày học nào phù hợp với khung đã chọn trong thời hạn của gói!', 'error');
+          return;
+        }
+      }
+
       const payload = {
         ten_lop: `Lớp nhóm - GV ${teacherSelect.options[teacherSelect.selectedIndex].text.split(' (')[0]}`,
         giao_vien_id: parseInt(gvId),
@@ -924,7 +1021,8 @@ export async function renderClassManagement(container) {
         hoc_vien_ids: selectedStudentIds,
         ngay_hoc: ngayHoc,
         gio_bat_dau: batDau,
-        gio_ket_thuc: ketThuc
+        gio_ket_thuc: ketThuc,
+        ngay_hoc_list: ngay_hoc_list
       };
 
       try {
@@ -936,7 +1034,16 @@ export async function renderClassManagement(container) {
         const result = await res.json();
         if (result.success) {
           showToast('Tạo lớp học nhóm và xếp lịch thành công!');
-          renderClassManagement(container);
+          loadScheduleList();
+          
+          // Reset nhẹ danh sách học viên
+          selectedStudentIds = [];
+          renderStudentChecklist();
+          renderSelectedBadges();
+          if (autoScheduleCheck) {
+            autoScheduleCheck.checked = false;
+            autoScheduleOptions.classList.add('hidden');
+          }
         } else {
           showToast(result.error || 'Có lỗi xảy ra', 'error');
         }
@@ -951,12 +1058,27 @@ export async function renderClassManagement(container) {
         return;
       }
 
+      let ngay_hoc_list = null;
+      if (isAutoSchedule) {
+        const totalSes = parseInt(tutorIdInput.getAttribute('data-total-sessions')) || 10;
+        const usedSes = parseInt(tutorIdInput.getAttribute('data-used-sessions')) || 0;
+        const sessionsToSchedule = Math.max(1, totalSes - usedSes);
+
+        ngay_hoc_list = getScheduleDates(ngayHoc, frameType, 'sessions', sessionsToSchedule);
+        if (ngay_hoc_list.length === 0) {
+          showToast('Không tìm thấy ngày học nào phù hợp với khung đã chọn!', 'error');
+          return;
+        }
+      }
+
       const payload = {
         dang_ky_hoc_kem_id: parseInt(contractId),
+        giao_vien_id: gvId ? parseInt(gvId) : null,
         ngay_hoc: ngayHoc,
         gio_bat_dau: batDau,
         gio_ket_thuc: ketThuc,
-        loai_buoi: 'ca_nhan'
+        loai_buoi: 'ca_nhan',
+        ngay_hoc_list: ngay_hoc_list
       };
 
       try {
@@ -968,7 +1090,17 @@ export async function renderClassManagement(container) {
         const result = await res.json();
         if (result.success) {
           showToast('Đặt lịch học kèm thành công!');
-          renderClassManagement(container);
+          loadScheduleList();
+          
+          // Reset nhẹ danh sách học viên
+          selectedStudentIds = [];
+          tutorIdInput.value = '';
+          renderStudentChecklist();
+          renderSelectedBadges();
+          if (autoScheduleCheck) {
+            autoScheduleCheck.checked = false;
+            autoScheduleOptions.classList.add('hidden');
+          }
         } else {
           showToast(result.error || 'Có lỗi xảy ra', 'error');
         }

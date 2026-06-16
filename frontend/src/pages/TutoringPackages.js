@@ -55,7 +55,7 @@ export async function renderTutoringPackages(container) {
     `).join('');
 
     container.innerHTML = `
-      <div class="space-y-6">
+      <div id="tutoring-packages-wrapper" class="space-y-6">
         <div class="flex justify-between items-center gap-2 flex-wrap">
           <div class="flex items-center gap-2">
             <!-- Nút Refresh đồng bộ kích thước -->
@@ -70,7 +70,7 @@ export async function renderTutoringPackages(container) {
           </div>
         </div>
 
-        <!-- Bảng so sánh ngang Gói học kèm -->
+        <!-- Bảng so sánh ngang Gói học -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           ${comparisonsHtml}
           ${packages.length === 0 ? `
@@ -97,24 +97,24 @@ export async function renderTutoringPackages(container) {
           <form id="tutor-pkg-form" class="space-y-4 text-xs">
             <div>
               <label class="block font-semibold text-slate-600 mb-1.5">Tên gói học kèm <span class="text-rose-500 font-bold">*</span></label>
-              <input type="text" id="tutor-pkg-name" placeholder="Ví dụ: Kèm IELTS VIP 24 buổi..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+              <input type="text" id="tutor-pkg-name" placeholder="Ví dụ: Gói học kèm 10 buổi..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
             </div>
             <div>
               <label class="block font-semibold text-slate-600 mb-1.5">Mô tả chi tiết <span class="text-rose-500 font-bold">*</span></label>
               <textarea id="tutor-pkg-desc" rows="3" placeholder="Nhập mô tả về quyền lợi, cam kết..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa] resize-none"></textarea>
             </div>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-3 gap-3">
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Số buổi <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="tutor-pkg-sessions" min="1" value="12" class="w-full border border-[#e2e2e4] rounded-xl px-3 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <input type="number" id="tutor-pkg-sessions" min="1" value="10" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Thời hạn (tháng) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="tutor-pkg-months" min="1" value="3" class="w-full border border-[#e2e2e4] rounded-xl px-3 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <label class="block font-semibold text-slate-600 mb-1.5">Thời hạn (tháng)</label>
+                <input type="number" id="tutor-pkg-months" placeholder="Không giới hạn" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Giá tiền (VNĐ) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="tutor-pkg-price" min="0" placeholder="Học phí..." class="w-full border border-[#e2e2e4] rounded-xl px-3 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <input type="number" id="tutor-pkg-price" min="0" placeholder="0" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
@@ -161,7 +161,7 @@ export async function renderTutoringPackages(container) {
           document.getElementById('tutor-pkg-name').value = pkg.ten_goi;
           document.getElementById('tutor-pkg-desc').value = pkg.mo_ta || '';
           document.getElementById('tutor-pkg-sessions').value = pkg.so_buoi;
-          document.getElementById('tutor-pkg-months').value = pkg.so_thang;
+          document.getElementById('tutor-pkg-months').value = pkg.so_thang !== null && pkg.so_thang !== undefined ? pkg.so_thang : '';
           document.getElementById('tutor-pkg-price').value = pkg.gia;
           modal.classList.remove('hidden');
         }
@@ -197,7 +197,6 @@ export async function renderTutoringPackages(container) {
         { id: 'tutor-pkg-name', label: 'Tên gói học kèm' },
         { id: 'tutor-pkg-desc', label: 'Mô tả chi tiết' },
         { id: 'tutor-pkg-sessions', label: 'Số buổi học' },
-        { id: 'tutor-pkg-months', label: 'Thời hạn' },
         { id: 'tutor-pkg-price', label: 'Giá tiền' }
       ];
 
@@ -218,12 +217,13 @@ export async function renderTutoringPackages(container) {
 
       if (hasError) return;
 
+      const monthsVal = document.getElementById('tutor-pkg-months').value;
       const payload = {
         ten_goi: document.getElementById('tutor-pkg-name').value.trim(),
         mo_ta: document.getElementById('tutor-pkg-desc').value.trim(),
         loai_goi: 'theo_buoi',
         so_buoi: parseInt(document.getElementById('tutor-pkg-sessions').value),
-        so_thang: parseInt(document.getElementById('tutor-pkg-months').value),
+        so_thang: monthsVal ? parseInt(monthsVal) : null,
         gia: parseFloat(document.getElementById('tutor-pkg-price').value)
       };
 

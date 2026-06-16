@@ -140,7 +140,7 @@ router.post('/registrations', verifyAccess(['admin', 'le_tan']), async (req, res
 router.post('/registrations/tutoring', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { hoc_vien_id, giao_vien_id, goi_hoc_kem_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, so_buoi_dang_ky } = req.body;
 
-  if (hoc_vien_id === giao_vien_id) {
+  if (giao_vien_id && hoc_vien_id === giao_vien_id) {
     return res.status(400).json({ success: false, error: 'Học viên và Giáo viên không được trùng nhau' });
   }
 
@@ -157,7 +157,7 @@ router.post('/registrations/tutoring', verifyAccess(['admin', 'le_tan']), async 
       RETURNING *
     `;
     const result = await pool.query(insertQuery, [
-      hoc_vien_id, giao_vien_id, goi_hoc_kem_id, so_buoi_dang_ky, tu_ngay, den_ngay || null, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt
+      hoc_vien_id, giao_vien_id || null, goi_hoc_kem_id, so_buoi_dang_ky, tu_ngay, den_ngay || null, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt
     ]);
 
     await createNotification(
@@ -179,107 +179,140 @@ router.post('/registrations/tutoring', verifyAccess(['admin', 'le_tan']), async 
 // 2. PHÂN HỆ XẾP LỊCH HỌC & VẬN HÀNH ĐIỂM DANH
 // ============================================================
 
-// API POST /api/schedule: Xếp lịch học kèm/lớp học (Chống 3 lỗi lớn)
+// API POST /api/schedule: Xếp lịch học kèm/lớp học (Chống 3 lỗi lớn và hỗ trợ xếp lịch hàng loạt)
 router.post('/schedule', verifyAccess(['admin', 'le_tan']), async (req, res) => {
-  const { dang_ky_hoc_kem_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi } = req.body;
+  const { dang_ky_hoc_kem_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi, ngay_hoc_list, giao_vien_id } = req.body;
 
+  const datesToSchedule = (ngay_hoc_list && Array.isArray(ngay_hoc_list) && ngay_hoc_list.length > 0) 
+    ? ngay_hoc_list 
+    : [ngay_hoc];
+
+  if (!dang_ky_hoc_kem_id || datesToSchedule.some(d => !d) || !gio_bat_dau || !gio_ket_thuc) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc để xếp lịch học' });
+  }
+
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     // 1. Đọc thông tin hợp đồng đăng ký học kèm
-    const contractRes = await pool.query('SELECT * FROM dang_ky_hoc_kem WHERE id = $1', [dang_ky_hoc_kem_id]);
+    const contractRes = await client.query('SELECT * FROM dang_ky_hoc_kem WHERE id = $1', [dang_ky_hoc_kem_id]);
     if (contractRes.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy đăng ký học kèm tương ứng' });
+      throw new Error('Không tìm thấy đăng ký học kèm tương ứng');
     }
     const contract = contractRes.rows[0];
 
-    // 2. Chặn xếp lịch học ngoài thời hạn hợp đồng
-    const dateHoc = new Date(ngay_hoc);
-    const dateTu = new Date(contract.tu_ngay);
-    const dateDen = contract.den_ngay ? new Date(contract.den_ngay) : null;
+    // Xác định giáo viên thực tế (ưu tiên giáo viên gửi từ form, fallback về giáo viên của hợp đồng)
+    const finalGvId = giao_vien_id ? parseInt(giao_vien_id) : contract.giao_vien_id;
 
-    if (dateHoc < dateTu || (dateDen && dateHoc > dateDen)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Lỗi: Ngày xếp lịch (${ngay_hoc}) nằm ngoài thời hạn hợp đồng (từ ${contract.tu_ngay.toISOString().split('T')[0]} đến ${contract.den_ngay ? contract.den_ngay.toISOString().split('T')[0] : 'vô hạn'})` 
-      });
+    // 2. Chặn ngày quá khứ
+    const today = new Date().toISOString().split('T')[0];
+    for (const d of datesToSchedule) {
+      if (d < today) {
+        throw new Error(`Không thể xếp lịch vào ngày trong quá khứ (${d.split('-').reverse().join('/')})`);
+      }
     }
 
-    // 3. Chặn vượt quá số buổi đăng ký (Đã học + Sẽ học không vượt quá đăng ký)
-    const countRes = await pool.query(
+    // 3. Chặn xếp lịch học ngoài thời hạn hợp đồng
+    for (const d of datesToSchedule) {
+      const dateHoc = new Date(d);
+      const dateTu = new Date(contract.tu_ngay);
+      const dateDen = contract.den_ngay ? new Date(contract.den_ngay) : null;
+
+      if (dateHoc < dateTu || (dateDen && dateHoc > dateDen)) {
+        throw new Error(`Lỗi: Ngày xếp lịch (${d.split('-').reverse().join('/')}) nằm ngoài thời hạn hợp đồng (từ ${contract.tu_ngay.toISOString().split('T')[0].split('-').reverse().join('/')} đến ${contract.den_ngay ? contract.den_ngay.toISOString().split('T')[0].split('-').reverse().join('/') : 'vô hạn'})`);
+      }
+    }
+
+    // 4. Chặn vượt quá số buổi đăng ký
+    const countRes = await client.query(
       "SELECT COUNT(*) FROM lich_hoc WHERE dang_ky_hoc_kem_id = $1 AND trang_thai IN ('cho_hoc', 'da_hoc')",
       [dang_ky_hoc_kem_id]
     );
     const activeSessions = parseInt(countRes.rows[0].count);
-    if (activeSessions >= contract.so_buoi_dang_ky) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Lỗi: Học viên đã xếp đủ ${activeSessions}/${contract.so_buoi_dang_ky} buổi theo gói học. Không được phép xếp thêm.` 
-      });
+    const totalProposed = activeSessions + datesToSchedule.length;
+    if (totalProposed > contract.so_buoi_dang_ky) {
+      throw new Error(`Lỗi: Bạn đề xuất xếp thêm ${datesToSchedule.length} buổi, nâng tổng số buổi xếp lên ${totalProposed}/${contract.so_buoi_dang_ky} buổi của gói học. Không được vượt quá giới hạn.`);
     }
 
-    // 4. Chặn trùng lịch dạy của Giáo viên (Teacher Overbooking)
-    const checkGvOverlap = `
-      SELECT id FROM lich_hoc
-      WHERE giao_vien_id = $1 
-        AND ngay_hoc = $2 
-        AND trang_thai != 'da_huy'
-        AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-    `;
-    const overlapRes = await pool.query(checkGvOverlap, [contract.giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
-    if (overlapRes.rows.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Giáo viên phụ trách đã bị trùng lịch giảng dạy một lớp/buổi học kèm khác vào khung giờ này!' 
-      });
+    // 5. Kiểm tra overlap của từng ngày
+    for (const d of datesToSchedule) {
+      // 5.1 Chặn trùng lịch dạy của Giáo viên
+      if (finalGvId) {
+        const checkGvOverlap1 = `
+          SELECT id FROM lich_hoc
+          WHERE giao_vien_id = $1 
+            AND ngay_hoc = $2 
+            AND trang_thai != 'da_huy'
+            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+        `;
+        const checkGvOverlap2 = `
+          SELECT id FROM lich_hoc_nhom
+          WHERE giao_vien_id = $1 
+            AND ngay_hoc = $2 
+            AND trang_thai != 'da_huy'
+            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+        `;
+
+        const overlapRes1 = await client.query(checkGvOverlap1, [finalGvId, d, gio_bat_dau, gio_ket_thuc]);
+        const overlapRes2 = await client.query(checkGvOverlap2, [finalGvId, d, gio_bat_dau, gio_ket_thuc]);
+
+        if (overlapRes1.rows.length > 0 || overlapRes2.rows.length > 0) {
+          throw new Error(`Giáo viên giảng dạy đã bị trùng lịch ngày ${d.split('-').reverse().join('/')} vào ca giờ ${gio_bat_dau.slice(0,5)}-${gio_ket_thuc.slice(0,5)}!`);
+        }
+      }
+
+      // 5.2 Chặn trùng lịch học của Học viên
+      const checkHvOverlap1 = `
+        SELECT id FROM lich_hoc
+        WHERE hoc_vien_id = $1
+          AND ngay_hoc = $2
+          AND trang_thai != 'da_huy'
+          AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+      `;
+      const checkHvOverlap2 = `
+        SELECT lhn.id FROM lich_hoc_nhom lhn
+        JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+        WHERE lhv.hoc_vien_id = $1
+          AND lhn.ngay_hoc = $2
+          AND lhn.trang_thai != 'da_huy'
+          AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
+      `;
+      const hvOverlap1 = await client.query(checkHvOverlap1, [contract.hoc_vien_id, d, gio_bat_dau, gio_ket_thuc]);
+      const hvOverlap2 = await client.query(checkHvOverlap2, [contract.hoc_vien_id, d, gio_bat_dau, gio_ket_thuc]);
+
+      if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
+        throw new Error(`Học viên đã có lịch học một ca khác vào ngày ${d.split('-').reverse().join('/')} trong khung giờ ${gio_bat_dau.slice(0,5)}-${gio_ket_thuc.slice(0,5)}!`);
+      }
     }
 
-    // 5. Chặn trùng lịch học của Học viên (Student Overbooking)
-    const checkHvOverlap1 = `
-      SELECT id FROM lich_hoc
-      WHERE hoc_vien_id = $1
-        AND ngay_hoc = $2
-        AND trang_thai != 'da_huy'
-        AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-    `;
-    const checkHvOverlap2 = `
-      SELECT lhn.id FROM lich_hoc_nhom lhn
-      JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
-      WHERE lhv.hoc_vien_id = $1
-        AND lhn.ngay_hoc = $2
-        AND lhn.trang_thai != 'da_huy'
-        AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
-    `;
-    const hvOverlapRes1 = await pool.query(checkHvOverlap1, [contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
-    const hvOverlapRes2 = await pool.query(checkHvOverlap2, [contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
-    if (hvOverlapRes1.rows.length > 0 || hvOverlapRes2.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Học viên đã có lịch học một ca khác (lớp kèm hoặc lớp nhóm) trong khung giờ này!'
-      });
+    // Nếu hợp đồng học kèm chưa được gán giáo viên và có giáo viên được chọn từ form, tự động cập nhật hợp đồng
+    if (giao_vien_id && !contract.giao_vien_id) {
+      await client.query('UPDATE dang_ky_hoc_kem SET giao_vien_id = $1 WHERE id = $2', [finalGvId, dang_ky_hoc_kem_id]);
     }
 
-    // Tiến hành xếp lịch học
-    const insertQuery = `
-      INSERT INTO lich_hoc (
-        dang_ky_hoc_kem_id, giao_vien_id, hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi, trang_thai
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'cho_hoc')
-      RETURNING *
-    `;
-    const result = await pool.query(insertQuery, [
-      dang_ky_hoc_kem_id, contract.giao_vien_id, contract.hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi || 'ca_nhan'
-    ]);
+    // 6. Thực hiện chèn hàng loạt ca học
+    const schedulesCreated = [];
+    for (const d of datesToSchedule) {
+      const insertQuery = `
+        INSERT INTO lich_hoc (
+          dang_ky_hoc_kem_id, giao_vien_id, hoc_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, loai_buoi, trang_thai
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'cho_hoc')
+        RETURNING *
+      `;
+      const insertRes = await client.query(insertQuery, [
+        dang_ky_hoc_kem_id, finalGvId || null, contract.hoc_vien_id, d, gio_bat_dau, gio_ket_thuc, loai_buoi || 'ca_nhan'
+      ]);
+      schedulesCreated.push(insertRes.rows[0]);
+    }
 
-    await createNotification(
-      'xep_lich_hoc',
-      'Xếp lịch học kèm mới',
-      `Đã xếp lịch học mới cho học viên ngày ${ngay_hoc} từ ${gio_bat_dau} đến ${gio_ket_thuc}.`,
-      result.rows[0].id,
-      'lich_hoc',
-      'nhan_vien'
-    );
-
-    res.status(201).json({ success: true, data: result.rows[0] });
+    await client.query('COMMIT');
+    res.status(201).json({ success: true, data: schedulesCreated });
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -713,7 +746,7 @@ router.put('/course-packages/:id', verifyAccess(['admin', 'le_tan']), async (req
 });
 
 // DELETE /api/course-packages/:id: Xóa mềm gói học phí
-router.delete('/course-packages/:id', verifyAccess(['admin']), async (req, res) => {
+router.delete('/course-packages/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('UPDATE goi_hoc_phi SET is_deleted = 1 WHERE id = $1 RETURNING *', [id]);
@@ -748,9 +781,11 @@ router.get('/tutoring-packages', async (req, res) => {
 router.post('/tutoring-packages', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { ten_goi, mo_ta, loai_goi, so_buoi, so_thang, gia } = req.body;
   try {
+    const isTheoBuoi = loai_goi === 'theo_buoi';
+    const finalSoThang = isTheoBuoi ? null : (so_thang ? parseInt(so_thang) : null);
     const result = await pool.query(
       'INSERT INTO goi_hoc_kem (ten_goi, mo_ta, loai_goi, so_buoi, so_thang, gia, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, 0) RETURNING *',
-      [ten_goi, mo_ta, loai_goi || 'ca_nhan', parseInt(so_buoi), parseInt(so_thang), parseFloat(gia)]
+      [ten_goi, mo_ta, loai_goi || 'theo_buoi', parseInt(so_buoi), finalSoThang, parseFloat(gia)]
     );
     await createNotification(
       'them_goi_hoc_kem',
@@ -771,9 +806,11 @@ router.put('/tutoring-packages/:id', verifyAccess(['admin', 'le_tan']), async (r
   const { id } = req.params;
   const { ten_goi, mo_ta, loai_goi, so_buoi, so_thang, gia } = req.body;
   try {
+    const isTheoBuoi = loai_goi === 'theo_buoi';
+    const finalSoThang = isTheoBuoi ? null : (so_thang ? parseInt(so_thang) : null);
     const result = await pool.query(
       'UPDATE goi_hoc_kem SET ten_goi = $1, mo_ta = $2, loai_goi = $3, so_buoi = $4, so_thang = $5, gia = $6 WHERE id = $7 AND is_deleted = 0 RETURNING *',
-      [ten_goi, mo_ta, loai_goi, parseInt(so_buoi), parseInt(so_thang), parseFloat(gia), id]
+      [ten_goi, mo_ta, loai_goi || 'theo_buoi', parseInt(so_buoi), finalSoThang, parseFloat(gia), id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy gói học kèm' });
@@ -793,7 +830,7 @@ router.put('/tutoring-packages/:id', verifyAccess(['admin', 'le_tan']), async (r
 });
 
 // DELETE /api/tutoring-packages/:id: Xóa mềm gói học kèm
-router.delete('/tutoring-packages/:id', verifyAccess(['admin']), async (req, res) => {
+router.delete('/tutoring-packages/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('UPDATE goi_hoc_kem SET is_deleted = 1 WHERE id = $1 RETURNING *', [id]);
@@ -855,79 +892,84 @@ router.get('/classes/:id/students', async (req, res) => {
   }
 });
 
-// POST /api/classes: Tạo lớp học nhóm mới, thêm học viên và xếp lịch học
+// POST /api/classes: Tạo lớp học nhóm mới, thêm học viên và xếp lịch học (Hỗ trợ xếp lịch hàng loạt)
 router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
-  const { ten_lop, giao_vien_id, goi_hoc_phi_id, hoc_vien_ids, ngay_hoc, gio_bat_dau, gio_ket_thuc } = req.body;
+  const { ten_lop, giao_vien_id, goi_hoc_phi_id, hoc_vien_ids, ngay_hoc, gio_bat_dau, gio_ket_thuc, ngay_hoc_list } = req.body;
 
-  if (!ten_lop || !giao_vien_id || !ngay_hoc || !gio_bat_dau || !gio_ket_thuc) {
+  const datesToSchedule = (ngay_hoc_list && Array.isArray(ngay_hoc_list) && ngay_hoc_list.length > 0) 
+    ? ngay_hoc_list 
+    : [ngay_hoc];
+
+  if (!ten_lop || !giao_vien_id || datesToSchedule.some(d => !d) || !gio_bat_dau || !gio_ket_thuc) {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc để mở lớp và xếp lịch' });
   }
 
   // Chặn ngày quá khứ
   const today = new Date().toISOString().split('T')[0];
-  if (ngay_hoc < today) {
-    return res.status(400).json({ success: false, error: 'Không thể xếp lịch lớp học vào ngày trong quá khứ' });
+  for (const d of datesToSchedule) {
+    if (d < today) {
+      return res.status(400).json({ success: false, error: `Không thể xếp lịch lớp học vào ngày trong quá khứ (${d.split('-').reverse().join('/')})` });
+    }
   }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Kiểm tra giáo viên trùng lịch ở cả lich_hoc (1-1) và lich_hoc_nhom
-    const checkGvOverlap1 = `
-      SELECT id FROM lich_hoc 
-      WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
-        AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-    `;
-    const checkGvOverlap2 = `
-      SELECT id FROM lich_hoc_nhom
-      WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
-        AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-    `;
+    // 1. Kiểm tra giáo viên trùng lịch ở cả lich_hoc (1-1) và lich_hoc_nhom cho tất cả các ngày
+    for (const d of datesToSchedule) {
+      const checkGvOverlap1 = `
+        SELECT id FROM lich_hoc 
+        WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
+          AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+      `;
+      const checkGvOverlap2 = `
+        SELECT id FROM lich_hoc_nhom
+        WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
+          AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+      `;
 
-    const gvOverlap1 = await client.query(checkGvOverlap1, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
-    const gvOverlap2 = await client.query(checkGvOverlap2, [giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+      const gvOverlap1 = await client.query(checkGvOverlap1, [giao_vien_id, d, gio_bat_dau, gio_ket_thuc]);
+      const gvOverlap2 = await client.query(checkGvOverlap2, [giao_vien_id, d, gio_bat_dau, gio_ket_thuc]);
 
-    if (gvOverlap1.rows.length > 0 || gvOverlap2.rows.length > 0) {
-      throw new Error('Giáo viên đã trùng lịch giảng dạy một ca khác trong cùng khung giờ này!');
-    }
+      if (gvOverlap1.rows.length > 0 || gvOverlap2.rows.length > 0) {
+        throw new Error(`Giáo viên đã trùng lịch giảng dạy ngày ${d.split('-').reverse().join('/')} vào khung giờ ${gio_bat_dau.slice(0,5)}-${gio_ket_thuc.slice(0,5)}!`);
+      }
 
-    // 2. Kiểm tra từng học viên xem có bị trùng lịch học ca khác (1 kèm 1 hoặc nhóm khác) trong khung giờ này không
-    if (hoc_vien_ids && Array.isArray(hoc_vien_ids)) {
-      const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 50);
-      for (const hvId of uniqueHvs) {
-        // Lấy tên học viên để báo lỗi chi tiết
-        const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
-        const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
+      // 2. Kiểm tra từng học viên xem có bị trùng lịch học ca khác (1 kèm 1 hoặc nhóm khác) không
+      if (hoc_vien_ids && Array.isArray(hoc_vien_ids)) {
+        const uniqueHvs = [...new Set(hoc_vien_ids)].slice(0, 50);
+        for (const hvId of uniqueHvs) {
+          const studentInfoRes = await client.query('SELECT ho_ten FROM ho_so WHERE id = $1', [hvId]);
+          const tenHv = studentInfoRes.rows.length > 0 ? studentInfoRes.rows[0].ho_ten : `Học viên ID ${hvId}`;
 
-        // Trùng lớp học kèm
-        const checkHvOverlap1 = `
-          SELECT id FROM lich_hoc
-          WHERE hoc_vien_id = $1
-            AND ngay_hoc = $2
-            AND trang_thai != 'da_huy'
-            AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
-        `;
-        const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+          const checkHvOverlap1 = `
+            SELECT id FROM lich_hoc
+            WHERE hoc_vien_id = $1
+              AND ngay_hoc = $2
+              AND trang_thai != 'da_huy'
+              AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+          `;
+          const hvOverlap1 = await client.query(checkHvOverlap1, [hvId, d, gio_bat_dau, gio_ket_thuc]);
 
-        // Trùng lớp học nhóm
-        const checkHvOverlap2 = `
-          SELECT lhn.id FROM lich_hoc_nhom lhn
-          JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
-          WHERE lhv.hoc_vien_id = $1
-            AND lhn.ngay_hoc = $2
-            AND lhn.trang_thai != 'da_huy'
-            AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
-        `;
-        const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, ngay_hoc, gio_bat_dau, gio_ket_thuc]);
+          const checkHvOverlap2 = `
+            SELECT lhn.id FROM lich_hoc_nhom lhn
+            JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+            WHERE lhv.hoc_vien_id = $1
+              AND lhn.ngay_hoc = $2
+              AND lhn.trang_thai != 'da_huy'
+              AND NOT (lhn.gio_ket_thuc <= $3 OR lhn.gio_bat_dau >= $4)
+          `;
+          const hvOverlap2 = await client.query(checkHvOverlap2, [hvId, d, gio_bat_dau, gio_ket_thuc]);
 
-        if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
-          throw new Error(`Học viên "${tenHv}" đã có lịch học trùng ca khác trong khung giờ này!`);
+          if (hvOverlap1.rows.length > 0 || hvOverlap2.rows.length > 0) {
+            throw new Error(`Học viên "${tenHv}" đã có lịch học trùng ca khác ngày ${d.split('-').reverse().join('/')} vào khung giờ ${gio_bat_dau.slice(0,5)}-${gio_ket_thuc.slice(0,5)}!`);
+          }
         }
       }
     }
 
-    // 3. Tạo lớp học (tối đa 50 học viên)
+    // 3. Tạo một lớp học nhóm duy nhất
     const classRes = await client.query(
       `INSERT INTO lop_hoc (ten_lop, giao_vien_id, loai_lop, goi_hoc_phi_id, max_hoc_vien, trang_thai, is_deleted)
        VALUES ($1, $2, 'nhom', $3, 50, 'dang_hoat_dong', 0) RETURNING *`,
@@ -946,21 +988,27 @@ router.post('/classes', verifyAccess(['admin', 'le_tan']), async (req, res) => {
       }
     }
 
-    // 5. Xếp lịch học cho lớp học nhóm
-    const schedRes = await client.query(
-      `INSERT INTO lich_hoc_nhom (lop_hoc_id, giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, trang_thai)
-       VALUES ($1, $2, $3, $4, $5, 'cho_hoc') RETURNING *`,
-      [lopHoc.id, giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc]
-    );    await client.query('COMMIT');
+    // 5. Xếp lịch học hàng loạt cho lớp học nhóm
+    const schedulesCreated = [];
+    for (const d of datesToSchedule) {
+      const schedRes = await client.query(
+        `INSERT INTO lich_hoc_nhom (lop_hoc_id, giao_vien_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, trang_thai)
+         VALUES ($1, $2, $3, $4, $5, 'cho_hoc') RETURNING *`,
+        [lopHoc.id, giao_vien_id, d, gio_bat_dau, gio_ket_thuc]
+      );
+      schedulesCreated.push(schedRes.rows[0]);
+    }
+
+    await client.query('COMMIT');
     await createNotification(
       'them_lop_hoc',
       'Mở lớp học nhóm mới',
-      `Lớp học nhóm "${ten_lop}" đã được mở thành công.`,
+      `Lớp học nhóm "${ten_lop}" đã được mở và xếp ${datesToSchedule.length} ca học thành công.`,
       lopHoc.id,
       'lop_hoc',
       'nhan_vien'
     );
-    res.status(201).json({ success: true, data: { class: lopHoc, schedule: schedRes.rows[0] } });
+    res.status(201).json({ success: true, data: { class: lopHoc, schedules: schedulesCreated } });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ success: false, error: err.message });
@@ -1838,6 +1886,57 @@ router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async
   }
 });
 
+// API PUT /api/registrations/tutoring/:id/cancel: Hủy đăng ký học kèm, hoàn tiền, tự động cập nhật
+router.post('/registrations/tutoring/:id/cancel', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  // express routing hack: sử dụng post hoặc put để hỗ trợ route fallback
+  // do người dùng truyền PUT hay POST, chúng ta khai báo router.put ở dưới
+});
+
+router.put('/registrations/tutoring/:id/cancel', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  const { so_tien_hoan, ly_do_huy } = req.body;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Cập nhật trang_thai = 'huy', chèn số tiền hoàn và lý do hủy trong dang_ky_hoc_kem
+    const cancelQuery = `
+      UPDATE dang_ky_hoc_kem
+      SET 
+        trang_thai = 'huy',
+        so_tien_hoan = COALESCE($1, 0),
+        ly_do_huy = $2,
+        ngay_huy = CURRENT_TIMESTAMP,
+        ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `;
+    const result = await client.query(cancelQuery, [so_tien_hoan || 0, ly_do_huy || 'Hủy theo yêu cầu của học viên', id]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Không tìm thấy đăng ký học kèm');
+    }
+
+    await client.query('COMMIT');
+    await createNotification(
+      'huy_buoi_tap',
+      'Hủy gói kèm 1-1',
+      `Hợp đồng học kèm ID ${id} đã bị hủy. Hoàn tiền: ${so_tien_hoan || 0} VNĐ.`,
+      id,
+      'dang_ky_hoc_kem',
+      'nhan_vien'
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Lỗi API hủy gói kèm (Transaction):', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // API PUT /api/registrations/:id: Cập nhật / đổi gói khóa học đại trà
 router.put('/registrations/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
@@ -2100,6 +2199,63 @@ router.delete('/teachers/:id', verifyAccess(['admin']), async (req, res) => {
     );
 
     res.json({ success: true, message: 'Đã xóa mềm giáo viên thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/checkin-logs: Lấy danh sách toàn bộ log check-in/out ra vào
+router.get('/checkin-logs', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT l.*, h.ho_ten, h.ma_ho_so, h.loai_ho_so,
+             l.thoi_diem::date::text as ngay_quet,
+             l.thoi_diem::time::text as gio_quet
+      FROM luot_vao_ra l
+      LEFT JOIN ho_so h ON l.ho_so_id = h.id
+      ORDER BY l.thoi_diem DESC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/checkin-logs: Ghi nhận check-in/out thủ công từ Admin/Lễ tân
+router.post('/checkin-logs', verifyAccess(['admin', 'le_tan', 'giao_vien']), async (req, res) => {
+  const { ho_so_id, chi_nhanh_thuc_hien, thoi_diem, phuong_thuc } = req.body;
+  if (!ho_so_id) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin người dùng cần chấm công' });
+  }
+  try {
+    const hsRes = await pool.query('SELECT ho_ten, loai_ho_so FROM ho_so WHERE id = $1 AND is_deleted = 0', [ho_so_id]);
+    if (hsRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ nhân sự/giáo viên' });
+    }
+    const profile = hsRes.rows[0];
+
+    const insertQuery = `
+      INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, chi_nhanh_thuc_hien, thoi_diem)
+      VALUES ($1, 'vao', $2, $3, $4)
+      RETURNING *
+    `;
+    const result = await pool.query(insertQuery, [
+      ho_so_id, 
+      phuong_thuc || 'van_tay', 
+      chi_nhanh_thuc_hien || 'Trung tâm chính',
+      thoi_diem || new Date().toISOString()
+    ]);
+
+    await createNotification(
+      'quet_ma_qr',
+      'Ghi nhận chấm công thủ công',
+      `Nhân viên/Giáo viên "${profile.ho_ten}" đã được ghi nhận chấm công thủ công bởi người quản trị.`,
+      result.rows[0].id,
+      'luot_vao_ra',
+      'nhan_vien'
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

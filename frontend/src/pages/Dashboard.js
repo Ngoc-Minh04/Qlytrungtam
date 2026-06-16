@@ -23,12 +23,13 @@ let currentPage = 'dashboard';
 let currentActiveSubPage = 'dashboard';
 
 // Expose modal helpers ra toàn cục
-window.openCancelModal = function (id, price = '0') {
+window.openCancelModal = function (id, price = '0', type = 'khoa_hoc') {
   const modal = document.getElementById('cancel-modal');
   const idInput = document.getElementById('modal-dky-id');
   const moneyInput = document.getElementById('modal-so-tien-hoan');
   if (modal && idInput) {
     idInput.value = id;
+    modal.setAttribute('data-pkg-type', type);
     if (moneyInput) {
       moneyInput.value = formatCurrencyInput(String(price));
     }
@@ -102,6 +103,7 @@ function getMenuConfig(role) {
   const allItems = [
     { page: 'dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'] },
     { page: 'schedules', icon: 'calendar_month', label: 'Thời khóa biểu', roles: ['admin', 'le_tan', 'giao_vien'] },
+    { page: 'attendance-staff', icon: 'fingerprint', label: 'Chấm công của tôi', roles: ['giao_vien'] },
     { page: 'checkin-logs', icon: 'qr_code_scanner', label: 'Lượt Vào - Ra', roles: ['admin', 'le_tan'] },
     { page: 'course-packages-group', icon: 'school', label: 'Quản lý Gói học', roles: ['admin', 'le_tan'] },
     { page: 'class-management', icon: 'event_note', label: 'Lớp học & Xếp lịch', roles: ['admin', 'le_tan'] },
@@ -687,6 +689,8 @@ export function renderDashboard(role) {
   document.getElementById('cancel-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('modal-dky-id').value;
+    const modalEl = document.getElementById('cancel-modal');
+    const type = modalEl ? modalEl.getAttribute('data-pkg-type') : 'khoa_hoc';
     const rawMoneyStr = document.getElementById('modal-so-tien-hoan').value;
     const soTienHoan = parseCurrencyInput(rawMoneyStr);
 
@@ -700,7 +704,10 @@ export function renderDashboard(role) {
       ly_do_huy: document.getElementById('modal-ly-do-huy').value
     };
     try {
-      const res = await fetch(`${API_BASE}/registrations/${id}/cancel`, {
+      const endpoint = type === 'hoc_kem' 
+        ? `${API_BASE}/registrations/tutoring/${id}/cancel` 
+        : `${API_BASE}/registrations/${id}/cancel`;
+      const res = await fetch(endpoint, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-User-Role': 'le_tan' }, body: JSON.stringify(payload)
       });
       const result = await res.json();

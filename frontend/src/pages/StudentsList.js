@@ -177,6 +177,7 @@ export async function renderStudentsList(container, role) {
               <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
             </button>
           </div>
+          <div id="infinite-scroll-sentinel" class="h-4 w-full"></div>
         </div>
       </div>
 
@@ -302,21 +303,15 @@ export async function renderStudentsList(container, role) {
     const btnLoadMore = document.getElementById('btn-load-more');
     const spinnerLoadMore = document.getElementById('load-more-spinner');
 
-    // Infinity scroll setup bằng cách cuộn tới đáy xuất hiện nút Xem thêm, bấm để hiển thị thêm 20
+    // IntersectionObserver Infinite Scroll Setup
     let displayCount = 20;
     let filteredList = [...allStudents];
+    let isPageLoadingMore = false;
 
     function renderInfinityRows(list) {
       const rowsHtml = renderTableRows(list.slice(0, displayCount));
       tableBody.innerHTML = rowsHtml;
       attachRowEvents(list.slice(0, displayCount));
-
-      // Ẩn/hiện container Xem thêm
-      if (displayCount < list.length) {
-        loadMoreContainer.classList.remove('hidden');
-      } else {
-        loadMoreContainer.classList.add('hidden');
-      }
     }
 
     function updateTableInfinity(list) {
@@ -325,32 +320,32 @@ export async function renderStudentsList(container, role) {
       renderInfinityRows(filteredList);
     }
 
-    btnLoadMore?.addEventListener('click', () => {
-      spinnerLoadMore.classList.remove('hidden');
-      btnLoadMore.setAttribute('disabled', 'true');
-      setTimeout(() => {
-        displayCount = Math.min(displayCount + 20, filteredList.length);
-        renderInfinityRows(filteredList);
-        spinnerLoadMore.classList.add('hidden');
-        btnLoadMore.removeAttribute('disabled');
-      }, 400); // Tạo hiệu ứng loading mượt mà
-    });
-
-    // Auto load khi cuộn sát đáy nhưng có nút Xem thêm làm chốt chặn
-    const scrollContainer = tableBody.closest('.overflow-x-auto') || tableBody.closest('.overflow-y-auto');
-    const onScroll = () => {
-      if (displayCount >= filteredList.length) return;
-      const scrollEl = scrollContainer || document.documentElement;
-      const scrolled = scrollContainer ? scrollEl.scrollTop + scrollEl.clientHeight : window.scrollY + window.innerHeight;
-      const total = scrollContainer ? scrollEl.scrollHeight : document.documentElement.scrollHeight;
-      
-      // Nếu cách đáy dưới 50px -> tự động click Tải thêm nếu nút chưa bị disable
-      if (scrolled >= total - 50 && !btnLoadMore.hasAttribute('disabled')) {
-        btnLoadMore.click();
-      }
-    };
-    if (scrollContainer) scrollContainer.addEventListener('scroll', onScroll, { passive: true });
-    else window.addEventListener('scroll', onScroll, { passive: true });
+    // Thiết lập IntersectionObserver theo dõi sentinel
+    if (window.studentsObserver) {
+      window.studentsObserver.disconnect();
+    }
+    const sentinel = document.getElementById('infinite-scroll-sentinel');
+    if (sentinel) {
+      window.studentsObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && displayCount < filteredList.length && !isPageLoadingMore) {
+          isPageLoadingMore = true;
+          if (loadMoreContainer) {
+            loadMoreContainer.classList.remove('hidden');
+            spinnerLoadMore?.classList.remove('hidden');
+          }
+          setTimeout(() => {
+            displayCount = Math.min(displayCount + 20, filteredList.length);
+            renderInfinityRows(filteredList);
+            isPageLoadingMore = false;
+            if (loadMoreContainer) {
+              loadMoreContainer.classList.add('hidden');
+              spinnerLoadMore?.classList.add('hidden');
+            }
+          }, 150);
+        }
+      }, { rootMargin: '10px' });
+      window.studentsObserver.observe(sentinel);
+    }
 
     function applyFilters() {
       const q = searchInput.value.toLowerCase();
@@ -412,9 +407,16 @@ export async function renderStudentsList(container, role) {
       tableBody.querySelectorAll('tr').forEach(row => {
         row.addEventListener('click', (e) => {
           if (e.target.closest('.btn-cancel-reg')) {
+            e.stopPropagation();
             const studentId = e.target.closest('.btn-cancel-reg').getAttribute('data-id');
-            const price = e.target.closest('.btn-cancel-reg').getAttribute('data-price') || '0';
-            window.openCancelModal && window.openCancelModal(studentId, price);
+            const sv = currentList.find(item => item.id == studentId);
+            if (sv) {
+              showStudentDetailModal(sv);
+              setTimeout(() => {
+                const tabPkg = document.getElementById('btn-tab-packages');
+                if (tabPkg) tabPkg.click();
+              }, 150);
+            }
             return;
           }
           const id = row.getAttribute('data-id');
@@ -819,7 +821,7 @@ export function showStudentDetailModal(sv) {
                 </h4>
                 <div id="active-packages-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   ${activeCourses.map(item => `
-                    <div class="border border-[#0066cc]/20 rounded-2xl p-4 bg-gradient-to-br from-[#0066cc]/5 to-transparent flex flex-col justify-between gap-3 relative overflow-hidden active-pkg-card" data-id="${item.id}" data-type="khoa_hoc">
+                    <div class="border border-[#0066cc]/20 rounded-2xl p-4 bg-gradient-to-br from-[#0066cc]/5 to-transparent flex flex-col justify-between gap-3 relative overflow-hidden active-pkg-card" data-id="${item.id}" data-type="khoa_hoc" data-original-tu-ngay="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
                       <div class="pkg-view-mode">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center gap-2">
@@ -834,7 +836,7 @@ export function showStudentDetailModal(sv) {
                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                           <p>Thanh toán: <strong class="uppercase">${item.phuong_thuc_tt || 'Tần mặt'}</strong></p>
                         </div>
-                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}">
+                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}" data-type="khoa_hoc">
                           Hủy gói / Hoàn tiền
                         </button>
                       </div>
@@ -848,24 +850,24 @@ export function showStudentDetailModal(sv) {
                             ${coursePkgs.map(p => `<option value="${p.id}" ${p.id === item.goi_hoc_phi_id ? 'selected' : ''} data-price="${p.gia}" data-months="${p.so_thang}">${p.ten_goi}</option>`).join('')}
                           </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-1.5">
+                         <div class="grid grid-cols-2 gap-1.5">
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">TỪ NGÀY</label>
-                            <input type="date" class="edit-tu-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${new Date(item.tu_ngay).toISOString().split('T')[0]}">
+                            <input type="date" class="edit-tu-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" min="${new Date().toLocaleDateString('sv-SE')}" value="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
                           </div>
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">ĐẾN NGÀY</label>
-                            <input type="date" class="edit-den-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${new Date(item.den_ngay).toISOString().split('T')[0]}">
+                            <input type="date" class="edit-den-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${new Date(item.den_ngay).toLocaleDateString('sv-SE')}">
                           </div>
                         </div>
                         <div class="grid grid-cols-2 gap-1.5">
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">GIÁ THỰC TẾ (VNĐ)</label>
-                            <input type="number" class="edit-gia-thuc-te w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${item.gia_thuc_te || 0}">
+                            <input type="text" class="edit-gia-thuc-te w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${formatCurrencyInput(String(item.gia_thuc_te || 0))}">
                           </div>
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">ĐÃ THU (VNĐ)</label>
-                            <input type="number" class="edit-da-thu w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${item.so_tien_da_thu || 0}">
+                            <input type="text" class="edit-da-thu w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${formatCurrencyInput(String(item.so_tien_da_thu || 0))}">
                           </div>
                         </div>
                         <div>
@@ -885,7 +887,7 @@ export function showStudentDetailModal(sv) {
                   `).join('')}
 
                   ${activeTutors.map(item => `
-                    <div class="border border-purple-500/20 rounded-2xl p-4 bg-gradient-to-br from-purple-500/5 to-transparent flex flex-col justify-between gap-3 active-pkg-card" data-id="${item.id}" data-type="hoc_kem">
+                    <div class="border border-purple-500/20 rounded-2xl p-4 bg-gradient-to-br from-purple-500/5 to-transparent flex flex-col justify-between gap-3 active-pkg-card" data-id="${item.id}" data-type="hoc_kem" data-original-tu-ngay="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
                       <div class="pkg-view-mode">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center gap-2">
@@ -901,7 +903,7 @@ export function showStudentDetailModal(sv) {
                           <p>Giá thực tế: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                         </div>
-                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}">
+                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}" data-type="hoc_kem">
                           Hủy gói / Hoàn tiền
                         </button>
                       </div>
@@ -918,6 +920,7 @@ export function showStudentDetailModal(sv) {
                         <div>
                           <label class="block text-[9px] font-bold text-slate-400 mb-0.5">GIÁO VIÊN HƯỚNG DẪN</label>
                           <select class="edit-teacher-select w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px] bg-white">
+                            <option value="" ${!item.giao_vien_id ? 'selected' : ''}>-- Chưa xếp --</option>
                             ${teachersList.map(t => `<option value="${t.id}" ${t.id === item.giao_vien_id ? 'selected' : ''}>${t.ho_ten}</option>`).join('')}
                           </select>
                         </div>
@@ -933,16 +936,16 @@ export function showStudentDetailModal(sv) {
                         </div>
                         <div>
                           <label class="block text-[9px] font-bold text-slate-400 mb-0.5">NGÀY BẮT ĐẦU</label>
-                          <input type="date" class="edit-tu-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${new Date(item.tu_ngay).toISOString().split('T')[0]}">
+                          <input type="date" class="edit-tu-ngay w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" min="${new Date().toLocaleDateString('sv-SE')}" value="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
                         </div>
                         <div class="grid grid-cols-2 gap-1.5">
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">GIÁ THỰC TẾ (VNĐ)</label>
-                            <input type="number" class="edit-gia-thuc-te w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${item.gia_thuc_te || 0}">
+                            <input type="text" class="edit-gia-thuc-te w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${formatCurrencyInput(String(item.gia_thuc_te || 0))}">
                           </div>
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">ĐÃ THU (VNĐ)</label>
-                            <input type="number" class="edit-da-thu w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${item.so_tien_da_thu || 0}">
+                            <input type="text" class="edit-da-thu w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${formatCurrencyInput(String(item.so_tien_da_thu || 0))}">
                           </div>
                         </div>
                         <div>
@@ -1003,16 +1006,15 @@ export function showStudentDetailModal(sv) {
                       <input type="date" id="reg-den-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
                     </div>
                   </div>
-                  <div id="reg-hoc-kem-fields" class="grid grid-cols-2 gap-3 hidden">
-                    <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Chọn Giáo viên</label>
-                      <select id="reg-teacher-id" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
-                        <option value="">-- Chọn GV --</option>
+                  <div id="reg-hoc-kem-fields" class="grid grid-cols-1 gap-3 hidden">
+                    <div class="hidden">
+                      <select id="reg-teacher-id">
+                        <option value="" selected>-- Chọn GV --</option>
                       </select>
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Số buổi đăng ký</label>
-                      <input type="number" id="reg-so-buoi" min="1" value="10" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="number" id="reg-so-buoi" min="1" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
@@ -1135,15 +1137,26 @@ export function showStudentDetailModal(sv) {
             const price = parseFloat(opt.getAttribute('data-price')) || 0;
             const months = parseInt(opt.getAttribute('data-months')) || 0;
 
-            if (editGiaInput) editGiaInput.value = price;
-            if (editDaThuInput) editDaThuInput.value = price;
+            if (editGiaInput) editGiaInput.value = formatCurrencyInput(String(price));
+            if (editDaThuInput) editDaThuInput.value = formatCurrencyInput(String(price));
 
             if (type === 'khoa_hoc' && editTuNgayInput && editDenNgayInput && months > 0) {
               const start = new Date(editTuNgayInput.value);
               const end = new Date(start);
               end.setMonth(start.getMonth() + months);
-              editDenNgayInput.value = end.toISOString().split('T')[0];
+              editDenNgayInput.value = end.toLocaleDateString('sv-SE');
             }
+          });
+        }
+
+        if (editGiaInput) {
+          editGiaInput.addEventListener('input', (e) => {
+            e.target.value = formatCurrencyInput(e.target.value);
+          });
+        }
+        if (editDaThuInput) {
+          editDaThuInput.addEventListener('input', (e) => {
+            e.target.value = formatCurrencyInput(e.target.value);
           });
         }
 
@@ -1155,7 +1168,7 @@ export function showStudentDetailModal(sv) {
               const start = new Date(editTuNgayInput.value);
               const end = new Date(start);
               end.setMonth(start.getMonth() + months);
-              editDenNgayInput.value = end.toISOString().split('T')[0];
+              editDenNgayInput.value = end.toLocaleDateString('sv-SE');
             }
           });
         }
@@ -1164,26 +1177,38 @@ export function showStudentDetailModal(sv) {
         card.querySelector('.btn-save-edit-pkg')?.addEventListener('click', async () => {
           let payload = {};
           let endpoint = '';
+          const tuNgayVal = card.querySelector('.edit-tu-ngay').value;
+          const originalTuNgay = card.getAttribute('data-original-tu-ngay');
+          const todayStr = new Date().toLocaleDateString('sv-SE');
+
+          if (tuNgayVal !== originalTuNgay && tuNgayVal < todayStr) {
+            showToast('Ngày bắt đầu mới không được ở quá khứ!', 'error');
+            return;
+          }
+
+          const giaThucTeVal = parseCurrencyInput(card.querySelector('.edit-gia-thuc-te').value);
+          const daThuVal = parseCurrencyInput(card.querySelector('.edit-da-thu').value);
 
           if (type === 'khoa_hoc') {
             payload = {
               goi_hoc_phi_id: parseInt(card.querySelector('.edit-pkg-select').value),
-              tu_ngay: card.querySelector('.edit-tu-ngay').value,
+              tu_ngay: tuNgayVal,
               den_ngay: card.querySelector('.edit-den-ngay').value,
-              gia_thuc_te: parseFloat(card.querySelector('.edit-gia-thuc-te').value) || 0,
-              so_tien_da_thu: parseFloat(card.querySelector('.edit-da-thu').value) || 0,
+              gia_thuc_te: giaThucTeVal,
+              so_tien_da_thu: daThuVal,
               phuong_thuc_tt: card.querySelector('.edit-phuong-thuc').value
             };
             endpoint = `${API_BASE}/registrations/${id}`;
           } else {
+            const gvVal = card.querySelector('.edit-teacher-select').value;
             payload = {
               goi_hoc_kem_id: parseInt(card.querySelector('.edit-pkg-select').value),
-              giao_vien_id: parseInt(card.querySelector('.edit-teacher-select').value),
+              giao_vien_id: gvVal ? parseInt(gvVal) : null,
               so_buoi_dang_ky: parseInt(card.querySelector('.edit-so-buoi').value) || 0,
               so_buoi_da_hoc: parseInt(card.querySelector('.edit-so-buoi-da-hoc').value) || 0,
-              tu_ngay: card.querySelector('.edit-tu-ngay').value,
-              gia_thuc_te: parseFloat(card.querySelector('.edit-gia-thuc-te').value) || 0,
-              so_tien_da_thu: parseFloat(card.querySelector('.edit-da-thu').value) || 0,
+              tu_ngay: tuNgayVal,
+              gia_thuc_te: giaThucTeVal,
+              so_tien_da_thu: daThuVal,
               phuong_thuc_tt: card.querySelector('.edit-phuong-thuc').value
             };
             endpoint = `${API_BASE}/registrations/tutoring/${id}`;
@@ -1203,9 +1228,16 @@ export function showStudentDetailModal(sv) {
             const resultJson = await putRes.json();
             if (resultJson.success) {
               showToast('Cập nhật gói học thành công!', 'success');
-              modal.classList.add('hidden');
               const contentDiv = document.getElementById('dashboard-content');
-              renderStudentsList(contentDiv, localStorage.getItem('userRole'));
+              await renderStudentsList(contentDiv, localStorage.getItem('userRole'));
+              
+              if (window.showStudentDetailModal && window.currentStudent) {
+                window.showStudentDetailModal(window.currentStudent);
+                setTimeout(() => {
+                  const tabPkg = document.getElementById('btn-tab-packages');
+                  if (tabPkg) tabPkg.click();
+                }, 100);
+              }
             } else {
               showToast(resultJson.error || 'Có lỗi xảy ra', 'error');
             }
@@ -1323,8 +1355,9 @@ export function showStudentDetailModal(sv) {
           e.stopPropagation();
           const regId = btn.getAttribute('data-id');
           const price = btn.getAttribute('data-price') || '0';
+          const type = btn.getAttribute('data-type') || 'khoa_hoc';
           modal.classList.add('hidden');
-          window.openCancelModal && window.openCancelModal(regId, price);
+          window.openCancelModal && window.openCancelModal(regId, price, type);
         });
       });
 
@@ -1358,22 +1391,31 @@ export function showStudentDetailModal(sv) {
         const khoaHocFields = modal.querySelector('#reg-khoa-hoc-fields');
         const hocKemFields = modal.querySelector('#reg-hoc-kem-fields');
         const teacherSel = modal.querySelector('#reg-teacher-id');
+        const regSoBuoiInput = modal.querySelector('#reg-so-buoi');
         if (!pkgSelect) return;
         if (type === 'khoa_hoc') {
           pkgSelect.innerHTML = '<option value="">-- Chọn gói học phí --</option>' + allPkgsKH.map(p => `<option value="${p.id}" data-price="${p.gia}" data-months="${p.so_thang}">${p.ten_goi} (${Number(p.gia).toLocaleString('vi-VN')} VNĐ)</option>`).join('');
           khoaHocFields?.classList.remove('hidden');
           hocKemFields?.classList.add('hidden');
         } else {
-          pkgSelect.innerHTML = '<option value="">-- Chọn gói học kèm --</option>' + allPkgsKem.map(p => `<option value="${p.id}" data-price="${p.gia}">${p.ten_goi} (${Number(p.gia).toLocaleString('vi-VN')} VNĐ)</option>`).join('');
+          pkgSelect.innerHTML = '<option value="">-- Chọn gói học kèm --</option>' + allPkgsKem.map(p => `<option value="${p.id}" data-price="${p.gia}" data-sessions="${p.so_buoi}">${p.ten_goi} (${Number(p.gia).toLocaleString('vi-VN')} VNĐ)</option>`).join('');
           khoaHocFields?.classList.add('hidden');
           hocKemFields?.classList.remove('hidden');
+          if (regSoBuoiInput) regSoBuoiInput.value = ''; // Để trống khi chưa chọn gói cụ thể
           if (teacherSel) {
             teacherSel.innerHTML = '<option value="">-- Chọn giáo viên --</option>' + allTeachers.map(t => `<option value="${t.id}">${t.ho_ten}</option>`).join('');
           }
         }
       }
 
-      modal.querySelector('#reg-pkg-type')?.addEventListener('change', updatePkgOptions);
+      modal.querySelector('#reg-pkg-type')?.addEventListener('change', () => {
+        updatePkgOptions();
+        // Reset giá trị giá và đã thu khi đổi loại gói
+        const giaInput = modal.querySelector('#reg-gia-thuc-te');
+        const daThuInput = modal.querySelector('#reg-da-thu');
+        if (giaInput) giaInput.value = '';
+        if (daThuInput) daThuInput.value = '';
+      });
 
       // Tự động nhảy Ngày, Giá, Thực thu khi chọn gói học mới
       const pkgSelect = modal.querySelector('#reg-pkg-id');
@@ -1397,6 +1439,7 @@ export function showStudentDetailModal(sv) {
 
         const price = parseFloat(opt.getAttribute('data-price')) || 0;
         const months = parseInt(opt.getAttribute('data-months')) || 0;
+        const sessions = parseInt(opt.getAttribute('data-sessions')) || 0;
 
         if (giaInput) giaInput.value = formatCurrencyInput(String(price));
         if (daThuInput) daThuInput.value = formatCurrencyInput(String(price));
@@ -1406,6 +1449,9 @@ export function showStudentDetailModal(sv) {
           const end = new Date(start);
           end.setMonth(start.getMonth() + months);
           denNgayInput.value = end.toLocaleDateString('sv-SE');
+        } else if (type === 'hoc_kem') {
+          const regSoBuoiInput = modal.querySelector('#reg-so-buoi');
+          if (regSoBuoiInput) regSoBuoiInput.value = sessions;
         }
       });
 
@@ -1441,11 +1487,9 @@ export function showStudentDetailModal(sv) {
           payload = { ho_so_id: sv.id, goi_hoc_phi_id: parseInt(pkgId), tu_ngay: tuNgay, den_ngay: denNgay, gia_thuc_te: giaThucTe, so_tien_da_thu: daThu, phuong_thuc_tt: phuongThuc, chi_nhanh_mua: sv.chi_nhanh || 'Trung tam chính' };
           endpoint = `${API_BASE}/registrations`;
         } else {
-          const gvId = modal.querySelector('#reg-teacher-id')?.value;
           const soBuoi = parseInt(modal.querySelector('#reg-so-buoi')?.value) || 10;
           const tuNgay = modal.querySelector('#reg-tu-ngay')?.value || new Date().toISOString().split('T')[0];
-          if (!gvId) { showToast('Vui lòng chọn giáo viên', 'error'); return; }
-          payload = { hoc_vien_id: sv.id, giao_vien_id: parseInt(gvId), goi_hoc_kem_id: parseInt(pkgId), tu_ngay: tuNgay, den_ngay: null, gia_thuc_te: giaThucTe, so_tien_da_thu: daThu, phuong_thuc_tt: phuongThuc, so_buoi_dang_ky: soBuoi };
+          payload = { hoc_vien_id: sv.id, giao_vien_id: null, goi_hoc_kem_id: parseInt(pkgId), tu_ngay: tuNgay, den_ngay: null, gia_thuc_te: giaThucTe, so_tien_da_thu: daThu, phuong_thuc_tt: phuongThuc, so_buoi_dang_ky: soBuoi };
           endpoint = `${API_BASE}/registrations/tutoring`;
         }
 

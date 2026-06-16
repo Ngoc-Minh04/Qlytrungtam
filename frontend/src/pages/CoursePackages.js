@@ -49,7 +49,7 @@ export async function renderCoursePackages(container) {
     `).join('');
 
     container.innerHTML = `
-      <div class="space-y-6">
+      <div id="course-packages-wrapper" class="space-y-6">
         <div class="flex justify-between items-center gap-2 flex-wrap">
           <div class="flex items-center gap-2">
             <!-- Nút Refresh đồng bộ kích thước -->
@@ -100,11 +100,11 @@ export async function renderCoursePackages(container) {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Thời hạn (tháng) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="pkg-months" min="1" value="1" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <input type="number" id="pkg-months" min="1" max="60" value="1" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Giá tiền (VNĐ) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="pkg-price" min="0" placeholder="Học phí trọn gói..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <input type="number" id="pkg-price" min="0" placeholder="0" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
@@ -137,8 +137,8 @@ export async function renderCoursePackages(container) {
     document.getElementById('btn-close-modal')?.addEventListener('click', closeModal);
     document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
 
-    // Gắn sự kiện sửa/xóa trên Card
-    container.addEventListener('click', async (e) => {
+    // Gắn sự kiện sửa/xóa trên Card qua wrapper động để tránh lặp listener
+    container.querySelector('#course-packages-wrapper')?.addEventListener('click', async (e) => {
       const btnEdit = e.target.closest('.btn-edit-pkg');
       const btnDel = e.target.closest('.btn-delete-pkg');
 

@@ -23,9 +23,23 @@ export async function renderAttendanceStaff(container) {
     const allLogs = logsData.data || [];
     const teachers = teachersData.data || [];
 
+    // Lấy username hiện tại từ localStorage để tìm giáo viên khớp
+    const currentUsername = localStorage.getItem('username') || '';
+    const currentTeacher = teachers.find(t => 
+      (t.ma_ho_so && t.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) || 
+      t.so_dien_thoai === currentUsername ||
+      (t.ho_ten && t.ho_ten.toLowerCase().replace(/\s/g, '') === currentUsername.toLowerCase())
+    );
+
     // Chỉ lọc các log của giáo viên (loai_ho_so = 'giao_vien' hoặc liên kết với danh sách giáo viên)
-    const teacherIds = new Set(teachers.map(t => t.id));
-    const teacherLogs = allLogs.filter(log => teacherIds.has(log.ho_so_id));
+    // Nếu là giáo viên, chỉ hiển thị log của chính mình
+    let teacherLogs = [];
+    if (userRole === 'giao_vien' && currentTeacher) {
+      teacherLogs = allLogs.filter(log => log.ho_so_id === currentTeacher.id);
+    } else {
+      const teacherIds = new Set(teachers.map(t => t.id));
+      teacherLogs = allLogs.filter(log => teacherIds.has(log.ho_so_id));
+    }
 
     // Thống kê sơ bộ
     const totalCheckins = teacherLogs.length;
@@ -68,8 +82,8 @@ export async function renderAttendanceStaff(container) {
         <!-- Header & Action Row -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-800">Chấm công Nhân sự & Giáo viên</h2>
-            <p class="text-xs text-slate-500">Giám sát lượt vào ra và giờ giấc giảng dạy dựa trên hệ thống quét QR & thẻ vân tay.</p>
+            <h2 class="text-xl font-bold tracking-tight text-slate-800">${userRole === 'giao_vien' ? 'Lịch sử Chấm công của tôi' : 'Chấm công Nhân sự & Giáo viên'}</h2>
+            <p class="text-xs text-slate-500">${userRole === 'giao_vien' ? 'Xem nhật ký check-in ra vào và tự chấm công bổ sung khi quên quét QR.' : 'Giám sát lượt vào ra và giờ giấc giảng dạy dựa trên hệ thống quét QR & thẻ vân tay.'}</p>
           </div>
           
           <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -78,9 +92,9 @@ export async function renderAttendanceStaff(container) {
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             
-            ${(userRole === 'admin' || userRole === 'le_tan') ? `
+            ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
               <button id="btn-add-log" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
-                <span class="material-symbols-outlined text-[16px]">add</span>Thêm lượt quét
+                <span class="material-symbols-outlined text-[16px]">add</span>${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Thêm lượt quét'}
               </button>
             ` : ''}
           </div>
@@ -210,7 +224,7 @@ export async function renderAttendanceStaff(container) {
       <div id="add-log-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
           <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Ghi nhận lượt quét thủ công</h3>
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Ghi nhận lượt quét thủ công'}</h3>
             <button id="close-log-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
               <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
@@ -219,10 +233,11 @@ export async function renderAttendanceStaff(container) {
           <form id="add-log-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Giáo viên / Nhân sự</label>
-              <select name="ho_so_id" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+              <select name="ho_so_id" id="modal-attendance-teacher" required ${userRole === 'giao_vien' && currentTeacher ? 'disabled' : ''} class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
                 <option value="">-- Chọn Giáo viên --</option>
-                ${teachers.map(t => `<option value="${t.id}">${t.ho_ten} (${t.ma_ho_so})</option>`).join('')}
+                ${teachers.map(t => `<option value="${t.id}" ${userRole === 'giao_vien' && currentTeacher && currentTeacher.id === t.id ? 'selected' : ''}>${t.ho_ten} (${t.ma_ho_so})</option>`).join('')}
               </select>
+              ${userRole === 'giao_vien' && currentTeacher ? `<input type="hidden" id="modal-attendance-teacher-hidden" value="${currentTeacher.id}">` : ''}
             </div>
 
             <div class="space-y-1 hidden">
@@ -302,7 +317,10 @@ export async function renderAttendanceStaff(container) {
     document.getElementById('add-log-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
-      const ho_so_id = parseInt(formData.get('ho_so_id'));
+      let ho_so_id = parseInt(formData.get('ho_so_id'));
+      if (isNaN(ho_so_id)) {
+        ho_so_id = parseInt(document.getElementById('modal-attendance-teacher-hidden')?.value);
+      }
       const chi_nhanh_thuc_hien = formData.get('chi_nhanh_thuc_hien');
       const ngay_quet = formData.get('ngay_quet');
       const gio_quet = formData.get('gio_quet');
@@ -312,19 +330,6 @@ export async function renderAttendanceStaff(container) {
       const thoi_diem = new Date(`${ngay_quet}T${gio_quet}`).toISOString();
 
       try {
-        // Gọi API backend giả lập lưu lượt check-in hoặc trực tiếp lưu vào DB
-        // Chúng ta có thể lưu check-in log qua backend.
-        // Backend có API POST /api/checkin nhưng nhận QR token.
-        // Để linh hoạt hơn, chúng ta tạo một api ghi log check-in trực tiếp hoặc có thể bypass nếu role admin qua backend.
-        // Tuy nhiên, backend chưa có api ghi log check-in thủ công trực tiếp ngoài API QR Code.
-        // Hãy kiểm tra xem backend có hỗ trợ không, nếu chưa, chúng ta có thể chèn trực tiếp bằng endpoint phụ hoặc nâng cấp api.
-        // Để không phải sửa backend nhiều, hãy gọi fetch chèn thông tin checkin qua route phụ hoặc bổ sung endpoint backend.
-        // Ở backend có route POST /api/checkin nhận QR. Chúng ta có thể tạo QR ảo hoặc tạo API mới ở backend để thêm log chấm công nhân viên.
-        // Hãy bổ sung endpoint POST /api/checkin-logs thủ công ở backend để Admin dễ ghi nhận!
-        // Đó là một giải pháp hoàn hảo và chuyên nghiệp.
-        
-        // Ta sẽ phát triển endpoint này sau hoặc bổ sung luôn vào backend.
-        // Bây giờ hãy kiểm tra xem có thể gửi request lên POST /api/checkin-logs thủ công.
         const res = await fetch(`${API_BASE}/checkin-logs`, {
           method: 'POST',
           headers: { 
