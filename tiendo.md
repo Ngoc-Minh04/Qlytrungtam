@@ -1,3 +1,12 @@
+### [16/06/2026 15:35] — Hỗ trợ xem chi tiết ca học kèm & Sửa/Hủy ca đơn lẻ linh hoạt
+- **Loại**: Cải tiến tính năng / UI UX
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Accordion xem chi tiết**: Thêm nút "Xem chi tiết ca" ở mỗi dòng gộp học kèm. Lễ tân có thể click vào để mở rộng danh sách chi tiết các buổi học của gói kèm này.
+  - **Sửa/Hủy ca học đơn lẻ**: Trong bảng chi tiết mở rộng, Lễ tân có thể nhấn Hủy (xóa duy nhất 1 ca học kèm này) hoặc nhấn Sửa (mở Modal cho phép dời Ngày học, đổi Giờ, đổi Giáo viên của duy nhất ca đó).
+  - **Cập nhật Modal Sửa**: Hiển thị lại trường chọn **Ngày học** trên Modal khi sửa đơn lẻ hoặc sửa chuỗi.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 15:25] — Gộp hiển thị lịch học kèm theo Đăng ký & Thêm API hủy hàng loạt ca chưa học
 - **Loại**: Cải tiến tính năng / API mới
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`

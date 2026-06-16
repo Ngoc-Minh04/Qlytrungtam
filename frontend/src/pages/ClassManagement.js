@@ -605,6 +605,14 @@ export async function renderClassManagement(container) {
             * Lưu ý: Hệ thống sẽ áp dụng giờ học, thời lượng và giáo viên giảng dạy mới cho toàn bộ các ca học <strong>chưa diễn ra (chờ học)</strong> của chuỗi lớp học này.
           </p>
 
+          <!-- Ngày học (Mốc bắt đầu đổi hoặc ngày đơn lẻ) -->
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học (Ngày áp dụng/Mốc bắt đầu) <span class="text-rose-500 font-bold">*</span></label>
+            <div id="edit-class-date-container" class="relative">
+              <input type="date" id="edit-class-date" required min="${todayStr}" value="${itemNgayStr}">
+            </div>
+          </div>
+
           <!-- Chọn Giáo viên giảng dạy -->
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
@@ -655,6 +663,7 @@ export async function renderClassManagement(container) {
     const timeGridEl = editModal.querySelector('#edit-time-grid');
     const endLabel = editModal.querySelector('#edit-class-end-label');
     const editTeacherSelect = editModal.querySelector('#edit-class-teacher');
+    const dateInput = editModal.querySelector('#edit-class-date');
 
     let currentSelStart = startInput.value;
     let currentSelDuration = parseInt(durationInput.value) || 90;
@@ -739,6 +748,21 @@ export async function renderClassManagement(container) {
       endLabel.textContent = endStr;
     };
 
+    // Khởi tạo date picker custom cho Modal sửa
+    setupCustomDatePicker(
+      dateInput,
+      editModal.querySelector('#edit-class-date-container'),
+      {
+        minDate: todayStr,
+        onSelect: (val) => {
+          currentSelStart = '';
+          startInput.value = '';
+          renderEditTimeGrid();
+          updateEndTime();
+        }
+      }
+    );
+
     renderEditTimeGrid();
     updateEndTime();
 
@@ -760,10 +784,15 @@ export async function renderClassManagement(container) {
     // Submit form
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const updatedNgay = dateInput.value;
       const updatedStart = startInput.value;
       const updatedEnd = endLabel.textContent;
       const updatedGv = editTeacherSelect.value;
 
+      if (!updatedNgay) {
+        showToast('Vui lòng chọn ngày học!', 'error');
+        return;
+      }
       if (!updatedStart || updatedEnd === '--:--') {
         showToast('Vui lòng chọn giờ học hợp lệ!', 'error');
         return;
@@ -773,12 +802,24 @@ export async function renderClassManagement(container) {
         return;
       }
 
+      // Check quá khứ trên frontend
+      const targetDateTime = new Date(`${updatedNgay}T${updatedStart}:00`);
+      if (targetDateTime < new Date()) {
+        showToast('Không được chọn lịch học ở thời điểm quá khứ!', 'error');
+        return;
+      }
+
       const isGroup = item.type === 'nhom';
+      const isSingleTutor = item.type === 'ca_nhan_don_le';
+      
       const url = isGroup 
         ? `${API_BASE}/classes/${item.id}` 
-        : `${API_BASE}/schedule/by-contract/${item.dang_ky_hoc_kem_id}/update-batch`;
+        : isSingleTutor
+          ? `${API_BASE}/schedule/${item.id}`
+          : `${API_BASE}/schedule/by-contract/${item.dang_ky_hoc_kem_id}/update-batch`;
 
       const bodyPayload = {
+        ngay_hoc: updatedNgay,
         gio_bat_dau: updatedStart,
         gio_ket_thuc: updatedEnd,
         giao_vien_id: parseInt(updatedGv)
@@ -792,7 +833,7 @@ export async function renderClassManagement(container) {
         });
         const result = await editRes.json();
         if (result.success) {
-          showToast(`Cập nhật chuỗi lịch học thành công!`);
+          showToast(isSingleTutor ? 'Cập nhật ca học thành công!' : 'Cập nhật chuỗi lịch học thành công!');
           closeModal();
           loadScheduleList();
         } else {
@@ -950,7 +991,7 @@ export async function renderClassManagement(container) {
       }
 
       let rows = '';
-      allSessions.forEach(item => {
+      allSessions.forEach((item, index) => {
         const ngayHocStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
         
         // Tính khoảng ngày bắt đầu - kết thúc
@@ -970,25 +1011,93 @@ export async function renderClassManagement(container) {
         const thuLabel = isGroup ? getDayOfWeekLabel(item.ngay_hoc) : item.thu_gop;
         const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
 
-        rows += `
-          <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
-            <td class="px-5 py-3.5">
-              <div class="font-bold text-apple-ink">${item.title}</div>
-              ${item.detail ? `<div class="text-[9.5px] text-slate-500 mt-0.5 font-medium">${item.detail}</div>` : ''}
-              ${dateRangeStr}
-              <div class="text-[9.5px] text-slate-400 mt-0.5">${isGroup ? `Ngày dạy: ${ngayHocStr}` : `Lịch học: ${item.ngay_hoc_gop}`}</div>
-            </td>
-            <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
-            <td class="px-5 py-3.5 font-bold ${isGroup ? 'text-apple-blue' : 'text-apple-ink'} whitespace-nowrap">${gioHocStr} ${isGroup ? `(${item.si_so}/50 HS)` : ''}</td>
-            <td class="px-5 py-3.5">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
-            </td>
-            <td class="px-5 py-3.5 text-right whitespace-nowrap">
-              <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${allSessions.indexOf(item)}">Sửa</button>
-              <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="${item.type}" data-id="${item.id}" data-contract-id="${item.dang_ky_hoc_kem_id || ''}">Hủy</button>
-            </td>
-          </tr>
-        `;
+        if (isGroup) {
+          // Render dòng lớp nhóm bình thường
+          rows += `
+            <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
+              <td class="px-5 py-3.5">
+                <div class="font-bold text-apple-ink">${item.title}</div>
+                ${item.detail ? `<div class="text-[9.5px] text-slate-500 mt-0.5 font-medium">${item.detail}</div>` : ''}
+                ${dateRangeStr}
+                <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày dạy: ${ngayHocStr}</div>
+              </td>
+              <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
+              <td class="px-5 py-3.5 font-bold text-apple-blue whitespace-nowrap">${gioHocStr} (${item.si_so}/50 HS)</td>
+              <td class="px-5 py-3.5">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
+              </td>
+              <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${index}">Sửa</button>
+                <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="nhom" data-id="${item.id}">Hủy</button>
+              </td>
+            </tr>
+          `;
+        } else {
+          // Lớp kèm: lấy danh sách các ca học chi tiết của group này để chuẩn bị render accordion
+          const groupSessions = tutoringGroups[item.dang_ky_hoc_kem_id] || [];
+          
+          let subRowsHtml = '';
+          groupSessions.forEach((sub, subIdx) => {
+            const subNgayStr = sub.ngay_hoc ? sub.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
+            const subThu = getDayOfWeekLabel(sub.ngay_hoc);
+            const subGio = (sub.gio_bat_dau && sub.gio_ket_thuc) ? `${sub.gio_bat_dau.slice(0, 5)} - ${sub.gio_ket_thuc.slice(0, 5)}` : '—';
+            const subStatusLabel = sub.trang_thai === 'da_hoc' ? 'Đã học' : sub.trang_thai === 'vang' ? 'Vắng' : 'Chờ học';
+            const subStatusClass = sub.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : sub.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+
+            subRowsHtml += `
+              <div class="flex items-center justify-between py-2 border-b border-apple-divider/30 last:border-0 hover:bg-slate-50 px-2 rounded-lg">
+                <div class="space-y-0.5">
+                  <div class="font-bold text-slate-700">Buổi ${subIdx + 1}: ${subNgayStr} (${subThu})</div>
+                  <div class="text-[10px] text-slate-400">Giáo viên: ${sub.ten_giao_vien || 'Chưa gán'}</div>
+                </div>
+                <div class="font-bold text-slate-600">${subGio}</div>
+                <div>
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${subStatusClass}">${subStatusLabel}</span>
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.dang_ky_hoc_kem_id}">Sửa</button>
+                  <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                </div>
+              </div>
+            `;
+          });
+
+          rows += `
+            <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
+              <td class="px-5 py-3.5">
+                <div class="font-bold text-apple-ink">${item.title}</div>
+                <div class="text-[9.5px] text-slate-500 mt-0.5 font-semibold flex items-center gap-1.5">
+                  ${item.detail}
+                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="sub-list-${item.dang_ky_hoc_kem_id}">
+                    <span class="material-symbols-outlined text-[14px]">unfold_more</span>Xem chi tiết ca
+                  </button>
+                </div>
+                ${dateRangeStr}
+                <div class="text-[9.5px] text-slate-400 mt-0.5">Lịch học: ${item.ngay_hoc_gop}</div>
+              </td>
+              <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
+              <td class="px-5 py-3.5 font-bold text-slate-700 whitespace-nowrap">${gioHocStr}</td>
+              <td class="px-5 py-3.5">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
+              </td>
+              <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${index}">Sửa chung</button>
+                <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="ca_nhan" data-contract-id="${item.dang_ky_hoc_kem_id}">Hủy hết</button>
+              </td>
+            </tr>
+            <tr id="sub-list-${item.dang_ky_hoc_kem_id}" class="hidden bg-slate-50/50 border-b border-apple-divider/40">
+              <td colspan="5" class="px-6 py-3">
+                <div class="bg-white rounded-2xl border border-apple-divider/50 p-3 shadow-inner space-y-1.5 max-h-60 overflow-y-auto">
+                  <div class="text-[10px] uppercase font-bold text-slate-400 border-b pb-1 mb-1.5 flex justify-between items-center">
+                    <span>Danh sách chi tiết ca học học kèm</span>
+                    <span class="text-apple-blue font-bold">${groupSessions.length} buổi học</span>
+                  </div>
+                  ${subRowsHtml}
+                </div>
+              </td>
+            </tr>
+          `;
+        }
       });
 
       schList.innerHTML = `
@@ -1056,13 +1165,85 @@ export async function renderClassManagement(container) {
         });
       });
 
-      // Gắn sự kiện Sửa ca học custom
+      // Gắn sự kiện Sửa ca học custom (Sửa chuỗi/Sửa chung)
       schList.querySelectorAll('.btn-edit-session').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const idx = parseInt(btn.getAttribute('data-idx'));
           const item = allSessions[idx];
           if (item) openEditSessionModal(item);
+        });
+      });
+
+      // Gắn sự kiện toggle danh sách chi tiết các ca học kèm
+      schList.querySelectorAll('.btn-toggle-sub-sessions').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetId = btn.getAttribute('data-target-id');
+          const subPanel = document.getElementById(targetId);
+          if (subPanel) {
+            subPanel.classList.toggle('hidden');
+            const icon = btn.querySelector('.material-symbols-outlined');
+            if (icon) {
+              icon.textContent = subPanel.classList.contains('hidden') ? 'unfold_more' : 'unfold_less';
+            }
+          }
+        });
+      });
+
+      // Gắn sự kiện Xóa đơn lẻ 1 ca học kèm
+      schList.querySelectorAll('.btn-delete-single-session').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const subId = btn.getAttribute('data-sub-id');
+          if (!confirm('Bạn có chắc chắn muốn hủy duy nhất buổi học kèm này không?')) return;
+
+          try {
+            const res = await fetch(`${API_BASE}/schedule/${subId}`, { method: 'DELETE', headers: { 'X-User-Role': 'le_tan' } });
+            const result = await res.json();
+            if (result.success) {
+              showToast('Hủy ca học kèm thành công!');
+              loadScheduleList();
+            } else {
+              showToast(result.error || 'Lỗi khi hủy', 'error');
+            }
+          } catch {
+            showToast('Lỗi máy chủ', 'error');
+          }
+        });
+      });
+
+      // Gắn sự kiện Sửa đơn lẻ 1 ca học kèm
+      schList.querySelectorAll('.btn-edit-single-session').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const subId = btn.getAttribute('data-sub-id');
+          const contractId = btn.getAttribute('data-contract-id');
+
+          // Fetch thông tin ca học cụ thể để mở modal sửa đơn lẻ
+          try {
+            const res = await fetch(`${API_BASE}/schedules`);
+            const data = await res.json();
+            const singleSession = (data.data || []).find(s => s.id === parseInt(subId));
+            if (singleSession) {
+              // Gán trường type = 'ca_nhan_don_le' để hàm openEditSessionModal nhận biết sửa 1 buổi thay vì chuỗi
+              const editItem = {
+                id: singleSession.id,
+                type: 'ca_nhan_don_le', // Đánh dấu sửa đơn lẻ
+                dang_ky_hoc_kem_id: singleSession.dang_ky_hoc_kem_id,
+                title: `Sửa Buổi Học Kèm`,
+                ngay_hoc: singleSession.ngay_hoc,
+                gio_bat_dau: singleSession.gio_bat_dau || '',
+                gio_ket_thuc: singleSession.gio_ket_thuc || '',
+                giao_vien_id: singleSession.giao_vien_id
+              };
+              openEditSessionModal(editItem);
+            } else {
+              showToast('Không tìm thấy thông tin ca học!', 'error');
+            }
+          } catch {
+            showToast('Lỗi tải dữ liệu ca học', 'error');
+          }
         });
       });
 
