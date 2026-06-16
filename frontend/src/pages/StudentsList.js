@@ -154,15 +154,15 @@ export async function renderStudentsList(container, role) {
 
         <!-- Table Container (bỏ cột Chi nhánh, còn 5 cột) -->
         <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th class="px-6 py-4">HỌC VIÊN</th>
-                  <th class="px-6 py-4">TRÌNH ĐỘ</th>
-                  <th class="px-6 py-4">LIÊN HỆ PHỤ HUYNH</th>
-                  <th class="px-6 py-4">TRẠNG THÁI</th>
-                  <th class="px-6 py-4 text-right">THAO TÁC</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">HỌC VIÊN</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">TRÌNH ĐỘ</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">LIÊN HỆ PHỤ HUYNH</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">TRẠNG THÁI</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody id="students-table-body">
@@ -304,7 +304,7 @@ export async function renderStudentsList(container, role) {
     const spinnerLoadMore = document.getElementById('load-more-spinner');
 
     // IntersectionObserver Infinite Scroll Setup
-    let displayCount = 20;
+    let displayCount = 10;
     let filteredList = [...allStudents];
     let isPageLoadingMore = false;
 
@@ -316,7 +316,7 @@ export async function renderStudentsList(container, role) {
 
     function updateTableInfinity(list) {
       filteredList = list;
-      displayCount = 20;
+      displayCount = 10;
       renderInfinityRows(filteredList);
     }
 
@@ -334,7 +334,7 @@ export async function renderStudentsList(container, role) {
             spinnerLoadMore?.classList.remove('hidden');
           }
           setTimeout(() => {
-            displayCount = Math.min(displayCount + 20, filteredList.length);
+            displayCount = Math.min(displayCount + 10, filteredList.length);
             renderInfinityRows(filteredList);
             isPageLoadingMore = false;
             if (loadMoreContainer) {
@@ -917,13 +917,6 @@ export function showStudentDetailModal(sv) {
                             ${tutoringPkgs.map(p => `<option value="${p.id}" ${p.id === item.goi_hoc_kem_id ? 'selected' : ''} data-price="${p.gia}">${p.ten_goi}</option>`).join('')}
                           </select>
                         </div>
-                        <div>
-                          <label class="block text-[9px] font-bold text-slate-400 mb-0.5">GIÁO VIÊN HƯỚNG DẪN</label>
-                          <select class="edit-teacher-select w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px] bg-white">
-                            <option value="" ${!item.giao_vien_id ? 'selected' : ''}>-- Chưa xếp --</option>
-                            ${teachersList.map(t => `<option value="${t.id}" ${t.id === item.giao_vien_id ? 'selected' : ''}>${t.ho_ten}</option>`).join('')}
-                          </select>
-                        </div>
                         <div class="grid grid-cols-2 gap-1.5">
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">SỐ BUỔI ĐK</label>
@@ -1200,10 +1193,8 @@ export function showStudentDetailModal(sv) {
             };
             endpoint = `${API_BASE}/registrations/${id}`;
           } else {
-            const gvVal = card.querySelector('.edit-teacher-select').value;
             payload = {
               goi_hoc_kem_id: parseInt(card.querySelector('.edit-pkg-select').value),
-              giao_vien_id: gvVal ? parseInt(gvVal) : null,
               so_buoi_dang_ky: parseInt(card.querySelector('.edit-so-buoi').value) || 0,
               so_buoi_da_hoc: parseInt(card.querySelector('.edit-so-buoi-da-hoc').value) || 0,
               tu_ngay: tuNgayVal,

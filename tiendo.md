@@ -1,3 +1,14 @@
+### [16/06/2026 14:25] — Sửa hiển thị thời hạn gói kèm, tối ưu Infinite Scroll và bỏ GV hướng dẫn lúc sửa gói
+- **Loại**: Sửa bug / Cải tiến giao diện
+- **File**: `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
+- **Mô tả**:
+  - **TutoringPackages**: Sửa dứt điểm hiển thị thời hạn "null tháng" thành "Không giới hạn".
+  - **StudentsList, TeachersList, StaffList**: 
+    - Nâng cấp layout bảng: Bổ sung thanh cuộn `max-h-[600px] overflow-y-auto` cho container bảng và gán class `sticky top-0 bg-[#f3f3f5] z-20` cho tất cả các tiêu đề `th` để cố định tiêu đề bảng không bị trôi khi cuộn vô hạn.
+    - Chỉnh sửa Infinite Scroll: Chỉ hiển thị 10 dòng dữ liệu ban đầu thay vì 20 dòng, đồng thời bước nhảy IntersectionObserver tải thêm mỗi lần cũng là 10 dòng (rootMargin đồng bộ về 10px).
+  - **StudentsList**: Xóa trường select chọn Giáo viên hướng dẫn khỏi form chỉnh sửa gói học kèm đang hoạt động (`active-pkg-card`), đồng thời xóa thuộc tính `giao_vien_id` khỏi payload gửi lên API khi bấm Lưu để giữ nguyên giáo viên đang được xếp lịch dạy.
+- **Kết quả**: Thành công
+
 ### [16/06/2026 13:45] — Hoàn tất sửa đổi các lỗi liên quan đến Gói học, Học kèm, Hủy gói hoàn tiền và Xếp lịch đủ buổi
 - **Loại**: Sửa bug / Cải tiến tính năng
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/Dashboard.js`

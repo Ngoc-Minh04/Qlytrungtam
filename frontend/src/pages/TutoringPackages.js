@@ -31,7 +31,7 @@ export async function renderTutoringPackages(container) {
             </div>
             <div>
               <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Thời hạn</div>
-              <div class="text-sm font-extrabold text-apple-ink mt-0.5">${p.so_thang} tháng</div>
+              <div class="text-sm font-extrabold text-apple-ink mt-0.5">${p.so_thang !== null && p.so_thang !== undefined ? p.so_thang + ' tháng' : 'Không giới hạn'}</div>
             </div>
           </div>
         </div>
@@ -147,8 +147,8 @@ export async function renderTutoringPackages(container) {
     document.getElementById('btn-close-tutor-modal')?.addEventListener('click', closeModal);
     document.getElementById('btn-cancel-tutor-modal')?.addEventListener('click', closeModal);
 
-    // Gắn sự kiện sửa/xóa trên Card
-    container.addEventListener('click', async (e) => {
+    // Gắn sự kiện sửa/xóa trên wrapper tĩnh
+    document.getElementById('tutoring-packages-wrapper')?.addEventListener('click', async (e) => {
       const btnEdit = e.target.closest('.btn-edit-tutor-pkg');
       const btnDel = e.target.closest('.btn-delete-tutor-pkg');
 

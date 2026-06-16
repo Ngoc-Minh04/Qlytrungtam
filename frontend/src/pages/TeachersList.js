@@ -123,16 +123,16 @@ export async function renderTeachersList(container, role) {
 
         <!-- Table Container -->
         <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th class="px-6 py-4">GIÁO VIÊN</th>
-                  <th class="px-6 py-4 hidden">CHUYÊN MÔN</th>
-                  <th class="px-6 py-4">SỐ ĐIỆN THOẠI</th>
-                  <th class="px-6 py-4">EMAIL</th>
-                  <th class="px-6 py-4">KINH NGHIỆM</th>
-                  <th class="px-6 py-4 text-right">THAO TÁC</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">GIÁO VIÊN</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 hidden">CHUYÊN MÔN</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">SỐ ĐIỆN THOẠI</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">EMAIL</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">KINH NGHIỆM</th>
+                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody id="teachers-table-body">
@@ -246,7 +246,7 @@ export async function renderTeachersList(container, role) {
     const spinnerLoadMore = document.getElementById('load-more-spinner');
 
     // IntersectionObserver Infinite Scroll Setup
-    let displayCount = 20;
+    let displayCount = 10;
     let filteredList = [...allTeachers];
     let isPageLoadingMore = false;
 
@@ -258,7 +258,7 @@ export async function renderTeachersList(container, role) {
 
     function updateTableInfinity(list) {
       filteredList = list;
-      displayCount = 20;
+      displayCount = 10;
       renderInfinityRows(filteredList);
     }
 
@@ -276,7 +276,7 @@ export async function renderTeachersList(container, role) {
             spinnerLoadMore?.classList.remove('hidden');
           }
           setTimeout(() => {
-            displayCount = Math.min(displayCount + 20, filteredList.length);
+            displayCount = Math.min(displayCount + 10, filteredList.length);
             renderInfinityRows(filteredList);
             isPageLoadingMore = false;
             if (loadMoreContainer) {
@@ -285,7 +285,7 @@ export async function renderTeachersList(container, role) {
             }
           }, 150);
         }
-      }, { rootMargin: '100px' });
+      }, { rootMargin: '10px' });
       window.teachersObserver.observe(sentinel);
     }
 
