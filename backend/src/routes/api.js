@@ -684,18 +684,36 @@ router.post('/checkin', async (req, res) => {
       });
     }
 
+    // Xác định loại lượt ra vào: Tự động đảo chiều (vào -> ra -> vào) dựa trên lượt quét cuối cùng trong ngày hôm nay
+    const lastScanRes = await pool.query(
+      `SELECT loai FROM luot_vao_ra 
+       WHERE ho_so_id = $1 
+         AND thoi_diem::date = CURRENT_DATE
+       ORDER BY thoi_diem DESC LIMIT 1`,
+      [userProfile.id]
+    );
+
+    let nextLoai = 'vao'; // Mặc định là vào
+    if (lastScanRes.rows.length > 0) {
+      const lastLoai = lastScanRes.rows[0].loai;
+      nextLoai = (lastLoai === 'vao') ? 'ra' : 'vao';
+    }
+
     // Tiến hành ghi nhận vào/ra
     const insertQuery = `
       INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, chi_nhanh_thuc_hien)
-      VALUES ($1, 'vao', 'qr_code', $2)
+      VALUES ($1, $2, 'qr_code', $3)
       RETURNING *
     `;
-    const result = await pool.query(insertQuery, [userProfile.id, current_branch || 'Trung tam chính']);
+    const result = await pool.query(insertQuery, [userProfile.id, nextLoai, current_branch || 'Trung tam chính']);
+
+    const actionText = nextLoai === 'vao' ? 'check-in (đi vào)' : 'check-out (đi ra)';
+    const titleText = nextLoai === 'vao' ? 'Quét mã QR vào' : 'Quét mã QR ra';
 
     await createNotification(
       'quet_ma_qr',
-      'Quét mã QR ra vào',
-      `Thành viên "${userProfile.ho_ten}" đã check-in thành công qua QR Code tại chi nhánh.`,
+      titleText,
+      `Thành viên "${userProfile.ho_ten}" đã ${actionText} thành công qua QR Code tại chi nhánh.`,
       result.rows[0].id,
       'luot_vao_ra',
       'nhan_vien'
@@ -703,11 +721,12 @@ router.post('/checkin', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Ghi nhận quét mã QR check-in thành công!',
+      message: `Ghi nhận ${nextLoai === 'vao' ? 'vào (Check-in)' : 'ra (Check-out)'} thành công!`,
       data: {
         ho_ten: userProfile.ho_ten,
         ma_ho_so: userProfile.ma_ho_so,
         loai_ho_so: userProfile.loai_ho_so,
+        loai: nextLoai,
         thoi_diem: result.rows[0].thoi_diem
       }
     });

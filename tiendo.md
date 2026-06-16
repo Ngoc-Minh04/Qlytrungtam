@@ -1,3 +1,9 @@
+### [16/06/2026 16:53] — Tích hợp tự động nhận diện và đảo chiều Check-in / Check-out
+- **Loại**: Cải tiến tính năng / Trải nghiệm người dùng
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Tích hợp tính năng tự động nhận diện Vào/Ra (Check-in/Check-out). Hệ thống kiểm tra lượt quét của thành viên trong ngày: nếu là lượt đầu tiên hoặc lượt gần nhất là "Ra" thì ghi nhận là "Vào (Check-in)", nếu lượt gần nhất là "Vào" thì tự động đảo chiều ghi nhận là "Ra (Check-out)".
+- **Kết quả**: Thành công
+
 ### [16/06/2026 16:50] — Khôi phục sự kiện đóng modal Quick Check-in
 - **Loại**: Sửa bug / Giao diện & Trải nghiệm
 - **File**: `frontend/src/pages/Dashboard.js`
