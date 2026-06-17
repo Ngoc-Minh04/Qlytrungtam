@@ -1,3 +1,20 @@
+### [17/06/2026 11:33] — Hoàn thiện toàn bộ các luồng chức năng và điều hướng cho Mobile App
+- **Loại**: Tính năng mới / Phát triển ứng dụng di động
+- **File**: `mobile/App.js`, `mobile/src/screens/student/StudentHome.js`, `mobile/src/screens/teacher/TeacherHome.js`, `mobile/src/screens/teacher/TeacherQR.js`, `mobile/src/screens/admin/AdminHome.js`, `mobile/src/screens/admin/AdminScanner.js`
+- **Mô tả**:
+  - Phát triển thành công giao diện trang chủ Học viên (`StudentHome.js`) hiển thị bento thống kê thông tin học phí, gói học kèm 1-1, timeline lịch học trong 7 ngày tới và lịch sử học tập.
+  - Xây dựng giao diện cho Giáo viên gồm trang chủ (`TeacherHome.js`) hiển thị bento thống kê số buổi đã dạy, ca dạy sắp tới, điểm đánh giá sao trung bình, danh sách ca dạy hôm nay tích hợp nút điểm danh nhanh (có mặt, vắng, hủy lịch) và giao diện sinh mã QR chấm công (`TeacherQR.js`).
+  - Thiết lập giao diện cho Admin/Lễ tân gồm trang chủ (`AdminHome.js`) hiển thị bento thống kê số lượt vào/ra hôm nay và danh sách nhật ký quét thẻ thời gian thực, cùng giao diện quét QR bằng camera di động (`AdminScanner.js`) sử dụng `expo-camera` và có hiệu ứng hiển thị kết quả quét trực quan.
+  - Cập nhật định tuyến chính (`App.js`) tự động điều hướng luồng giao diện (Bottom Tab Bar riêng biệt) theo 3 vai trò tương ứng ngay khi đăng nhập thành công.
+- **Kết quả**: Thành công
+
+### [17/06/2026 11:05] — Giảm giới hạn chặn quét trùng lặp check-in xuống 1 phút
+- **Loại**: Cải tiến tính năng / Tối ưu hóa vận hành
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Giảm thời gian chặn quét check-in trùng lặp của một thành viên từ 5 phút xuống còn 1 phút (`INTERVAL '1 minute'`). Thay đổi này giúp tối ưu hóa luồng check-in/out tự động đảo chiều, đáp ứng các tình huống khẩn cấp cần ra vào lớp ngay lập tức và tránh hiện tượng ùn tắc quầy lễ tân khi gặp sự cố thẻ lỗi.
+- **Kết quả**: Thành công
+
+
 ### [17/06/2026 10:55] — Khắc phục lỗi DOM Exception (NotFoundError) khi dừng camera ở các trang Log Checkin & Chấm công
 - **Loại**: Sửa bug / Cải tiến thư viện
 - **File**: `frontend/src/pages/CheckinLogs.js`, `frontend/src/pages/AttendanceStaff.js`

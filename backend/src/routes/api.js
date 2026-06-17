@@ -859,11 +859,11 @@ router.post('/checkin/scan', async (req, res) => {
       }
     }
 
-    // 4. Chống check-in trùng lặp trong vòng 5 phút gần nhất
+    // 4. Chống check-in trùng lặp trong vòng 1 phút gần nhất
     const recentCheckin = await pool.query(
       `SELECT * FROM luot_vao_ra 
        WHERE ho_so_id = $1 
-         AND thoi_diem > NOW() - INTERVAL '5 minutes'
+         AND thoi_diem > NOW() - INTERVAL '1 minute'
        ORDER BY thoi_diem DESC LIMIT 1`,
       [userProfile.id]
     );
@@ -871,7 +871,7 @@ router.post('/checkin/scan', async (req, res) => {
       const timeStr = new Date(recentCheckin.rows[0].thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       return res.status(400).json({ 
         success: false, 
-        error: `Thành viên này đã quét check-in lúc ${timeStr}. Vui lòng đợi thêm 5 phút.` 
+        error: `Thành viên này đã quét check-in lúc ${timeStr}. Vui lòng đợi thêm 1 phút.` 
       });
     }
 
