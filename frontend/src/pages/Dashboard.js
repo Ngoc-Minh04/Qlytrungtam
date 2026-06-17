@@ -629,7 +629,7 @@ export function renderDashboard(role) {
     
     // Gửi request check-in lên server
     try {
-      const res = await fetch(`${API_BASE}/checkin`, {
+      const res = await fetch(`${API_BASE}/checkin/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qr_token: decodedText, current_branch: 'Trung tâm chính' })
@@ -648,12 +648,16 @@ export function renderDashboard(role) {
 
   function stopScanner() {
     if (html5QrScanner) {
-      html5QrScanner.stop().then(() => {
+      if (html5QrScanner.isScanning) {
+        html5QrScanner.stop().then(() => {
+          html5QrScanner = null;
+        }).catch(err => {
+          console.error("Lỗi giải phóng camera:", err);
+          html5QrScanner = null;
+        });
+      } else {
         html5QrScanner = null;
-      }).catch(err => {
-        console.error("Lỗi giải phóng camera:", err);
-        html5QrScanner = null;
-      });
+      }
     }
   }
 
@@ -729,7 +733,7 @@ export function renderDashboard(role) {
     const payload = { ho_so_id: studentId, timestamp: Date.now() };
     const qr_token = btoa(JSON.stringify(payload));
     try {
-      const res = await fetch(`${API_BASE}/checkin`, {
+      const res = await fetch(`${API_BASE}/checkin/scan`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qr_token, current_branch: 'Trung tâm chính' })
       });

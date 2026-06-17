@@ -620,12 +620,16 @@ export async function renderAttendanceStaff(container) {
 
   function stopAttendanceScanner() {
     if (attendanceQrScanner) {
-      attendanceQrScanner.stop().then(() => {
+      if (attendanceQrScanner.isScanning) {
+        attendanceQrScanner.stop().then(() => {
+          attendanceQrScanner = null;
+        }).catch(err => {
+          console.error("Lỗi giải phóng camera chấm công:", err);
+          attendanceQrScanner = null;
+        });
+      } else {
         attendanceQrScanner = null;
-      }).catch(err => {
-        console.error("Lỗi giải phóng camera chấm công:", err);
-        attendanceQrScanner = null;
-      });
+      }
     }
   }
 

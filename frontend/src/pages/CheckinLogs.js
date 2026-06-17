@@ -125,12 +125,16 @@ export async function renderCheckinLogs(container) {
 
     function stopScanner() {
       if (html5QrScanner) {
-        html5QrScanner.stop().then(() => {
+        if (html5QrScanner.isScanning) {
+          html5QrScanner.stop().then(() => {
+            html5QrScanner = null;
+          }).catch(err => {
+            console.error("Lỗi giải phóng camera:", err);
+            html5QrScanner = null;
+          });
+        } else {
           html5QrScanner = null;
-        }).catch(err => {
-          console.error("Lỗi giải phóng camera:", err);
-          html5QrScanner = null;
-        });
+        }
       }
     }
 

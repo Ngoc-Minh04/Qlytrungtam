@@ -1,3 +1,20 @@
+### [17/06/2026 10:55] — Khắc phục lỗi DOM Exception (NotFoundError) khi dừng camera ở các trang Log Checkin & Chấm công
+- **Loại**: Sửa bug / Cải tiến thư viện
+- **File**: `frontend/src/pages/CheckinLogs.js`, `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**:
+  - Khắc phục lỗi DOM Exception `NotFoundError: Failed to execute 'removeChild' on 'Node'` khi người dùng tải tệp tin ảnh QR thay vì dùng camera. Lỗi xảy ra do hàm `stopScanner` gọi phương thức `.stop()` của thư viện khi camera chưa từng khởi chạy.
+  - Áp dụng bọc điều kiện kiểm tra thuộc tính `.isScanning` trước khi gọi `.stop()` trong `CheckinLogs.js` và `AttendanceStaff.js` để tránh việc thư viện cố gắng gỡ bỏ Node giao diện camera vốn không tồn tại.
+- **Kết quả**: Thành công
+
+### [17/06/2026 10:50] — Sửa lỗi gọi sai API check-in và cải tiến bộ tắt camera tại Dashboard.js
+- **Loại**: Sửa bug / Cải tiến vận hành
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**:
+  - Phát hiện nguyên nhân: Tại nút quét QR nhanh / nhập mã nhanh ngoài topbar của Dashboard.js đang gọi nhầm lên endpoint cũ `/api/checkin` (trả về lỗi hoặc không tự động điểm danh ca học), trong khi endpoint đúng, bảo mật và đồng bộ điểm danh là `/api/checkin/scan`.
+  - Tiến hành sửa đổi endpoint gọi API trong hàm `onScanSuccess` và sự kiện `submit` form check-in nhanh sang `/api/checkin/scan`.
+  - Khắc phục lỗi warning của thư viện `Html5Qrcode` ("Cannot stop, scanner is not running or paused") bằng cách bọc điều kiện kiểm tra thuộc tính `html5QrScanner.isScanning` trước khi gọi phương thức giải phóng camera `stop()`.
+- **Kết quả**: Thành công
+
 ### [17/06/2026 10:30] — Khắc phục lỗi nút Đăng xuất không hoạt động trên các Portal và Dashboard
 - **Loại**: Sửa bug / Trải nghiệm người dùng
 - **File**: `frontend/src/pages/TeacherPortal.js`, `frontend/src/pages/StudentPortal.js`, `frontend/src/pages/Dashboard.js`
