@@ -494,6 +494,76 @@ router.delete('/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, re
   }
 });
 
+// API DELETE /api/classes/schedule/:id: Xóa một ca dạy đơn lẻ của lớp nhóm khỏi database
+router.delete('/classes/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query("DELETE FROM lich_hoc_nhom WHERE id = $1 AND trang_thai = 'cho_hoc' RETURNING *", [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy ca học nhóm chưa diễn ra để hủy!' });
+    }
+    res.json({ success: true, message: 'Đã hủy ca học nhóm đơn lẻ thành công!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API PUT /api/classes/schedule/:id: Cập nhật sửa đổi một ca học nhóm đơn lẻ
+router.put('/classes/schedule/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
+  const { id } = req.params;
+  const { ngay_hoc, gio_bat_dau, gio_ket_thuc, giao_vien_id } = req.body;
+
+  try {
+    const sessionRes = await pool.query('SELECT * FROM lich_hoc_nhom WHERE id = $1', [id]);
+    if (sessionRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy buổi học lớp nhóm' });
+    }
+    const session = sessionRes.rows[0];
+
+    const newGvId = giao_vien_id || session.giao_vien_id;
+    const newNgay = ngay_hoc || session.ngay_hoc;
+    const newStart = gio_bat_dau || session.gio_bat_dau;
+    const newEnd = gio_ket_thuc || session.gio_ket_thuc;
+
+    // Chặn sửa ngày/giờ quá khứ
+    const targetDateTime = new Date(`${newNgay.split('T')[0]}T${newStart}:00`);
+    if (targetDateTime < new Date()) {
+      return res.status(400).json({ success: false, error: 'Không thể chỉnh sửa ca học nhóm lùi về thời điểm quá khứ!' });
+    }
+
+    // Kiểm tra giáo viên trùng lịch
+    if (newGvId) {
+      const checkGvOverlap1 = `
+        SELECT id FROM lich_hoc
+        WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND trang_thai != 'da_huy'
+          AND NOT (gio_ket_thuc <= $3 OR gio_bat_dau >= $4)
+      `;
+      const checkGvOverlap2 = `
+        SELECT id FROM lich_hoc_nhom
+        WHERE giao_vien_id = $1 AND ngay_hoc = $2 AND id != $3 AND trang_thai != 'da_huy'
+          AND NOT (gio_ket_thuc <= $4 OR gio_bat_dau >= $5)
+      `;
+      const gvOverlapRes1 = await pool.query(checkGvOverlap1, [newGvId, newNgay, newStart, newEnd]);
+      const gvOverlapRes2 = await pool.query(checkGvOverlap2, [newGvId, newNgay, id, newStart, newEnd]);
+      if (gvOverlapRes1.rows.length > 0 || gvOverlapRes2.rows.length > 0) {
+        return res.status(400).json({ success: false, error: 'Giáo viên phụ trách đã bị trùng lịch giảng dạy ca khác vào khung giờ mới này!' });
+      }
+    }
+
+    const updateQuery = `
+      UPDATE lich_hoc_nhom
+      SET ngay_hoc = $1, gio_bat_dau = $2, gio_ket_thuc = $3, giao_vien_id = $4, ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING *
+    `;
+    const result = await pool.query(updateQuery, [newNgay, newStart, newEnd, newGvId, id]);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // API DELETE /api/schedule/by-contract/:contractId: Hủy hàng loạt các ca học kèm chưa học (trạng thái cho_hoc)
 router.delete('/schedule/by-contract/:contractId', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { contractId } = req.params;
@@ -1609,6 +1679,24 @@ router.delete('/classes/:id', verifyAccess(['admin', 'le_tan']), async (req, res
   }
 });
 
+// API GET /classes/schedules: Lấy danh sách toàn bộ ca học của các lớp học nhóm
+router.get('/classes/schedules', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT lhn.id, lhn.lop_hoc_id, lhn.giao_vien_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai,
+             lh.ten_lop, hs.ho_ten as ten_giao_vien
+      FROM lich_hoc_nhom lhn
+      JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+      LEFT JOIN ho_so hs ON lhn.giao_vien_id = hs.id
+      WHERE lh.is_deleted = 0 AND lhn.trang_thai != 'da_huy'
+      ORDER BY lhn.ngay_hoc ASC, lhn.gio_bat_dau ASC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/teachers: Lấy danh sách giáo viên
 router.get('/teachers', async (req, res) => {
   try {
@@ -2227,12 +2315,26 @@ router.get('/schedule/today', async (req, res) => {
 router.get('/schedules', async (req, res) => {
   const { hoc_vien_id, giao_vien_id } = req.query;
   try {
-    let conditions = [];
+    let condsTutor = [];
+    let condsGroup = [];
     let params = [];
-    if (hoc_vien_id) { params.push(hoc_vien_id); conditions.push(`lh.hoc_vien_id = $${params.length}`); }
-    if (giao_vien_id) { params.push(giao_vien_id); conditions.push(`lh.giao_vien_id = $${params.length}`); }
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    if (hoc_vien_id) {
+      params.push(hoc_vien_id);
+      condsTutor.push(`lh.hoc_vien_id = $${params.length}`);
+      condsGroup.push(`lhv.hoc_vien_id = $${params.length}`);
+    }
+    if (giao_vien_id) {
+      params.push(giao_vien_id);
+      condsTutor.push(`lh.giao_vien_id = $${params.length}`);
+      condsGroup.push(`lhn.giao_vien_id = $${params.length}`);
+    }
+
+    const whereTutor = condsTutor.length > 0 ? `WHERE ${condsTutor.join(' AND ')}` : '';
+    const whereGroup = condsGroup.length > 0 ? `WHERE ${condsGroup.join(' AND ')}` : '';
+
     const queryStr = `
+      -- 1. Lịch dạy/học kèm 1-1
       SELECT 
         lh.id, lh.dang_ky_hoc_kem_id, lh.giao_vien_id, lh.hoc_vien_id, 
         lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, lh.loai_buoi, 
@@ -2246,9 +2348,30 @@ router.get('/schedules', async (req, res) => {
       JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
       LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
       LEFT JOIN dang_ky_hoc_kem dk ON lh.dang_ky_hoc_kem_id = dk.id
-      ${where}
-      ORDER BY lh.ngay_hoc DESC, lh.gio_bat_dau ASC
+      ${whereTutor}
+
+      UNION ALL
+
+      -- 2. Lịch dạy/học lớp nhóm
+      SELECT 
+        lhn.id, NULL as dang_ky_hoc_kem_id, lhn.giao_vien_id, lhv.hoc_vien_id,
+        lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, 'nhom' as loai_buoi,
+        lhn.trang_thai, 0 as da_checkin, 0 as pt_xac_nhan, 0 as hv_xac_nhan,
+        NULL as ngay_xac_nhan, NULL as ghi_chu, lhn.ngay_tao, NULL as ngay_cap_nhat,
+        hs_hv.ho_ten as ten_hoc_vien,
+        hs_gv.ho_ten as ten_giao_vien,
+        (SELECT MIN(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = lhn.lop_hoc_id AND trang_thai != 'da_huy') as tu_ngay,
+        (SELECT MAX(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = lhn.lop_hoc_id AND trang_thai != 'da_huy') as den_ngay
+      FROM lich_hoc_nhom lhn
+      JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+      LEFT JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+      LEFT JOIN ho_so hs_hv ON lhv.hoc_vien_id = hs_hv.id
+      LEFT JOIN ho_so hs_gv ON lhn.giao_vien_id = hs_gv.id
+      ${whereGroup}
+
+      ORDER BY ngay_hoc DESC, gio_bat_dau ASC
     `;
+    
     const result = await pool.query(queryStr, params);
     res.json({ success: true, data: result.rows });
   } catch (err) {

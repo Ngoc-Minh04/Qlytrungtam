@@ -289,21 +289,27 @@ export async function renderClassManagement(container) {
   // Hàm lấy danh sách các ngày học hợp lệ theo khung (hỗ trợ sinh đủ số buổi học hoặc số tháng học)
   function getScheduleDates(startDateStr, allowedDays, limitType, limitVal) {
     const dates = [];
-    const start = new Date(startDateStr);
     
     // Check nếu allowedDays rỗng hoặc null, mặc định Thứ 2, 4, 6
     const days = (allowedDays && Array.isArray(allowedDays) && allowedDays.length > 0) 
       ? allowedDays.map(Number) 
       : [1, 3, 5];
       
-    const currentDate = new Date(start);
+    // Tránh lệch múi giờ bằng cách phân tách chuỗi YYYY-MM-DD
+    const parts = startDateStr.split('-');
+    const currentDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+
+    const start = new Date(currentDate);
 
     if (limitType === 'sessions') {
       const maxSessions = parseInt(limitVal) || 10;
       while (dates.length < maxSessions) {
         const dayOfWeek = currentDate.getDay(); // 0-6 (0 là Chủ nhật, 1 là Thứ 2...)
         if (days.includes(dayOfWeek)) {
-          dates.push(currentDate.toLocaleDateString('sv-SE'));
+          const y = currentDate.getFullYear();
+          const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+          const d = String(currentDate.getDate()).padStart(2, '0');
+          dates.push(`${y}-${m}-${d}`);
         }
         currentDate.setDate(currentDate.getDate() + 1);
         // Chặn an toàn vòng lặp vô hạn (không quá 1 năm)
@@ -318,7 +324,10 @@ export async function renderClassManagement(container) {
       while (currentDate <= end) {
         const dayOfWeek = currentDate.getDay();
         if (days.includes(dayOfWeek)) {
-          dates.push(currentDate.toLocaleDateString('sv-SE'));
+          const y = currentDate.getFullYear();
+          const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+          const d = String(currentDate.getDate()).padStart(2, '0');
+          dates.push(`${y}-${m}-${d}`);
         }
         currentDate.setDate(currentDate.getDate() + 1);
         // Chặn an toàn
@@ -811,12 +820,15 @@ export async function renderClassManagement(container) {
 
       const isGroup = item.type === 'nhom';
       const isSingleTutor = item.type === 'ca_nhan_don_le';
+      const isSingleGroup = item.type === 'nhom_don_le';
       
       const url = isGroup 
         ? `${API_BASE}/classes/${item.id}` 
         : isSingleTutor
           ? `${API_BASE}/schedule/${item.id}`
-          : `${API_BASE}/schedule/by-contract/${item.dang_ky_hoc_kem_id}/update-batch`;
+          : isSingleGroup
+            ? `${API_BASE}/classes/schedule/${item.id}`
+            : `${API_BASE}/schedule/by-contract/${item.dang_ky_hoc_kem_id}/update-batch`;
 
       const bodyPayload = {
         ngay_hoc: updatedNgay,
@@ -833,7 +845,7 @@ export async function renderClassManagement(container) {
         });
         const result = await editRes.json();
         if (result.success) {
-          showToast(isSingleTutor ? 'Cập nhật ca học thành công!' : 'Cập nhật chuỗi lịch học thành công!');
+          showToast((isSingleTutor || isSingleGroup) ? 'Cập nhật ca học thành công!' : 'Cập nhật chuỗi lịch học thành công!');
           closeModal();
           loadScheduleList();
         } else {
@@ -850,67 +862,98 @@ export async function renderClassManagement(container) {
     const schList = document.getElementById('class-list-container');
     if (!schList) return;
     try {
-      const [schedulesRes, classesRes] = await Promise.all([
+      const [schedulesRes, classesRes, classSchedulesRes] = await Promise.all([
         fetch(`${API_BASE}/schedules`).then(r => r.json()),
-        fetch(`${API_BASE}/classes`).then(r => r.json())
+        fetch(`${API_BASE}/classes`).then(r => r.json()),
+        fetch(`${API_BASE}/classes/schedules`).then(r => r.json())
       ]);
       const schedules = schedulesRes.data || [];
       const classesList = classesRes.data || [];
+      const classSchedules = classSchedulesRes.data || [];
 
       // Gộp các ca học
       const allSessions = [];
-      classesList.forEach(item => {
-        const today = new Date().toLocaleDateString('sv-SE');
-        const ngayHocStr = item.ngay_hoc ? item.ngay_hoc.substring(0, 10) : '';
-        let label = 'Chờ học';
-        let cssClass = 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-        
-        if (item.trang_thai_lich === 'da_hoc') {
-          label = 'Đã học';
-          cssClass = 'bg-emerald-100 text-emerald-800';
-        } else if (item.trang_thai_lich === 'vang') {
-          label = 'Vắng';
-          cssClass = 'bg-rose-100 text-rose-800';
-        } else if (item.trang_thai_lich === 'da_huy') {
-          label = 'Đã hủy';
-          cssClass = 'bg-slate-100 text-slate-600 border border-slate-200';
-        } else {
-          if (ngayHocStr < today) {
-            label = 'Chưa điểm danh';
-            cssClass = 'bg-amber-100 text-amber-800';
-          } else if (ngayHocStr === today) {
-            label = 'Hôm nay';
-            cssClass = 'bg-blue-100 text-blue-800';
-          }
+      
+      // Group các ca của lớp nhóm theo lop_hoc_id
+      const groupSchedulesByClass = {};
+      classSchedules.forEach(item => {
+        if (!groupSchedulesByClass[item.lop_hoc_id]) {
+          groupSchedulesByClass[item.lop_hoc_id] = [];
         }
+        groupSchedulesByClass[item.lop_hoc_id].push(item);
+      });
+
+      classesList.forEach(item => {
+        const classSessions = groupSchedulesByClass[item.id] || [];
+        
+        // Tính khoảng ngày bắt đầu - kết thúc
+        let minNgayStr = '';
+        let maxNgayStr = '';
+        let ngayGopText = '—';
+        if (classSessions.length > 0) {
+          const sortedClass = [...classSessions].sort((a, b) => a.ngay_hoc.localeCompare(b.ngay_hoc));
+          minNgayStr = sortedClass[0].ngay_hoc ? sortedClass[0].ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '';
+          maxNgayStr = sortedClass[sortedClass.length - 1].ngay_hoc ? sortedClass[sortedClass.length - 1].ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '';
+          ngayGopText = minNgayStr === maxNgayStr ? minNgayStr : `${minNgayStr} - ${maxNgayStr}`;
+        } else if (item.ngay_hoc) {
+          ngayGopText = item.ngay_hoc.substring(0, 10).split('-').reverse().join('/');
+        }
+
+        // Lấy danh sách các thứ duy nhất của lớp nhóm
+        const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const uniqueDaysSet = new Set();
+        classSessions.forEach(s => {
+          if (s.ngay_hoc) {
+            const d = new Date(s.ngay_hoc);
+            uniqueDaysSet.add(d.getDay()); // 0-6
+          }
+        });
+        const sortedUniqueDays = Array.from(uniqueDaysSet).sort((a, b) => {
+          const valA = a === 0 ? 7 : a;
+          const valB = b === 0 ? 7 : b;
+          return valA - valB;
+        });
+        const thuGopLabel = sortedUniqueDays.length > 0 
+          ? sortedUniqueDays.map(d => dayLabels[d]).join(', ') 
+          : (item.ngay_hoc ? getDayOfWeekLabel(item.ngay_hoc) : '—');
+
+        const totalClassSessions = classSessions.length;
+        const finishedClassSessions = classSessions.filter(s => s.trang_thai === 'da_hoc').length;
+        const pendingClassSessions = classSessions.filter(s => s.trang_thai === 'cho_hoc').length;
 
         allSessions.push({
           id: item.id,
           type: 'nhom',
           title: item.ten_lop,
-          detail: `Gói: ${item.ten_goi_hoc_phi || 'Tự chọn'}`,
-          ngay_hoc: item.ngay_hoc,
+          detail: `Gói: ${item.ten_goi_hoc_phi || 'Tự chọn'} (Đã xếp ${totalClassSessions} buổi)`,
+          ngay_hoc: classSessions[0]?.ngay_hoc || item.ngay_hoc,
+          ngay_hoc_gop: ngayGopText,
+          thu_gop: thuGopLabel,
           gio_bat_dau: item.gio_bat_dau || '',
           gio_ket_thuc: item.gio_ket_thuc || '',
           ten_giao_vien: item.ten_giao_vien,
           giao_vien_id: item.giao_vien_id,
           si_so: item.si_so || 0,
-          trang_thai: item.trang_thai_lich || 'cho_hoc',
-          trang_thai_label: label,
-          trang_thai_class: cssClass,
+          trang_thai: pendingClassSessions > 0 ? 'cho_hoc' : 'da_hoc',
+          trang_thai_label: pendingClassSessions > 0 ? 'Đang học' : 'Hoàn thành',
+          trang_thai_class: pendingClassSessions > 0 ? 'bg-blue-50 text-apple-blue border border-blue-200' : 'bg-emerald-100 text-emerald-800',
           tu_ngay: item.tu_ngay,
-          den_ngay: item.den_ngay
+          den_ngay: item.den_ngay,
+          classSessions: classSessions
         });
       });
 
       // Group các ca học kèm theo dang_ky_hoc_kem_id
       const tutoringGroups = {};
       schedules.forEach(item => {
-        const key = item.dang_ky_hoc_kem_id || `temp-${Date.now()}-${Math.random()}`;
-        if (!tutoringGroups[key]) {
-          tutoringGroups[key] = [];
+        // Chỉ gộp ca học kèm (loại ca_nhan)
+        if (item.loai_buoi === 'ca_nhan') {
+          const key = item.dang_ky_hoc_kem_id || `temp-${Date.now()}-${Math.random()}`;
+          if (!tutoringGroups[key]) {
+            tutoringGroups[key] = [];
+          }
+          tutoringGroups[key].push(item);
         }
-        tutoringGroups[key].push(item);
       });
 
       // Map các group học kèm thành từng dòng lịch gộp duy nhất
@@ -967,7 +1010,8 @@ export async function renderClassManagement(container) {
           trang_thai_label: pendingSessions > 0 ? 'Đang tiến hành' : 'Hoàn thành',
           trang_thai_class: pendingSessions > 0 ? 'bg-blue-50 text-apple-blue border border-blue-200' : 'bg-emerald-100 text-emerald-800',
           tu_ngay: firstSession.tu_ngay,
-          den_ngay: firstSession.den_ngay
+          den_ngay: firstSession.den_ngay,
+          pendingSessionsCount: pendingSessions
         });
       });
 
@@ -1012,16 +1056,53 @@ export async function renderClassManagement(container) {
         const gioHocStr = (item.gio_bat_dau && item.gio_ket_thuc) ? `${item.gio_bat_dau.slice(0, 5)} - ${item.gio_ket_thuc.slice(0, 5)}` : '—';
 
         if (isGroup) {
-          // Render dòng lớp nhóm bình thường
+          // Lớp nhóm: hiển thị accordion xem chi tiết các ca của lớp nhóm
+          const groupSessions = [...(item.classSessions || [])].sort((a, b) => a.ngay_hoc.localeCompare(b.ngay_hoc));
+          
+          let subRowsHtml = '';
+          groupSessions.forEach((sub, subIdx) => {
+            const subNgayStr = sub.ngay_hoc ? sub.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
+            const subThu = getDayOfWeekLabel(sub.ngay_hoc);
+            const subGio = (sub.gio_bat_dau && sub.gio_ket_thuc) ? `${sub.gio_bat_dau.slice(0, 5)} - ${sub.gio_ket_thuc.slice(0, 5)}` : '—';
+            const subStatusLabel = sub.trang_thai === 'da_hoc' ? 'Đã học' : sub.trang_thai === 'vang' ? 'Vắng' : 'Chờ học';
+            const subStatusClass = sub.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : sub.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+
+            subRowsHtml += `
+              <div class="flex items-center justify-between py-2 border-b border-apple-divider/30 last:border-0 hover:bg-slate-50 px-2 rounded-lg">
+                <div class="space-y-0.5">
+                  <div class="font-bold text-slate-700">Buổi ${subIdx + 1}: ${subNgayStr} (${subThu})</div>
+                  <div class="text-[10px] text-slate-400">Giáo viên: ${sub.ten_giao_vien || item.ten_giao_vien || 'Chưa gán'}</div>
+                </div>
+                <div class="font-bold text-slate-600">${subGio}</div>
+                <div>
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${subStatusClass}">${subStatusLabel}</span>
+                </div>
+                <div class="flex gap-2">
+                  ${sub.trang_thai === 'cho_hoc' ? `
+                    <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.id}">Sửa</button>
+                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                  ` : `
+                    <span class="text-[9px] text-slate-400 font-semibold italic">Đã dạy</span>
+                  `}
+                </div>
+              </div>
+            `;
+          });
+
           rows += `
             <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
               <td class="px-5 py-3.5">
                 <div class="font-bold text-apple-ink">${item.title}</div>
-                ${item.detail ? `<div class="text-[9.5px] text-slate-500 mt-0.5 font-medium">${item.detail}</div>` : ''}
+                <div class="text-[9.5px] text-slate-500 mt-0.5 font-semibold flex items-center gap-1.5">
+                  ${item.detail}
+                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="sub-list-class-${item.id}">
+                    <span class="material-symbols-outlined text-[14px]">unfold_more</span>Xem chi tiết ca
+                  </button>
+                </div>
                 ${dateRangeStr}
-                <div class="text-[9.5px] text-slate-400 mt-0.5">Ngày dạy: ${ngayHocStr}</div>
+                <div class="text-[9.5px] text-slate-400 mt-0.5">Lịch dạy: ${item.ngay_hoc_gop}</div>
               </td>
-              <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
+              <td class="px-5 py-3.5 text-slate-600 font-semibold">${item.thu_gop}</td>
               <td class="px-5 py-3.5 font-bold text-apple-blue whitespace-nowrap">${gioHocStr} (${item.si_so}/50 HS)</td>
               <td class="px-5 py-3.5">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
@@ -1031,10 +1112,21 @@ export async function renderClassManagement(container) {
                 <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="nhom" data-id="${item.id}">Hủy</button>
               </td>
             </tr>
+            <tr id="sub-list-class-${item.id}" class="hidden bg-slate-50/50 border-b border-apple-divider/40">
+              <td colspan="5" class="px-6 py-3">
+                <div class="bg-white rounded-2xl border border-apple-divider/50 p-3 shadow-inner space-y-1.5 max-h-60 overflow-y-auto">
+                  <div class="text-[10px] uppercase font-bold text-slate-400 border-b pb-1 mb-1.5 flex justify-between items-center">
+                    <span>Danh sách chi tiết ca học lớp nhóm</span>
+                    <span class="text-apple-blue font-bold">${groupSessions.length} buổi học</span>
+                  </div>
+                  ${subRowsHtml}
+                </div>
+              </td>
+            </tr>
           `;
         } else {
           // Lớp kèm: lấy danh sách các ca học chi tiết của group này để chuẩn bị render accordion
-          const groupSessions = tutoringGroups[item.dang_ky_hoc_kem_id] || [];
+          const groupSessions = [...(tutoringGroups[item.dang_ky_hoc_kem_id] || [])].sort((a, b) => a.ngay_hoc.localeCompare(b.ngay_hoc));
           
           let subRowsHtml = '';
           groupSessions.forEach((sub, subIdx) => {
@@ -1055,12 +1147,18 @@ export async function renderClassManagement(container) {
                   <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${subStatusClass}">${subStatusLabel}</span>
                 </div>
                 <div class="flex gap-2">
-                  <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.dang_ky_hoc_kem_id}">Sửa</button>
-                  <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                  ${sub.trang_thai === 'cho_hoc' ? `
+                    <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.dang_ky_hoc_kem_id}">Sửa</button>
+                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                  ` : `
+                    <span class="text-[9px] text-slate-400 font-semibold italic">Đã chốt ca</span>
+                  `}
                 </div>
               </div>
             `;
           });
+
+          const hasPending = item.pendingSessionsCount > 0;
 
           rows += `
             <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
@@ -1081,8 +1179,12 @@ export async function renderClassManagement(container) {
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
               </td>
               <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${index}">Sửa chung</button>
-                <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="ca_nhan" data-contract-id="${item.dang_ky_hoc_kem_id}">Hủy hết</button>
+                ${hasPending ? `
+                  <button type="button" class="btn-edit-session text-apple-blue hover:underline font-bold mr-2 text-[11px]" data-idx="${index}">Sửa chung</button>
+                  <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="ca_nhan" data-contract-id="${item.dang_ky_hoc_kem_id}">Hủy hết</button>
+                ` : `
+                  <span class="text-[10px] text-slate-400 italic font-semibold">Không còn ca chờ học</span>
+                `}
               </td>
             </tr>
             <tr id="sub-list-${item.dang_ky_hoc_kem_id}" class="hidden bg-slate-50/50 border-b border-apple-divider/40">
@@ -1191,18 +1293,26 @@ export async function renderClassManagement(container) {
         });
       });
 
-      // Gắn sự kiện Xóa đơn lẻ 1 ca học kèm
+      // Gắn sự kiện Xóa đơn lẻ 1 ca học (kèm hoặc nhóm)
       schList.querySelectorAll('.btn-delete-single-session').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const subId = btn.getAttribute('data-sub-id');
-          if (!confirm('Bạn có chắc chắn muốn hủy duy nhất buổi học kèm này không?')) return;
+          const contractId = btn.getAttribute('data-contract-id');
+          
+          // Kiểm tra xem đây là ca học nhóm hay học kèm bằng cách check classSessions
+          const isGroupSession = allSessions.some(s => s.type === 'nhom' && s.id === parseInt(contractId));
+          const url = isGroupSession 
+            ? `${API_BASE}/classes/schedule/${subId}` 
+            : `${API_BASE}/schedule/${subId}`;
+
+          if (!confirm(isGroupSession ? 'Bạn có chắc chắn muốn hủy duy nhất ca học nhóm này không?' : 'Bạn có chắc chắn muốn hủy duy nhất buổi học kèm này không?')) return;
 
           try {
-            const res = await fetch(`${API_BASE}/schedule/${subId}`, { method: 'DELETE', headers: { 'X-User-Role': 'le_tan' } });
+            const res = await fetch(url, { method: 'DELETE', headers: { 'X-User-Role': 'le_tan' } });
             const result = await res.json();
             if (result.success) {
-              showToast('Hủy ca học kèm thành công!');
+              showToast(isGroupSession ? 'Hủy ca học nhóm thành công!' : 'Hủy ca học kèm thành công!');
               loadScheduleList();
             } else {
               showToast(result.error || 'Lỗi khi hủy', 'error');
@@ -1213,25 +1323,27 @@ export async function renderClassManagement(container) {
         });
       });
 
-      // Gắn sự kiện Sửa đơn lẻ 1 ca học kèm
+      // Gắn sự kiện Sửa đơn lẻ 1 ca học (kèm hoặc nhóm)
       schList.querySelectorAll('.btn-edit-single-session').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const subId = btn.getAttribute('data-sub-id');
           const contractId = btn.getAttribute('data-contract-id');
 
+          const isGroupSession = allSessions.some(s => s.type === 'nhom' && s.id === parseInt(contractId));
+
           // Fetch thông tin ca học cụ thể để mở modal sửa đơn lẻ
           try {
-            const res = await fetch(`${API_BASE}/schedules`);
+            const res = await fetch(isGroupSession ? `${API_BASE}/classes/schedules` : `${API_BASE}/schedules`);
             const data = await res.json();
             const singleSession = (data.data || []).find(s => s.id === parseInt(subId));
             if (singleSession) {
-              // Gán trường type = 'ca_nhan_don_le' để hàm openEditSessionModal nhận biết sửa 1 buổi thay vì chuỗi
+              // Gán trường type để hàm openEditSessionModal nhận biết sửa 1 buổi
               const editItem = {
                 id: singleSession.id,
-                type: 'ca_nhan_don_le', // Đánh dấu sửa đơn lẻ
-                dang_ky_hoc_kem_id: singleSession.dang_ky_hoc_kem_id,
-                title: `Sửa Buổi Học Kèm`,
+                type: isGroupSession ? 'nhom_don_le' : 'ca_nhan_don_le', // Đánh dấu sửa đơn lẻ
+                dang_ky_hoc_kem_id: isGroupSession ? singleSession.lop_hoc_id : singleSession.dang_ky_hoc_kem_id,
+                title: isGroupSession ? `Sửa Ca Học Nhóm` : `Sửa Buổi Học Kèm`,
                 ngay_hoc: singleSession.ngay_hoc,
                 gio_bat_dau: singleSession.gio_bat_dau || '',
                 gio_ket_thuc: singleSession.gio_ket_thuc || '',

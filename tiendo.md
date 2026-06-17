@@ -1,3 +1,32 @@
+### [17/06/2026 14:54] — Khắc phục ReferenceError pendingSessions ở ClassManagement.js
+- **Loại**: Sửa bug giao diện
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**: Khắc phục lỗi `ReferenceError: pendingSessions is not defined` khi render dòng lịch học kèm 1-1. Lỗi do gọi trực tiếp biến `pendingSessions` nằm ngoài scope vòng lặp gộp trước đó. Đã chuyển sang sử dụng `item.pendingSessionsCount` giúp khôi phục hiển thị card **Lịch sử đặt lịch & Lớp học** phía Frontend.
+- **Kết quả**: Thành công
+
+### [17/06/2026 14:50] — Sửa lỗi SQL UNION ALL làm trống Thời khóa biểu và Lịch sử học kèm
+- **Loại**: Sửa bug hệ thống
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Khắc phục lỗi SQL query của API `GET /api/schedules` khi thực hiện `UNION ALL` gộp lịch kèm và lịch nhóm. Lỗi xảy ra do query cố gắng chọn cột `lhn.ngay_cap_nhat` vốn không tồn tại trong bảng `lich_hoc_nhom`, khiến API trả về lỗi 500. Đã sửa thành `NULL as ngay_cap_nhat` để đồng bộ cấu trúc cột, giúp khôi phục hoàn toàn dữ liệu hiển thị trên cả **Thời khóa biểu** lẫn **Lịch sử đặt lịch & Lớp học** phía Frontend.
+- **Kết quả**: Thành công
+
+### [17/06/2026 14:42] — Nâng cấp Accordion ca chi tiết cho lớp học nhóm và bổ sung các API quản lý ca đơn lẻ
+- **Loại**: Cải tiến tính năng / UI UX / API mới
+- **File**: `frontend/src/pages/ClassManagement.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Backend**: Thêm mới API `GET /api/classes/schedules` để lấy toàn bộ ca học của các lớp học nhóm. Thêm mới các API `DELETE /api/classes/schedule/:id` và `PUT /api/classes/schedule/:id` cho phép Lễ tân xóa hoặc dời ngày, đổi giờ dạy, đổi giáo viên cho từng ca đơn lẻ của lớp học nhóm.
+  - **Frontend**: Đồng bộ hóa giao diện lớp học nhóm trong Card Lịch sử bằng cách nhóm các ca dạy học của lớp nhóm theo `lop_hoc_id`, gộp hiển thị tất cả các thứ dạy học cố định (`thu_gop`) và khoảng ngày dạy. Bổ sung nút **"Xem chi tiết ca"** (Accordion) cho lớp học nhóm, cho phép Lễ tân click vào để bung ra danh sách chi tiết từng buổi học nhóm, tích hợp đầy đủ nút Sửa và Hủy cho từng ca đơn lẻ của lớp học nhóm đó.
+- **Kết quả**: Thành công
+
+### [17/06/2026 14:30] — Khắc phục lỗi hiển thị ca học 1-1, lỗi sinh ngày xếp lịch và thời khóa biểu trống
+- **Loại**: Sửa bug logic & Giao diện
+- **File**: `frontend/src/pages/ClassManagement.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - Sửa thuật toán `getScheduleDates` trong `ClassManagement.js` tính toán ngày học bằng cách phân rã chuỗi `YYYY-MM-DD` trực tiếp thay vì parse Date object từ string giúp tránh triệt để lệch múi giờ JS.
+  - Sắp xếp mảng chi tiết ca học kèm (`groupSessions`) tăng dần theo ngày học và hiển thị nút thao tác động (ẩn các nút Hủy/Sửa khi không còn ca "Chờ học" để tránh lễ tân hiểu nhầm là chưa hủy).
+  - Cập nhật API `GET /api/schedules` ở backend thực hiện `UNION ALL` gộp cả lịch 1-1 (`lich_hoc`) và lịch nhóm (`lich_hoc_nhom`) giúp tab **Thời khóa biểu** hiển thị đầy đủ ca học.
+- **Kết quả**: Thành công
+
 ### [17/06/2026 13:53] — Khắc phục dải màu trắng che khuất camera quét QR trên Web Frontend
 - **Loại**: Sửa bug giao diện / Trải nghiệm người dùng
 - **File**: `frontend/src/pages/Dashboard.js`

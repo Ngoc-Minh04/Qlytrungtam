@@ -1,22 +1,20 @@
 const { pool } = require('./src/config/db');
 
-async function showGoiHocKem() {
+async function checkSchedules() {
   try {
-    console.log(`\n=== COLUMNS IN goi_hoc_kem ===`);
-    const res = await pool.query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'goi_hoc_kem';
+    console.log(`\n=== DATA IN dang_ky_hoc_kem ===`);
+    const resReg = await pool.query(`
+      SELECT id, hoc_vien_id, giao_vien_id, goi_hoc_kem_id, so_buoi_dang_ky, so_buoi_da_hoc, trang_thai
+      FROM dang_ky_hoc_kem;
     `);
-    res.rows.forEach(r => console.log(`- ${r.column_name}: ${r.data_type}`));
+    console.log(resReg.rows);
 
-    console.log(`\n=== CHECK CONSTRAINTS IN goi_hoc_kem ===`);
-    const res2 = await pool.query(`
-      SELECT conname, pg_get_constraintdef(oid) 
-      FROM pg_constraint 
-      WHERE conrelid = 'goi_hoc_kem'::regclass;
+    console.log(`\n=== DATA IN lich_hoc ===`);
+    const resSch = await pool.query(`
+      SELECT id, dang_ky_hoc_kem_id, hoc_vien_id, giao_vien_id, ngay_hoc::text, gio_bat_dau, gio_ket_thuc, loai_buoi, trang_thai
+      FROM lich_hoc;
     `);
-    res2.rows.forEach(r => console.log(`- ${r.conname}: ${r.pg_get_constraintdef}`));
+    console.log(resSch.rows);
 
   } catch (err) {
     console.error("Lỗi:", err);
@@ -25,4 +23,4 @@ async function showGoiHocKem() {
   }
 }
 
-showGoiHocKem();
+checkSchedules();
