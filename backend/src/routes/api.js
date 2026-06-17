@@ -552,7 +552,7 @@ router.put('/classes/schedule/:id', verifyAccess(['admin', 'le_tan']), async (re
 
     const updateQuery = `
       UPDATE lich_hoc_nhom
-      SET ngay_hoc = $1, gio_bat_dau = $2, gio_ket_thuc = $3, giao_vien_id = $4, ngay_cap_nhat = CURRENT_TIMESTAMP
+      SET ngay_hoc = $1, gio_bat_dau = $2, gio_ket_thuc = $3, giao_vien_id = $4
       WHERE id = $5
       RETURNING *
     `;
@@ -1684,7 +1684,7 @@ router.get('/classes/schedules', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT lhn.id, lhn.lop_hoc_id, lhn.giao_vien_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc, lhn.trang_thai,
-             lh.ten_lop, hs.ho_ten as ten_giao_vien
+             lh.ten_lop, hs.ho_ten as ten_giao_vien, 'nhom' as loai_buoi
       FROM lich_hoc_nhom lhn
       JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
       LEFT JOIN ho_so hs ON lhn.giao_vien_id = hs.id
@@ -2315,8 +2315,8 @@ router.get('/schedule/today', async (req, res) => {
 router.get('/schedules', async (req, res) => {
   const { hoc_vien_id, giao_vien_id } = req.query;
   try {
-    let condsTutor = [];
-    let condsGroup = [];
+    let condsTutor = ["lh.trang_thai != 'da_huy'"];
+    let condsGroup = ["lhn.trang_thai != 'da_huy'"];
     let params = [];
 
     if (hoc_vien_id) {
@@ -2330,8 +2330,8 @@ router.get('/schedules', async (req, res) => {
       condsGroup.push(`lhn.giao_vien_id = $${params.length}`);
     }
 
-    const whereTutor = condsTutor.length > 0 ? `WHERE ${condsTutor.join(' AND ')}` : '';
-    const whereGroup = condsGroup.length > 0 ? `WHERE ${condsGroup.join(' AND ')}` : '';
+    const whereTutor = `WHERE ${condsTutor.join(' AND ')}`;
+    const whereGroup = `WHERE ${condsGroup.join(' AND ')}`;
 
     const queryStr = `
       -- 1. Lịch dạy/học kèm 1-1

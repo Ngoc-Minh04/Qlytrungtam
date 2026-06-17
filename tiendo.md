@@ -1,3 +1,18 @@
+### [17/06/2026 16:03] — Khắc phục lỗi SQL 500 khi sửa đổi ca học nhóm đơn lẻ
+- **Loại**: Sửa bug hệ thống
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Khắc phục lỗi SQL 500 `Internal Server Error: column "ngay_cap_nhat" of relation "lich_hoc_nhom" does not exist` khi gọi API `PUT /api/classes/schedule/:id` để dời ngày ca học nhóm đơn lẻ. Đã loại bỏ trường `ngay_cap_nhat` khỏi câu truy vấn `UPDATE lich_hoc_nhom` vì bảng này không sở hữu cột đó.
+- **Kết quả**: Thành công
+
+### [17/06/2026 15:57] — Đồng bộ ẩn lịch đã hủy trên Thời khóa biểu và Hoàn thiện sửa ca đơn lẻ
+- **Loại**: Sửa bug / Trải nghiệm người dùng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Ẩn lịch đã hủy trên Thời khóa biểu**: Sửa câu SQL query của API `GET /api/schedules` bổ sung thêm điều kiện lọc `lh.trang_thai != 'da_huy'` và `lhn.trang_thai != 'da_huy'` để ẩn sạch các lịch học/dạy đã hủy khỏi tab **Thời khóa biểu**.
+  - **Sửa ca nhóm đơn lẻ thành công**: Thêm trường `'nhom' as loai_buoi` vào API `GET /api/classes/schedules` giúp frontend đối chiếu tìm kiếm chính xác thông tin ca học nhóm đơn lẻ, giải quyết dứt điểm lỗi thông báo "Không tìm thấy thông tin ca học" khi bấm nút Sửa trong accordion chi tiết.
+  - **Tránh gây hiểu lầm khi Sửa chuỗi (Sửa chung)**: Ẩn trường chọn Ngày học trên Modal khi người dùng chọn **Sửa chung** (Sửa chuỗi), do tính năng này chỉ áp dụng đổi giờ học, giáo viên và thời lượng cho các buổi chưa học. Đối với **Sửa buổi đơn lẻ**, trường Ngày học vẫn hiển thị và cho phép thay đổi ngày tự do.
+- **Kết quả**: Thành công
+
 ### [17/06/2026 15:18] — Cập nhật khóa giờ quá khứ khi Sửa lịch và Khắc phục lỗi hiển thị sai ngày do trùng ID
 - **Loại**: Cải tiến tính năng / UI UX / Sửa bug
 - **File**: `frontend/src/pages/ClassManagement.js`

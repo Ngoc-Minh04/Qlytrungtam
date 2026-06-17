@@ -602,7 +602,7 @@ export async function renderClassManagement(container) {
         <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40">
           <h3 class="font-bold text-apple-ink text-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-apple-blue text-[18px]">edit_calendar</span>
-            Chỉnh sửa chuỗi ca học (${item.type === 'nhom' ? 'Lớp nhóm' : 'Học kèm'})
+            ${(item.type === 'nhom' || item.type === 'ca_nhan') ? 'Chỉnh sửa chuỗi ca học' : 'Chỉnh sửa ca học đơn lẻ'} (${item.type === 'nhom' || item.type === 'nhom_don_le' ? 'Lớp nhóm' : 'Học kèm'})
           </h3>
           <button type="button" id="btn-close-edit-session" class="p-1 hover:bg-slate-100 rounded-full flex items-center justify-center">
             <span class="material-symbols-outlined text-[16px] text-slate-400">close</span>
@@ -615,8 +615,8 @@ export async function renderClassManagement(container) {
           </p>
 
           <!-- Ngày học (Mốc bắt đầu đổi hoặc ngày đơn lẻ) -->
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học (Ngày áp dụng/Mốc bắt đầu) <span class="text-rose-500 font-bold">*</span></label>
+          <div class="${(item.type === 'nhom' || item.type === 'ca_nhan') ? 'hidden' : ''}">
+            <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
             <div id="edit-class-date-container" class="relative">
               <input type="date" id="edit-class-date" required min="${todayStr}" value="${itemNgayStr}">
             </div>
