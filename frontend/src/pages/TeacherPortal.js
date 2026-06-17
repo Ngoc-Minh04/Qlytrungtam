@@ -1,5 +1,6 @@
 // TeacherPortal.js — Portal giáo viên · Navy gradient · Top tab pills · Glassmorphism
 import { initChatbot } from './Chatbot.js';
+import { renderMyQR } from './MyQR.js';
 const API_BASE = 'http://localhost:3006/api';
 
 function getAuthHeaders() {
@@ -12,8 +13,7 @@ function getAuthHeaders() {
 
 function logout() {
   localStorage.clear();
-  window.history.pushState({}, '', '/login');
-  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.location.hash = '/login';
 }
 
 function formatDate(d) {
@@ -36,6 +36,7 @@ const GRAD = `linear-gradient(135deg,${NAV} 0%,${NAV2} 100%)`;
 
 const TABS = [
   { id: 'overview',  label: 'Tổng quan',    icon: 'home' },
+  { id: 'my-qr',     label: 'Mã QR của tôi', icon: 'qr_code' },
   { id: 'today',     label: 'Hôm nay',      icon: 'today' },
   { id: 'week',      label: 'Tuần này',     icon: 'calendar_month' },
   { id: 'students',  label: 'Học viên',     icon: 'group' },
@@ -208,6 +209,7 @@ async function _renderTab(tab) {
   c.innerHTML = `<div class="flex items-center justify-center min-h-[300px]"><div class="animate-spin w-8 h-8 rounded-full border-[3px] border-blue-200 border-t-blue-600"></div></div>`;
   switch (tab) {
     case 'overview':  await _tabOverview(c);  break;
+    case 'my-qr':     await renderMyQR(c);    break;
     case 'today':     await _tabToday(c);     break;
     case 'week':      await _tabWeek(c);      break;
     case 'students':  await _tabStudents(c);  break;

@@ -1,3 +1,38 @@
+### [17/06/2026 10:30] — Khắc phục lỗi nút Đăng xuất không hoạt động trên các Portal và Dashboard
+- **Loại**: Sửa bug / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`, `frontend/src/pages/StudentPortal.js`, `frontend/src/pages/Dashboard.js`
+- **Mô tả**: 
+  - Khắc phục lỗi nút đăng xuất không hoạt động do cơ chế Router của ứng dụng sử dụng cơ chế định tuyến dựa trên Hash (`hashchange`), trong khi hàm `logout()` cũ sử dụng `window.history.pushState()` khiến Router không bắt được sự kiện thay đổi trang.
+  - Chuyển đổi logic logout ở cả `TeacherPortal.js` và `StudentPortal.js` về chuẩn Hash Routing bằng cách thiết lập `window.location.hash = '/login'`.
+  - Đồng bộ nút đăng xuất trong Dashboard chính (`Dashboard.js`) về chung cơ chế Hash Routing để đảm bảo hoạt động mượt mà.
+- **Kết quả**: Thành công
+
+### [17/06/2026 09:45] — Sửa lỗi 401 (Unauthorized) khi lấy mã QR và cải tiến tự động liên kết hồ sơ tài khoản
+- **Loại**: Sửa bug / Cải tiến hệ thống
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: 
+  - Sửa lỗi 401 do các tài khoản thử nghiệm của giáo viên/học viên (`gv01`, `hv01`) chưa được liên kết `ho_so_id` (bị NULL) trong database từ trước, dẫn đến việc thiếu tham số khi gọi API sinh mã QR.
+  - Tiến hành cập nhật trực tiếp `ho_so_id` cho tài khoản `gv01` (khớp với hồ sơ GV001) và `hv01` (khớp với hồ sơ HV001) trong database.
+  - Cải tiến câu lệnh truy vấn liên kết hồ sơ tự động ở API `POST /api/auth/login` để tự động so khớp cả số điện thoại và tìm kiếm tương đối (LIKE) email/tên đăng nhập, đảm bảo các tài khoản đăng nhập sau này đều được gán hồ sơ chính xác, không bị lỗi 401 nữa.
+- **Kết quả**: Thành công
+
+### [17/06/2026 09:35] — Tích hợp menu và tab hiển thị mã QR check-in cho Học viên & Giáo viên
+- **Loại**: Cải tiến tính năng / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/StudentPortal.js`, `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**: Tích hợp thêm tab "Mã QR của tôi" vào hệ thống định tuyến (TABS) và thanh điều hướng của cả hai trang Portal (Học viên & Giáo viên). Kết nối gọi component `renderMyQR` để hiển thị mã QR động đếm ngược bảo mật, giúp giải quyết triệt để vấn đề giáo viên và học viên không tìm thấy mã QR để check-in.
+- **Kết quả**: Thành công
+
+### [17/06/2026 08:58] — Tích hợp luồng Check-in bằng mã QR JWT bảo mật & Tự động điểm danh ca học
+- **Loại**: Tính năng mới / Nâng cấp trải nghiệm
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/MyQR.js`, `frontend/src/pages/Dashboard.js`, `frontend/src/pages/CheckinLogs.js`, `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**:
+  - **Backend**: Phát triển API `GET /api/checkin/my-qr` sinh mã JWT ngắn hạn (5 phút) mã hóa AES-256 qua crypto. Phát triển API `POST /api/checkin/scan` thực hiện xác thực token, kiểm tra trùng quét (5 phút), kiểm tra hạn gói Gym (lớp nhóm) hoặc gói học kèm 1-1 còn ca, và tự động điểm danh ca học khớp trong ngày (`da_checkin = 1`, `trang_thai = 'da_hoc'`), đồng thời tự tăng số buổi học kèm tương ứng. Hỗ trợ song song cả quét QR lẫn nhập mã học viên thủ công từ Base64.
+  - **Frontend**:
+    - Xây dựng trang `MyQR.js` cho học viên/giáo viên hiển thị mã QR và bộ đếm ngược tự động làm mới mã sau 5 phút.
+    - Đăng ký tab và router "Mã QR của tôi" vào `Dashboard.js`.
+    - Tích hợp nút quét QR trực tiếp cùng modal camera và form nhập tay tiện lợi tại trang Lượt vào ra học viên (`CheckinLogs.js`) và Chấm công nhân sự (`AttendanceStaff.js`).
+- **Kết quả**: Thành công
+
 ### [16/06/2026 17:09] — Sửa đường dẫn load cấu hình .env trong db.js
 - **Loại**: Sửa bug / Cấu hình hệ thống
 - **File**: `backend/src/config/db.js`

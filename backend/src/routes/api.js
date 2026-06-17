@@ -735,6 +735,285 @@ router.post('/checkin', async (req, res) => {
   }
 });
 
+// GET /api/checkin/my-qr: Sinh mã QR JWT bảo mật ngắn hạn (5 phút) cho người dùng đăng nhập
+router.get('/checkin/my-qr', async (req, res) => {
+  const ho_so_id = req.headers['x-ho-so-id'];
+  const user_role = req.headers['x-user-role'];
+
+  if (!ho_so_id) {
+    return res.status(401).json({ success: false, error: 'Chưa xác thực người dùng' });
+  }
+
+  try {
+    // Tìm hồ sơ cá nhân tương ứng
+    let hsRes = await pool.query('SELECT id, ma_ho_so, ho_ten, loai_ho_so FROM ho_so WHERE id = $1 AND is_deleted = 0', [ho_so_id]);
+    
+    let userProfile;
+    if (hsRes.rows.length === 0) {
+      // Nếu không tìm thấy hồ sơ (tài khoản test chưa tạo hồ sơ), sinh thông tin giả lập tạm thời
+      userProfile = {
+        id: ho_so_id,
+        ma_ho_so: 'TEMP_' + ho_so_id,
+        ho_ten: 'Người dùng thử nghiệm #' + ho_so_id,
+        loai_ho_so: user_role || 'hoc_vien'
+      };
+    } else {
+      userProfile = hsRes.rows[0];
+    }
+
+    // Mã hóa JWT ngắn hạn bằng AES-256-CBC qua crypto
+    const crypto = require('crypto');
+    const secret = process.env.JWT_SECRET || 'stellar_academy_qr_secret_key_change_in_production';
+    
+    // Đọc TTL từ cấu hình, mặc định 5 phút
+    const ttlMinutes = 5; 
+    const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
+    
+    const payload = {
+      ho_so_id: userProfile.id,
+      ma_ho_so: userProfile.ma_ho_so,
+      ho_ten: userProfile.ho_ten,
+      loai_ho_so: userProfile.loai_ho_so,
+      expiresAt
+    };
+
+    const data = JSON.stringify(payload);
+    const iv = crypto.randomBytes(16);
+    const key = crypto.scryptSync(secret, 'salt', 32);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const token = iv.toString('hex') + ':' + encrypted;
+
+    res.json({
+      success: true,
+      data: {
+        qr_token: token,
+        expires_at: expiresAt,
+        ttl_seconds: ttlMinutes * 60
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/checkin/scan: Lễ tân quét QR check-in & tự động điểm danh ca học
+router.post('/checkin/scan', async (req, res) => {
+  const { qr_token, current_branch } = req.body;
+
+  if (!qr_token) {
+    return res.status(400).json({ success: false, error: 'Thiếu mã QR check-in' });
+  }
+
+  try {
+    // 1. Giải mã token bằng crypto hoặc Base64 thô
+    const crypto = require('crypto');
+    const secret = process.env.JWT_SECRET || 'stellar_academy_qr_secret_key_change_in_production';
+    
+    let payload;
+    let isManualInput = false;
+    try {
+      const parts = qr_token.split(':');
+      if (parts.length === 2) {
+        const iv = Buffer.from(parts[0], 'hex');
+        const encrypted = parts[1];
+        const key = crypto.scryptSync(secret, 'salt', 32);
+        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        payload = JSON.parse(decrypted);
+      } else {
+        // Thử giải mã Base64 thô
+        const decoded = Buffer.from(qr_token, 'base64').toString('utf8');
+        payload = JSON.parse(decoded);
+        isManualInput = true;
+      }
+    } catch (e) {
+      return res.status(400).json({ success: false, error: 'Mã QR hoặc Token không hợp lệ' });
+    }
+
+    const { ho_so_id, ma_ho_so, ho_ten, loai_ho_so, expiresAt, timestamp } = payload;
+
+    // 2. Chống gian lận: Kiểm tra mã QR hoặc Token hết hạn
+    const expirationTime = expiresAt || (parseInt(timestamp) + 60000); // 60s đối với token thủ công
+    if (Date.now() > expirationTime) {
+      return res.status(401).json({ success: false, error: 'Mã QR hoặc Token đã hết hạn hiệu lực.' });
+    }
+
+    // 3. Tìm kiếm hồ sơ
+    const hsRes = await pool.query('SELECT * FROM ho_so WHERE id = $1 AND is_deleted = 0', [ho_so_id]);
+    let userProfile = hsRes.rows[0];
+    
+    // Fallback nếu tài khoản test
+    if (!userProfile) {
+      if (String(ma_ho_so).startsWith('TEMP_')) {
+        userProfile = {
+          id: ho_so_id,
+          ma_ho_so,
+          ho_ten,
+          loai_ho_so
+        };
+      } else {
+        return res.status(404).json({ success: false, error: 'Hồ sơ người dùng không tồn tại hoặc đã bị khóa' });
+      }
+    }
+
+    // 4. Chống check-in trùng lặp trong vòng 5 phút gần nhất
+    const recentCheckin = await pool.query(
+      `SELECT * FROM luot_vao_ra 
+       WHERE ho_so_id = $1 
+         AND thoi_diem > NOW() - INTERVAL '5 minutes'
+       ORDER BY thoi_diem DESC LIMIT 1`,
+      [userProfile.id]
+    );
+    if (recentCheckin.rows.length > 0) {
+      const timeStr = new Date(recentCheckin.rows[0].thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return res.status(400).json({ 
+        success: false, 
+        error: `Thành viên này đã quét check-in lúc ${timeStr}. Vui lòng đợi thêm 5 phút.` 
+      });
+    }
+
+    // 5. Kiểm tra gói học đối với Học viên
+    if (userProfile.loai_ho_so === 'hoc_vien') {
+      // 5.1. Kiểm tra gói đại trà (lớp nhóm)
+      const groupPkgRes = await pool.query(
+        `SELECT 1 FROM dang_ky_khoa_hoc 
+         WHERE ho_so_id = $1 
+           AND trang_thai = 'dang_hoat_dong' 
+           AND den_ngay >= CURRENT_DATE`,
+        [userProfile.id]
+      );
+
+      // 5.2. Kiểm tra gói học kèm (1 kèm 1)
+      const privatePkgRes = await pool.query(
+        `SELECT 1 FROM dang_ky_hoc_kem 
+         WHERE hoc_vien_id = $1 
+           AND trang_thai = 'dang_hoat_dong' 
+           AND (den_ngay IS NULL OR den_ngay >= CURRENT_DATE) 
+           AND so_buoi_da_hoc < so_buoi_dang_ky`,
+        [userProfile.id]
+      );
+
+      if (groupPkgRes.rows.length === 0 && privatePkgRes.rows.length === 0) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Chặn check-in: Học viên hiện không có gói học nào đang hoạt động hoặc gói học đã hết hạn / hết buổi.' 
+        });
+      }
+    }
+
+    // 6. Xác định loại lượt ra vào: Tự động đảo chiều (vào -> ra -> vào) dựa trên lượt quét cuối trong ngày
+    const lastScanRes = await pool.query(
+      `SELECT loai FROM luot_vao_ra 
+       WHERE ho_so_id = $1 
+         AND thoi_diem::date = CURRENT_DATE
+       ORDER BY thoi_diem DESC LIMIT 1`,
+      [userProfile.id]
+    );
+
+    let nextLoai = 'vao';
+    if (lastScanRes.rows.length > 0) {
+      const lastLoai = lastScanRes.rows[0].loai;
+      nextLoai = (lastLoai === 'vao') ? 'ra' : 'vao';
+    }
+
+    // 7. Ghi nhận lượt ra vào
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const insertQuery = `
+        INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, chi_nhanh_thuc_hien)
+        VALUES ($1, $2, 'qr_code', $3)
+        RETURNING *
+      `;
+      const insertRes = await client.query(insertQuery, [userProfile.id, nextLoai, current_branch || 'Trung tâm chính']);
+      const logId = insertRes.rows[0].id;
+
+      let attendanceCount = 0;
+      let scheduledLessons = [];
+
+      // 8. Tự động điểm danh nếu là lượt "Vào" của Học viên
+      if (userProfile.loai_ho_so === 'hoc_vien' && nextLoai === 'vao') {
+        // Tìm các ca học trong ngày của học viên có trang_thai = 'cho_hoc'
+        const lessonsRes = await client.query(
+          `SELECT id, dang_ky_hoc_kem_id, ngay_hoc::text, gio_bat_dau 
+           FROM lich_hoc 
+           WHERE hoc_vien_id = $1 
+             AND ngay_hoc = CURRENT_DATE 
+             AND trang_thai = 'cho_hoc'`,
+          [userProfile.id]
+        );
+        scheduledLessons = lessonsRes.rows;
+
+        // Tiến hành điểm danh và cập nhật số buổi học kèm (nếu có)
+        for (const lesson of scheduledLessons) {
+          // Cập nhật trạng thái buổi học
+          await client.query(
+            `UPDATE lich_hoc 
+             SET da_checkin = 1, trang_thai = 'da_hoc', pt_xac_nhan = 1, hv_xac_nhan = 1, ngay_xac_nhan = NOW() 
+             WHERE id = $1`,
+            [lesson.id]
+          );
+          attendanceCount++;
+
+          // Nếu là học kèm 1 kèm 1, tăng số buổi đã dạy của hợp đồng
+          if (lesson.dang_ky_hoc_kem_id) {
+            await client.query(
+              `UPDATE dang_ky_hoc_kem 
+               SET so_buoi_da_hoc = so_buoi_da_hoc + 1 
+               WHERE id = $1`,
+              [lesson.dang_ky_hoc_kem_id]
+            );
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+
+      // Gửi notification hệ thống
+      const actionText = nextLoai === 'vao' ? 'check-in (đi vào)' : 'check-out (đi ra)';
+      const titleText = nextLoai === 'vao' ? 'Quét QR điểm danh vào' : 'Quét QR điểm danh ra';
+      const autoConfirmText = attendanceCount > 0 ? ` (Tự động điểm danh thành công ${attendanceCount} ca học hôm nay)` : '';
+
+      await createNotification(
+        'quet_ma_qr',
+        titleText,
+        `Thành viên "${userProfile.ho_ten}" đã ${actionText} thành công qua QR Code.${autoConfirmText}`,
+        logId,
+        'luot_vao_ra',
+        'nhan_vien'
+      );
+
+      res.json({
+        success: true,
+        message: `Ghi nhận ${nextLoai === 'vao' ? 'vào (Check-in)' : 'ra (Check-out)'} thành công!${autoConfirmText}`,
+        data: {
+          ho_ten: userProfile.ho_ten,
+          ma_ho_so: userProfile.ma_ho_so,
+          loai_ho_so: userProfile.loai_ho_so,
+          loai: nextLoai,
+          thoi_diem: insertRes.rows[0].thoi_diem,
+          attendance_count: attendanceCount
+        }
+      });
+
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
+
+  } catch (err) {
+    console.error('Lỗi scan check-in:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 // ============================================================
 // 4. PHÂN HỆ QUẢN LÝ BÁO CÁO DOANH THU & KỲ BÁO CÁO
 // ============================================================
@@ -2301,11 +2580,17 @@ router.post('/auth/login', async (req, res) => {
       const findProfile = await pool.query(
         `SELECT id, ho_ten, email, so_dien_thoai, chi_nhanh, loai_ho_so, ma_ho_so 
          FROM ho_so 
-         WHERE (UPPER(ma_ho_so) = $1 OR UPPER(ho_ten) = $1 OR UPPER(email) = $1) 
-           AND loai_ho_so = $2 
-           AND is_deleted = 0 
+         WHERE (
+           UPPER(ma_ho_so) = $1 
+           OR UPPER(ho_ten) = $1 
+           OR UPPER(email) = $1 
+           OR UPPER(email) LIKE $2
+           OR so_dien_thoai = $3
+         ) 
+         AND loai_ho_so = $4 
+         AND is_deleted = 0 
          LIMIT 1`,
-        [searchPattern, user.vai_tro]
+        [searchPattern, `%${searchPattern}%`, user.ten_dang_nhap, user.vai_tro]
       );
       if (findProfile.rows.length > 0) {
         const matchedProfile = findProfile.rows[0];

@@ -1,5 +1,6 @@
 // StudentPortal.js — Portal học viên · Orange gradient · Top tab pills · Glassmorphism
 import { initChatbot } from './Chatbot.js';
+import { renderMyQR } from './MyQR.js';
 const API_BASE = 'http://localhost:3006/api';
 
 function getAuthHeaders() {
@@ -12,8 +13,7 @@ function getAuthHeaders() {
 
 function logout() {
   localStorage.clear();
-  window.history.pushState({}, '', '/login');
-  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.location.hash = '/login';
 }
 
 function formatDate(dateStr) {
@@ -47,6 +47,7 @@ const STS_LBL = {
 
 const TABS = [
   { id: 'overview',  label: 'Tổng quan',  icon: 'home' },
+  { id: 'my-qr',     label: 'Mã QR của tôi', icon: 'qr_code' },
   { id: 'schedule',  label: 'Lịch học',   icon: 'calendar_month' },
   { id: 'diary',     label: 'Sổ liên lạc', icon: 'menu_book' },
   { id: 'tuition',   label: 'Học phí',    icon: 'payments' },
@@ -221,6 +222,7 @@ async function _renderTab(tab) {
   c.innerHTML = `<div class="flex items-center justify-center min-h-[300px]"><div class="animate-spin w-8 h-8 rounded-full border-[3px] border-orange-200 border-t-orange-500"></div></div>`;
   switch (tab) {
     case 'overview': await _tabOverview(c); break;
+    case 'my-qr':    await renderMyQR(c);    break;
     case 'schedule': await _tabSchedule(c); break;
     case 'diary':    await _tabDiary(c);    break;
     case 'tuition':  await _tabTuition(c);  break;

@@ -31,6 +31,12 @@ export async function renderAttendanceStaff(container) {
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             
+            ${(userRole === 'admin' || userRole === 'le_tan') ? `
+              <button id="btn-attendance-scan-qr" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
+                <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>Quét QR Chấm công
+              </button>
+            ` : ''}
+
             ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
               <button id="btn-add-log" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
                 <span class="material-symbols-outlined text-[16px]">add</span>${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Thêm lượt quét'}
@@ -102,6 +108,48 @@ export async function renderAttendanceStaff(container) {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <!-- Modal quét QR Chấm công -->
+      <div id="attendance-scan-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Quét mã QR Chấm công</h3>
+            <button id="close-attendance-scan-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          
+          <div class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
+            <!-- Camera Scanner Area -->
+            <div id="attendance-reader" class="w-full aspect-square bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden relative">
+              <!-- Camera preview will render here -->
+            </div>
+            
+            <!-- File upload fallback -->
+            <div class="flex justify-center">
+              <button id="btn-attendance-upload-qr" class="flex items-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition active:scale-95">
+                <span class="material-symbols-outlined text-[16px]">file_upload</span>
+                Chọn ảnh QR từ máy
+              </button>
+              <input type="file" id="attendance-scan-file" accept="image/*" class="hidden" />
+            </div>
+
+            <!-- Manual input fallback -->
+            <form id="attendance-scan-form" class="space-y-3 pt-2 border-t border-[#f3f3f5]">
+              <div class="space-y-1">
+                <label class="block font-semibold text-slate-600">Hoặc nhập mã nhân sự thủ công</label>
+                <div class="flex gap-2">
+                  <input type="text" id="attendance-scan-input" placeholder="Ví dụ: GV001" required
+                    class="flex-1 border border-[#e2e2e4] rounded-xl px-3 py-2 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                  <button type="submit" class="px-4 py-2 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition active:scale-95">
+                    Gửi
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     `;
@@ -565,6 +613,130 @@ export async function renderAttendanceStaff(container) {
       targetEl.innerHTML = `<div class="p-4 bg-red-50 text-red-700 text-xs rounded-xl">Lỗi tải bảng tổng hợp công: ${err.message}</div>`;
     }
   }
+
+  // Xử lý camera quét QR chấm công
+  let attendanceQrScanner = null;
+  const attScanModal = document.getElementById('attendance-scan-modal');
+
+  function stopAttendanceScanner() {
+    if (attendanceQrScanner) {
+      attendanceQrScanner.stop().then(() => {
+        attendanceQrScanner = null;
+      }).catch(err => {
+        console.error("Lỗi giải phóng camera chấm công:", err);
+        attendanceQrScanner = null;
+      });
+    }
+  }
+
+  async function onAttendanceScanSuccess(decodedText) {
+    stopAttendanceScanner();
+    attScanModal.classList.add('hidden');
+    await submitAttendanceScan(decodedText);
+  }
+
+  async function submitAttendanceScan(token) {
+    try {
+      const res = await fetch(`${API_BASE}/checkin/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_token: token, current_branch: 'Trung tâm chính' })
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast(result.message || 'Chấm công thành công!', 'success');
+        loadTabContent(); // Reload dữ liệu chấm công
+      } else {
+        showToast(result.error || 'Chấm công thất bại', 'error');
+      }
+    } catch (err) {
+      showToast('Không thể kết nối máy chủ', 'error');
+    }
+  }
+
+  // Mở modal quét
+  document.getElementById('btn-attendance-scan-qr')?.addEventListener('click', () => {
+    attScanModal.classList.remove('hidden');
+    setTimeout(() => {
+      try {
+        attendanceQrScanner = new Html5Qrcode("attendance-reader");
+        attendanceQrScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (w, h) => ({ width: Math.round(w * 0.7), height: Math.round(h * 0.7) })
+          },
+          onAttendanceScanSuccess
+        ).catch(err => {
+          console.warn("Không thể khởi động camera quét QR chấm công:", err);
+          const readerDiv = document.getElementById('attendance-reader');
+          if (readerDiv) {
+            readerDiv.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs h-full flex flex-col justify-center items-center select-none">
+              <span class="material-symbols-outlined text-red-400 text-[28px] mb-1">videocam_off</span>
+              Không thể truy cập camera. Vui lòng cấp quyền hoặc nhập thủ công.
+            </div>`;
+          }
+        });
+      } catch (e) {
+        console.error("Lỗi khởi tạo Html5Qrcode chấm công:", e);
+      }
+    }, 100);
+  });
+
+  // Đóng modal quét
+  document.getElementById('close-attendance-scan-modal')?.addEventListener('click', () => {
+    attScanModal.classList.add('hidden');
+    stopAttendanceScanner();
+  });
+
+  attScanModal.addEventListener('click', (e) => {
+    if (e.target === attScanModal) {
+      attScanModal.classList.add('hidden');
+      stopAttendanceScanner();
+    }
+  });
+
+  // Trigger upload ảnh
+  document.getElementById('btn-attendance-upload-qr')?.addEventListener('click', () => {
+    document.getElementById('attendance-scan-file')?.click();
+  });
+
+  document.getElementById('attendance-scan-file')?.addEventListener('change', async (e) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const tempScanner = new Html5Qrcode("attendance-reader");
+    try {
+      showToast('Đang quét mã QR từ ảnh...', 'info');
+      const decodedText = await tempScanner.scanFile(file, false);
+      await onAttendanceScanSuccess(decodedText);
+    } catch (err) {
+      showToast('Không tìm thấy mã QR trong ảnh này', 'error');
+    }
+  });
+
+  // Submit form thủ công
+  document.getElementById('attendance-scan-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inputVal = document.getElementById('attendance-scan-input').value.trim();
+    if (!inputVal) return;
+    
+    stopAttendanceScanner();
+    attScanModal.classList.add('hidden');
+
+    // Giả lập token Base64 thô tương tự quick-checkin
+    const payload = { ho_so_id: inputVal, timestamp: Date.now() };
+    const manualToken = btoa(JSON.stringify(payload));
+    await submitAttendanceScan(manualToken);
+  });
+
+  // Dọn dẹp observer khi chuyển trang
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(container)) {
+      stopAttendanceScanner();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   // Khởi chạy
   initLayout();

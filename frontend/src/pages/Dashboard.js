@@ -19,6 +19,7 @@ import { renderCourseRegistrations } from './CourseRegistrations.js';
 import { renderStudentRequests } from './StudentRequests.js';
 import { renderRevenueReport } from './RevenueReport.js';
 import { renderAccountManagement } from './AccountManagement.js';
+import { renderMyQR } from './MyQR.js';
 import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 import { initChatbot, destroyChatbot } from './Chatbot.js';
 
@@ -110,6 +111,7 @@ function findGroupOfPage(page) {
 function getMenuConfig(role) {
   const allItems = [
     { page: 'dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'] },
+    { page: 'my-qr', icon: 'qr_code', label: 'Mã QR của tôi', roles: ['hoc_vien', 'giao_vien'] },
     { page: 'schedules', icon: 'calendar_month', label: 'Thời khóa biểu', roles: ['admin', 'le_tan', 'giao_vien'] },
     { page: 'attendance-staff', icon: 'fingerprint', label: 'Chấm công của tôi', roles: ['giao_vien'] },
     { page: 'checkin-logs', icon: 'qr_code_scanner', label: 'Lượt Vào - Ra', roles: ['admin', 'le_tan'] },
@@ -148,6 +150,7 @@ function getPageRenderer(page, role) {
     'student-requests': (c) => renderStudentRequests(c),
     'revenue-report': (c) => renderRevenueReport(c),
     'account-management': (c) => renderAccountManagement(c),
+    'my-qr': (c) => renderMyQR(c),
   };
   return map[page] || map['dashboard'];
 }
@@ -614,7 +617,7 @@ export function renderDashboard(role) {
   // Logout
   document.getElementById('btn-header-logout')?.addEventListener('click', () => {
     localStorage.clear();
-    window.location.reload();
+    window.location.hash = '/login';
   });
 
   // Mở modal Quick Check-in & kích hoạt Camera quét QR thực tế
