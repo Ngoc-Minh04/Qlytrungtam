@@ -96,9 +96,6 @@ export default function AdminScanner() {
         facing="back"
         enableTorch={torch}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
       >
         {/* Lớp phủ tối mờ bên ngoài khung quét */}
         <View style={styles.overlay}>

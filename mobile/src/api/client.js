@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ⚠️ Đổi IP này thành IP LAN của máy tính chạy server nếu bạn test trên điện thoại thật qua Expo Go
 // Ví dụ: const SERVER_IP = '192.168.1.5';
-export const SERVER_IP = '10.0.2.2'; // Mặc định cho máy ảo Android Emulator
+export const SERVER_IP = '192.168.11.125'; // IP mạng LAN máy tính của bạn
 export const API_BASE = `http://${SERVER_IP}:3006/api`;
 
 export async function getAuthHeaders() {

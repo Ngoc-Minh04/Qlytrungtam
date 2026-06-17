@@ -532,6 +532,27 @@ export function renderDashboard(role) {
         </div>
       </div>
     </div>
+    <style>
+      #reader, #logs-reader {
+        border: none !important;
+      }
+      #reader video, #logs-reader video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        border-radius: 1rem !important;
+      }
+      #reader > div, #logs-reader > div {
+        border: none !important;
+        background: transparent !important;
+      }
+      #reader button, #logs-reader button,
+      #reader select, #logs-reader select,
+      #reader span, #logs-reader span,
+      #reader a, #logs-reader a {
+        display: none !important;
+      }
+    </style>
   `;
 
   // ========== KHỞI TẠO LAYOUT ==========

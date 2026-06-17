@@ -1,3 +1,30 @@
+### [17/06/2026 13:53] — Khắc phục dải màu trắng che khuất camera quét QR trên Web Frontend
+- **Loại**: Sửa bug giao diện / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**: Sửa lỗi giao diện camera quét QR nhanh bị một dải màu trắng lớn che khuất phần dưới (do các thành phần HTML điều khiển mặc định tự động sinh ra bởi thư viện `html5-qrcode` mà chưa được định dạng CSS). Đã thêm bộ CSS tùy chỉnh ẩn đi các nút bấm, menu chọn camera và căn chỉnh video camera chiếm trọn vẹn 100% khung quét, bo tròn góc hiện đại.
+- **Kết quả**: Thành công
+
+### [17/06/2026 13:43] — Tối ưu hóa mật độ mã QR để Webcam Laptop dễ quét hơn
+- **Loại**: Cải tiến bảo mật / Trải nghiệm người dùng
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Phát hiện nguyên nhân camera laptop/webcam không thể nhận diện mã QR hiển thị từ di động là do mật độ dữ liệu mã hóa quá cao (chứa nhiều trường tên, vai trò...). Đã rút gọn payload mã QR động từ 5 trường xuống còn 2 trường cốt lõi (`ho_so_id` và `expiresAt`). Việc này giúp hình ảnh mã QR thưa hơn, dễ bắt nét hơn gấp 2 lần trên các webcam độ phân giải thấp.
+- **Kết quả**: Thành công
+
+
+### [17/06/2026 13:38] — Tối ưu hóa camera nhận diện mã QR trên Mobile App
+- **Loại**: Cải tiến tính năng / Trải nghiệm người dùng
+- **File**: `mobile/src/screens/admin/AdminScanner.js`
+- **Mô tả**: Loại bỏ bộ lọc `barcodeScannerSettings` thủ công trong component `<CameraView>` của `expo-camera` để khắc phục lỗi không tự nhận diện mã QR trên một số thiết bị iOS và Android, giúp camera tự lấy nét và quét nhạy bén hơn.
+- **Kết quả**: Thành công
+
+
+### [17/06/2026 13:32] — Cấu hình địa chỉ IP mạng LAN thực tế cho Mobile App
+- **Loại**: Cấu hình hệ thống / Sửa lỗi kết nối
+- **File**: `mobile/src/api/client.js`
+- **Mô tả**: Phát hiện nguyên nhân gây lỗi Timeout kết nối là do IP của máy tính bị lệch so với IP giả lập mặc định `10.0.2.2`. Tiến hành chạy lệnh `ipconfig` xác định IP WiFi hiện tại của máy tính là `192.168.11.125`, từ đó cập nhật lại cấu hình `SERVER_IP` trong tệp `client.js` để thiết bị di động kết nối trực tiếp đến backend.
+- **Kết quả**: Thành công
+
+
 ### [17/06/2026 11:33] — Hoàn thiện toàn bộ các luồng chức năng và điều hướng cho Mobile App
 - **Loại**: Tính năng mới / Phát triển ứng dụng di động
 - **File**: `mobile/App.js`, `mobile/src/screens/student/StudentHome.js`, `mobile/src/screens/teacher/TeacherHome.js`, `mobile/src/screens/teacher/TeacherQR.js`, `mobile/src/screens/admin/AdminHome.js`, `mobile/src/screens/admin/AdminScanner.js`

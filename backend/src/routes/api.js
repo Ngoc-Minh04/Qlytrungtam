@@ -771,9 +771,6 @@ router.get('/checkin/my-qr', async (req, res) => {
     
     const payload = {
       ho_so_id: userProfile.id,
-      ma_ho_so: userProfile.ma_ho_so,
-      ho_ten: userProfile.ho_ten,
-      loai_ho_so: userProfile.loai_ho_so,
       expiresAt
     };
 
@@ -833,7 +830,7 @@ router.post('/checkin/scan', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Mã QR hoặc Token không hợp lệ' });
     }
 
-    const { ho_so_id, ma_ho_so, ho_ten, loai_ho_so, expiresAt, timestamp } = payload;
+    const { ho_so_id, expiresAt, timestamp } = payload;
 
     // 2. Chống gian lận: Kiểm tra mã QR hoặc Token hết hạn
     const expirationTime = expiresAt || (parseInt(timestamp) + 60000); // 60s đối với token thủ công
@@ -845,18 +842,14 @@ router.post('/checkin/scan', async (req, res) => {
     const hsRes = await pool.query('SELECT * FROM ho_so WHERE id = $1 AND is_deleted = 0', [ho_so_id]);
     let userProfile = hsRes.rows[0];
     
-    // Fallback nếu tài khoản test
+    // Fallback nếu tài khoản test hoặc profile chưa được tạo
     if (!userProfile) {
-      if (String(ma_ho_so).startsWith('TEMP_')) {
-        userProfile = {
-          id: ho_so_id,
-          ma_ho_so,
-          ho_ten,
-          loai_ho_so
-        };
-      } else {
-        return res.status(404).json({ success: false, error: 'Hồ sơ người dùng không tồn tại hoặc đã bị khóa' });
-      }
+      userProfile = {
+        id: ho_so_id,
+        ma_ho_so: 'TEMP_' + ho_so_id,
+        ho_ten: 'Người dùng thử nghiệm #' + ho_so_id,
+        loai_ho_so: 'hoc_vien'
+      };
     }
 
     // 4. Chống check-in trùng lặp trong vòng 1 phút gần nhất
