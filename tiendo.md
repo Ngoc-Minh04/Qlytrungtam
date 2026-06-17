@@ -1,3 +1,11 @@
+### [17/06/2026 15:18] — Cập nhật khóa giờ quá khứ khi Sửa lịch và Khắc phục lỗi hiển thị sai ngày do trùng ID
+- **Loại**: Cải tiến tính năng / UI UX / Sửa bug
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Khóa giờ quá khứ khi Sửa**: Đồng bộ hóa logic của Modal chỉnh sửa ca học giống như Form đăng ký chính. Nếu ngày chọn sửa là ngày hôm nay, các khung giờ bắt đầu đã trôi qua so với thời gian thực tế sẽ bị xám (`disabled`) không cho phép chọn. Đồng thời, tự động kiểm tra và reset giờ bắt đầu đã chọn nếu đổi ngày học sang hôm nay và giờ đó đã quá hạn.
+  - **Sửa lỗi hiển thị sai ngày**: Bổ sung kiểm tra thêm điều kiện loại hình lớp học (`loai_buoi` là `nhom` hoặc `ca_nhan`) trong hàm tìm kiếm `singleSession` của sự kiện sửa ca đơn lẻ. Thay đổi này giải quyết triệt để vấn đề xung đột trùng ID giữa bảng `lich_hoc` và `lich_hoc_nhom` trong kết quả gộp `UNION ALL`, đảm bảo ngày dạy học hiển thị trên Modal sửa ca đơn lẻ luôn chuẩn xác theo đúng buổi được chọn (ví dụ: Buổi 1 là 17/06, Buổi 2 là 19/06).
+- **Kết quả**: Thành công
+
 ### [17/06/2026 14:54] — Khắc phục ReferenceError pendingSessions ở ClassManagement.js
 - **Loại**: Sửa bug giao diện
 - **File**: `frontend/src/pages/ClassManagement.js`

@@ -708,6 +708,11 @@ export async function renderClassManagement(container) {
 
     // Render time grid
     const renderEditTimeGrid = () => {
+      const now = new Date();
+      const isToday = dateInput.value === now.toISOString().split('T')[0];
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+
       const slots = [];
       for (let h = 8; h <= 22; h++) {
         for (let m = 0; m < 60; m += 30) {
@@ -718,18 +723,20 @@ export async function renderClassManagement(container) {
 
       timeGridEl.innerHTML = slots.map(({ h, m }) => {
         const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const isPast = isToday && (h < currentH || (h === currentH && m <= currentM));
         const isSelected = label === currentSelStart;
         return `
           <button type="button" 
             class="edit-time-slot-btn py-1.5 rounded-xl text-[10px] font-bold transition text-center border-2 
-              ${isSelected ? 'bg-apple-blue border-apple-blue text-white shadow-sm' :
-                'bg-white border-apple-divider text-slate-600 hover:border-apple-blue hover:bg-blue-50'}"
-            data-time="${label}"
+              ${isPast ? 'bg-slate-100 border-slate-100 text-slate-300 cursor-not-allowed' : 
+                isSelected ? 'bg-apple-blue border-apple-blue text-white shadow-sm' :
+                'bg-white border-apple-divider text-slate-600 hover:border-apple-blue hover:bg-blue-50 active:scale-95'}"
+            data-time="${label}" ${isPast ? 'disabled' : ''}
           >${label}</button>
         `;
       }).join('');
 
-      timeGridEl.querySelectorAll('.edit-time-slot-btn').forEach(btn => {
+      timeGridEl.querySelectorAll('.edit-time-slot-btn:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => {
           currentSelStart = btn.getAttribute('data-time');
           startInput.value = currentSelStart;
@@ -764,8 +771,15 @@ export async function renderClassManagement(container) {
       {
         minDate: todayStr,
         onSelect: (val) => {
-          currentSelStart = '';
-          startInput.value = '';
+          const now = new Date();
+          const isToday = val === now.toISOString().split('T')[0];
+          if (isToday && currentSelStart) {
+            const [sh, sm] = currentSelStart.split(':').map(Number);
+            if (sh < now.getHours() || (sh === now.getHours() && sm <= now.getMinutes())) {
+              currentSelStart = '';
+              startInput.value = '';
+            }
+          }
           renderEditTimeGrid();
           updateEndTime();
         }
@@ -1336,7 +1350,10 @@ export async function renderClassManagement(container) {
           try {
             const res = await fetch(isGroupSession ? `${API_BASE}/classes/schedules` : `${API_BASE}/schedules`);
             const data = await res.json();
-            const singleSession = (data.data || []).find(s => s.id === parseInt(subId));
+            const singleSession = (data.data || []).find(s => 
+              s.id === parseInt(subId) && 
+              (isGroupSession ? s.loai_buoi === 'nhom' : s.loai_buoi === 'ca_nhan')
+            );
             if (singleSession) {
               // Gán trường type để hàm openEditSessionModal nhận biết sửa 1 buổi
               const editItem = {
