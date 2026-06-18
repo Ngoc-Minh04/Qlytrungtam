@@ -4,7 +4,7 @@ const API_BASE = 'http://localhost:3006/api';
 
 export async function renderLessonDiary(container) {
   const userRole = localStorage.getItem('userRole') || 'hoc_vien';
-  const hoSoId   = localStorage.getItem('hoSoId') || localStorage.getItem('userId') || '';
+  const hoSoId   = localStorage.getItem('hoSoId') || localStorage.getItem('taiKhoanId') || '';
 
   container.innerHTML = `
     <div class="flex items-center justify-center min-h-[300px]">
@@ -219,9 +219,19 @@ async function loadDiaryData(container, userRole, students, studentId) {
                           <span class="text-[9px] text-slate-400 block">${createdTime} - ${createdDate}</span>
                         </div>
                       </div>
-                      <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
-                        ${item.so_phut_hoc} phút học
-                      </span>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
+                          ${item.so_phut_hoc} phút học
+                        </span>
+                        ${(userRole === 'admin' || userRole === 'giao_vien') ? `
+                          <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-all" data-id="${item.id}" title="Sửa nhận xét">
+                            <span class="material-symbols-outlined text-[15px] block">edit</span>
+                          </button>
+                          <button class="btn-delete-diary text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all" data-id="${item.id}" title="Xóa nhận xét">
+                            <span class="material-symbols-outlined text-[15px] block">delete</span>
+                          </button>
+                        ` : ''}
+                      </div>
                     </div>
 
                     <!-- Nội dung bài học -->
@@ -321,6 +331,52 @@ async function loadDiaryData(container, userRole, students, studentId) {
           </form>
         </div>
       </div>
+
+      <!-- Modal Chỉnh sửa nhận xét sổ liên lạc -->
+      <div id="edit-diary-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Chỉnh sửa Nhật ký & Sổ liên lạc</h3>
+            <button id="close-edit-diary-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          
+          <form id="edit-diary-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
+            <input type="hidden" name="diary_id" id="edit-diary-id" />
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Số phút học</label>
+              <input type="number" name="so_phut_hoc" id="edit-diary-so-phut-hoc" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung bài học</label>
+              <textarea name="noi_dung_bai_hoc" id="edit-diary-noi-dung-bai-hoc" required rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nhận xét buổi học</label>
+              <textarea name="nhan_xet_buoi_hoc" id="edit-diary-nhan-xet-buoi-hoc" required rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Bài tập về nhà</label>
+              <textarea name="bai_tap_ve_nha" id="edit-diary-bai-tap-ve-nha" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dặn dò / Ghi chú thêm</label>
+              <input type="text" name="dan_do_giao_vien" id="edit-diary-dan-do-giao-vien" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+            </div>
+
+            <div class="pt-2 shrink-0">
+              <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+                Cập nhật sổ liên lạc
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
 
     // Đăng ký các sự kiện
@@ -352,7 +408,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
       const nhan_xet_buoi_hoc = formData.get('nhan_xet_buoi_hoc');
       const bai_tap_ve_nha = formData.get('bai_tap_ve_nha');
       const dan_do_giao_vien = formData.get('dan_do_giao_vien');
-      const gvId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('userId')) || 2;
+      const gvId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('taiKhoanId')) || 2;
 
       try {
         const res = await fetch(`${API_BASE}/reports`, {
@@ -384,6 +440,87 @@ async function loadDiaryData(container, userRole, students, studentId) {
       } catch (err) {
         showToast('Lỗi máy chủ', 'error');
       }
+    });
+
+    // Sự kiện Sửa nhận xét
+    container.querySelectorAll('.btn-edit-diary').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        const item = diaries.find(d => d.id === id);
+        if (item) {
+          document.getElementById('edit-diary-id').value = item.id;
+          document.getElementById('edit-diary-so-phut-hoc').value = item.so_phut_hoc || 90;
+          document.getElementById('edit-diary-noi-dung-bai-hoc').value = item.noi_dung_bai_hoc || '';
+          document.getElementById('edit-diary-nhan-xet-buoi-hoc').value = item.nhan_xet_buoi_hoc || '';
+          document.getElementById('edit-diary-bai-tap-ve-nha').value = item.bai_tap_ve_nha || '';
+          document.getElementById('edit-diary-dan-do-giao-vien').value = item.dan_do_giao_vien || '';
+          document.getElementById('edit-diary-modal').classList.remove('hidden');
+        }
+      });
+    });
+
+    document.getElementById('close-edit-diary-modal')?.addEventListener('click', () => {
+      document.getElementById('edit-diary-modal').classList.add('hidden');
+    });
+
+    // Submit form Sửa nhận xét
+    document.getElementById('edit-diary-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const diaryId = document.getElementById('edit-diary-id').value;
+      const formData = new FormData(e.target);
+      const so_phut_hoc = parseInt(formData.get('so_phut_hoc'));
+      const noi_dung_bai_hoc = formData.get('noi_dung_bai_hoc');
+      const nhan_xet_buoi_hoc = formData.get('nhan_xet_buoi_hoc');
+      const bai_tap_ve_nha = formData.get('bai_tap_ve_nha');
+      const dan_do_giao_vien = formData.get('dan_do_giao_vien');
+
+      try {
+        const res = await fetch(`${API_BASE}/reports/${diaryId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nhan_xet_buoi_hoc,
+            bai_tap_ve_nha,
+            noi_dung_bai_hoc,
+            so_phut_hoc,
+            dan_do_giao_vien
+          })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          showToast('Cập nhật nhận xét thành công!');
+          document.getElementById('edit-diary-modal').classList.add('hidden');
+          loadDiaryData(container, userRole, students, studentId);
+        } else {
+          showToast(result.error || 'Lỗi khi cập nhật', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    });
+
+    // Sự kiện Xóa nhận xét
+    container.querySelectorAll('.btn-delete-diary').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.id);
+        if (confirm('Bạn có chắc chắn muốn xóa nhận xét này không?')) {
+          try {
+            const res = await fetch(`${API_BASE}/reports/${id}`, {
+              method: 'DELETE'
+            });
+            const result = await res.json();
+            if (result.success) {
+              showToast('Xóa nhận xét thành công!');
+              loadDiaryData(container, userRole, students, studentId);
+            } else {
+              showToast(result.error || 'Lỗi khi xóa', 'error');
+            }
+          } catch (err) {
+            showToast('Lỗi máy chủ', 'error');
+          }
+        }
+      });
     });
 
   } catch (err) {

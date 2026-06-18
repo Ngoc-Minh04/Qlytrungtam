@@ -1,3 +1,14 @@
+### [18/06/2026 13:16] — Sửa lỗi hiển thị sai tên người nhận xét, Cập nhật chức vụ Admin & Tích hợp Sửa/Xóa nhận xét
+- **Loại**: Cải tiến tính năng & Sửa bug
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`, Database (ho_so)
+- **Mô tả**:
+  - **Sửa lỗi hiển thị sai tên người gửi**: Đổi trường fallback từ `userId` thành `taiKhoanId` (đúng cấu trúc lưu trong localStorage của hệ thống) trong `LessonDiary.js` giúp tài khoản Admin gửi đúng ID của mình là `1` (Nguyễn Văn Admin) lên backend, chấm dứt việc hiển thị sai tên thành Trần Thị Lễ Tân.
+  - **Cập nhật chức vụ Admin**: Thực thi lệnh SQL cập nhật trường `chuc_vu` của hồ sơ Admin thành `'Quản trị viên'` trong database để hiển thị đúng trong danh sách nhân viên của trung tâm.
+  - **Tích hợp tính năng Sửa & Xóa nhận xét**:
+    - **Backend**: Thêm router `PUT /api/reports/:id` (cập nhật nhận xét) và `DELETE /api/reports/:id` (xóa nhận xét).
+    - **Frontend**: Hiển thị nút Sửa/Xóa trực quan trên timeline nhận xét của giáo viên/admin, phát triển Modal chỉnh sửa nhận xét buổi học và tích hợp gọi các API tương ứng.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 11:44] — Sửa lỗi 500 khi lưu nhận xét do thiếu các trường người gửi trong SQL Insert
 - **Loại**: Sửa bug Backend
 - **File**: `backend/src/routes/api.js`

@@ -3552,6 +3552,49 @@ router.post('/reports', async (req, res) => {
   }
 });
 
+// PUT /api/reports/:id: Cập nhật nhận xét sổ liên lạc
+router.put('/reports/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    nhan_xet_buoi_hoc,
+    bai_tap_ve_nha,
+    noi_dung_bai_hoc,
+    so_phut_hoc,
+    dan_do_giao_vien
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE so_lien_lac 
+       SET nhan_xet_buoi_hoc = $1, bai_tap_ve_nha = $2, noi_dung_bai_hoc = $3, so_phut_hoc = $4, dan_do_giao_vien = $5, ngay_cap_nhat = NOW(), da_chinh_sua = 1
+       WHERE id = $6 RETURNING *`,
+      [nhan_xet_buoi_hoc, bai_tap_ve_nha, noi_dung_bai_hoc, so_phut_hoc || 90, dan_do_giao_vien, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy nhật ký nhận xét này' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/reports/:id: Xóa nhận xét sổ liên lạc
+router.delete('/reports/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM so_lien_lac WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy nhật ký nhận xét này' });
+    }
+    res.json({ success: true, message: 'Đã xóa nhận xét thành công' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/notes: GV ghi chú dặn dò riêng cho học viên
 router.post('/notes', async (req, res) => {
   const ho_so_id = req.headers['x-ho-so-id'];
