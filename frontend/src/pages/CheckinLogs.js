@@ -11,7 +11,17 @@ export async function renderCheckinLogs(container) {
   try {
     const res = await fetch(`${API_BASE}/checkin-logs`);
     const result = await res.json();
-    const logs = result.data || [];
+    const allLogs = result.data || [];
+
+    // Tính ngày hôm nay địa phương (yyyy-mm-dd) để lọc dữ liệu chỉ trong ngày hôm nay
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const localTodayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+
+    const logs = allLogs.filter(log => {
+      if (!log.thoi_diem) return false;
+      const logDateStr = new Date(new Date(log.thoi_diem).getTime() - tzOffset).toISOString().split('T')[0];
+      return logDateStr === localTodayStr;
+    });
 
     function renderLogCards(pageLogs) {
       if (pageLogs.length === 0) {
@@ -56,8 +66,8 @@ export async function renderCheckinLogs(container) {
               <span class="text-[10px] text-slate-400 bg-white px-3 py-1.5 rounded-full font-bold">Hôm nay</span>
             </div>
           </div>
-          <div id="checkin-log-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <!-- Sẽ chèn bằng setupSwipePagination -->
+          <div id="checkin-log-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
+            <!-- Dữ liệu render trực tiếp -->
           </div>
         </div>
       </div>
@@ -115,9 +125,9 @@ export async function renderCheckinLogs(container) {
     });
 
     const logListContainer = document.getElementById('checkin-log-list');
-    setupSwipePagination(logs, logListContainer, (pageLogs) => {
-      logListContainer.innerHTML = renderLogCards(pageLogs);
-    }, 10);
+    if (logListContainer) {
+      logListContainer.innerHTML = renderLogCards(logs);
+    }
 
     // Xử lý camera quét QR
     let html5QrScanner = null;

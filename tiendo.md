@@ -1,3 +1,11 @@
+### [18/06/2026 09:01] — Lọc lượt quét Vào - Ra trong ngày và cải tiến cuộn dọc danh sách
+- **Loại**: Cải tiến giao diện / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CheckinLogs.js`
+- **Mô tả**:
+  - **Lọc chỉ hiện ngày hôm nay**: Lọc danh sách lượt quét từ API dựa theo ngày hiện tại ở múi giờ địa phương, đảm bảo chỉ hiển thị các lượt check-in/out của ngày hôm nay, không còn hiển thị dữ liệu của ngày hôm qua.
+  - **Tối ưu hóa thanh cuộn (Scrollbar)**: Loại bỏ cơ chế phân trang kéo/vuốt (Swipe Pagination) không thuận tiện trên thiết bị máy tính, thay thế bằng thanh cuộn dọc tự nhiên với chiều cao tối đa cố định giúp giao diện hiển thị liền mạch và dễ dàng theo dõi.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 08:33] — Sửa lỗi 403 Forbidden ở Bảng chấm công và Tính lương
 - **Loại**: Sửa bug hệ thống
 - **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/SalaryManagement.js`
