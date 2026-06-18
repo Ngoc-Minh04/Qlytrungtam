@@ -1,3 +1,29 @@
+### [18/06/2026 08:33] — Sửa lỗi 403 Forbidden ở Bảng chấm công và Tính lương
+- **Loại**: Sửa bug hệ thống
+- **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/SalaryManagement.js`
+- **Mô tả**: Sửa lỗi 403 Forbidden bằng cách bổ sung đầy đủ headers 'x-user-role' và 'x-user-branch' vào tất cả các yêu cầu fetch gọi API chấm công (đối với danh sách giáo viên, nhân sự trong modal ghi nhận chấm công) và API tính toán lương tháng (đối với danh sách bảng thanh toán lương chi tiết).
+- **Kết quả**: Thành công
+
+### [18/06/2026 08:22] — Đơn giản hóa Thời khóa biểu: Cố định chế độ xem Tuần và loại bỏ Năm/Tháng
+- **Loại**: Cải tiến tính năng / UI UX
+- **File**: `frontend/src/pages/Schedules.js`
+- **Mô tả**: Tối ưu hóa triệt để giao diện bằng cách loại bỏ hoàn toàn các chế độ xem trung gian không cần thiết (Decade, Year, Month view) và dọn dẹp các nút bấm chuyển đổi. Cố định giao diện Thời khóa biểu ở chế độ xem **Tuần** chi tiết (lưới giờ học thực tế). Đồng thời, vô hiệu hóa sự kiện click vào tiêu đề tuần để tránh zoom out ngoài ý muốn.
+- **Kết quả**: Thành công
+
+### [17/06/2026 16:48] — Tối ưu hóa bật sáng đèn nút view mode trong Schedules.js
+- **Loại**: Sửa bug giao diện / Trải nghiệm người dùng
+- **File**: `frontend/src/pages/Schedules.js`
+- **Mô tả**: Sửa đổi triệt để hàm `updateViewBtns()` để loại bỏ hoàn toàn việc sáng đèn trùng lặp hoặc không đồng bộ giữa các tab view mode khi chuyển cấp độ zoom. Thiết lập logic tường minh: nút Năm sáng khi ở chế độ `year` hoặc `decade`, nút Tháng sáng khi ở chế độ `month`, nút Tuần sáng khi ở chế độ `week`.
+- **Kết quả**: Thành công
+
+### [17/06/2026 16:45] — Hoàn thiện Thời khóa biểu: Chuẩn hóa múi giờ và Đồng bộ zoom nút view
+- **Loại**: Cải tiến tính năng / UI UX
+- **File**: `frontend/src/pages/Schedules.js`
+- **Mô tả**:
+  - **Khắc phục lệch múi giờ**: Loại bỏ hoàn toàn phương thức `.toISOString()` khi so khớp ngày học. Thay vào đó, trích xuất chuỗi ngày học sạch từ backend bằng `.substring(0, 10)` và format ngày ô lịch theo giờ địa phương (`YYYY-MM-DD`). Giải pháp này giúp thời khóa biểu khớp chính xác 100% không bị lệch ngày học do timezone offset (đặc biệt khi xem vào buổi sáng sớm trước 7 giờ).
+  - **Sửa zoom nút view**: Cập nhật lại logic của nút **Năm** (gán `viewMode = 'year'` để hiện 12 tháng) và nút **Tháng** (gán `viewMode = 'month'` để hiện lưới ngày) giúp các nút hoạt động đúng theo đúng nhãn của chúng, không bị lệch cấp độ zoom.
+- **Kết quả**: Thành công
+
 ### [17/06/2026 16:03] — Khắc phục lỗi SQL 500 khi sửa đổi ca học nhóm đơn lẻ
 - **Loại**: Sửa bug hệ thống
 - **File**: `backend/src/routes/api.js`

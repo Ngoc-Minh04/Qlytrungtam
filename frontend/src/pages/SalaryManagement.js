@@ -114,7 +114,12 @@ export async function renderSalaryManagement(container) {
     `;
 
     try {
-      const res = await fetch(`${API_BASE}/payroll/summary?month=${filterMonth}&year=${filterYear}`);
+      const res = await fetch(`${API_BASE}/payroll/summary?month=${filterMonth}&year=${filterYear}`, {
+        headers: {
+          'x-user-role': userRole,
+          'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+        }
+      });
       const data = await res.json();
       const records = data.data || [];
 
@@ -261,7 +266,8 @@ export async function renderSalaryManagement(container) {
               method: 'PUT',
               headers: { 
                 'Content-Type': 'application/json',
-                'X-User-Role': 'le_tan'
+                'x-user-role': userRole,
+                'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
               },
               body: JSON.stringify({
                 month: filterMonth,

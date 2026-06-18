@@ -274,6 +274,88 @@ export async function renderAttendanceStaff(container) {
       }
     });
 
+    // === GÁN SỰ KIỆN QUÉT QR CHẤM CÔNG DƯỚI ĐÂY (SAU KHI RENDER HTML TRONG CONTAINER) ===
+    const scanModal = document.getElementById('attendance-scan-modal');
+    
+    document.getElementById('btn-attendance-scan-qr')?.addEventListener('click', () => {
+      scanModal?.classList.remove('hidden');
+      setTimeout(() => {
+        try {
+          attendanceQrScanner = new Html5Qrcode("attendance-reader");
+          attendanceQrScanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: (w, h) => ({ width: Math.round(w * 0.7), height: Math.round(h * 0.7) })
+            },
+            onAttendanceScanSuccess
+          ).catch(err => {
+            console.warn("Không thể khởi động camera quét QR chấm công:", err);
+            const readerDiv = document.getElementById('attendance-reader');
+            if (readerDiv) {
+              readerDiv.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs h-full flex flex-col justify-center items-center select-none">
+                <span class="material-symbols-outlined text-red-400 text-[28px] mb-1">videocam_off</span>
+                Không thể truy cập camera. Vui lòng cấp quyền hoặc nhập thủ công.
+              </div>`;
+            }
+          });
+        } catch (e) {
+          console.error("Lỗi khởi tạo Html5Qrcode chấm công:", e);
+        }
+      }, 100);
+    });
+
+    document.getElementById('close-attendance-scan-modal')?.addEventListener('click', () => {
+      scanModal?.classList.add('hidden');
+      stopAttendanceScanner();
+    });
+
+    scanModal?.addEventListener('click', (e) => {
+      if (e.target === scanModal) {
+        scanModal.classList.add('hidden');
+        stopAttendanceScanner();
+      }
+    });
+
+    document.getElementById('btn-attendance-upload-qr')?.addEventListener('click', () => {
+      document.getElementById('attendance-scan-file')?.click();
+    });
+
+    document.getElementById('attendance-scan-file')?.addEventListener('change', async (e) => {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const tempScanner = new Html5Qrcode("attendance-reader");
+      try {
+        showToast('Đang quét mã QR từ ảnh...', 'info');
+        const decodedText = await tempScanner.scanFile(file, false);
+        await onAttendanceScanSuccess(decodedText);
+      } catch (err) {
+        showToast('Không tìm thấy mã QR trong ảnh này', 'error');
+      }
+    });
+
+    document.getElementById('attendance-scan-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const inputVal = document.getElementById('attendance-scan-input').value.trim();
+      if (!inputVal) return;
+      
+      stopAttendanceScanner();
+      scanModal?.classList.add('hidden');
+
+      const payload = { ho_so_id: inputVal, timestamp: Date.now() };
+      const manualToken = btoa(JSON.stringify(payload));
+      await submitAttendanceScan(manualToken);
+    });
+
+    // Dọn dẹp observer khi chuyển trang
+    const observer = new MutationObserver(() => {
+      if (!document.body.contains(container)) {
+        stopAttendanceScanner();
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
     // Khởi chạy load nội dung
     loadTabContent();
   }
@@ -616,7 +698,6 @@ export async function renderAttendanceStaff(container) {
 
   // Xử lý camera quét QR chấm công
   let attendanceQrScanner = null;
-  const attScanModal = document.getElementById('attendance-scan-modal');
 
   function stopAttendanceScanner() {
     if (attendanceQrScanner) {
@@ -635,7 +716,7 @@ export async function renderAttendanceStaff(container) {
 
   async function onAttendanceScanSuccess(decodedText) {
     stopAttendanceScanner();
-    attScanModal.classList.add('hidden');
+    document.getElementById('attendance-scan-modal')?.classList.add('hidden');
     await submitAttendanceScan(decodedText);
   }
 
@@ -657,90 +738,6 @@ export async function renderAttendanceStaff(container) {
       showToast('Không thể kết nối máy chủ', 'error');
     }
   }
-
-  // Mở modal quét
-  document.getElementById('btn-attendance-scan-qr')?.addEventListener('click', () => {
-    attScanModal.classList.remove('hidden');
-    setTimeout(() => {
-      try {
-        attendanceQrScanner = new Html5Qrcode("attendance-reader");
-        attendanceQrScanner.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: (w, h) => ({ width: Math.round(w * 0.7), height: Math.round(h * 0.7) })
-          },
-          onAttendanceScanSuccess
-        ).catch(err => {
-          console.warn("Không thể khởi động camera quét QR chấm công:", err);
-          const readerDiv = document.getElementById('attendance-reader');
-          if (readerDiv) {
-            readerDiv.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs h-full flex flex-col justify-center items-center select-none">
-              <span class="material-symbols-outlined text-red-400 text-[28px] mb-1">videocam_off</span>
-              Không thể truy cập camera. Vui lòng cấp quyền hoặc nhập thủ công.
-            </div>`;
-          }
-        });
-      } catch (e) {
-        console.error("Lỗi khởi tạo Html5Qrcode chấm công:", e);
-      }
-    }, 100);
-  });
-
-  // Đóng modal quét
-  document.getElementById('close-attendance-scan-modal')?.addEventListener('click', () => {
-    attScanModal.classList.add('hidden');
-    stopAttendanceScanner();
-  });
-
-  attScanModal.addEventListener('click', (e) => {
-    if (e.target === attScanModal) {
-      attScanModal.classList.add('hidden');
-      stopAttendanceScanner();
-    }
-  });
-
-  // Trigger upload ảnh
-  document.getElementById('btn-attendance-upload-qr')?.addEventListener('click', () => {
-    document.getElementById('attendance-scan-file')?.click();
-  });
-
-  document.getElementById('attendance-scan-file')?.addEventListener('change', async (e) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const tempScanner = new Html5Qrcode("attendance-reader");
-    try {
-      showToast('Đang quét mã QR từ ảnh...', 'info');
-      const decodedText = await tempScanner.scanFile(file, false);
-      await onAttendanceScanSuccess(decodedText);
-    } catch (err) {
-      showToast('Không tìm thấy mã QR trong ảnh này', 'error');
-    }
-  });
-
-  // Submit form thủ công
-  document.getElementById('attendance-scan-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const inputVal = document.getElementById('attendance-scan-input').value.trim();
-    if (!inputVal) return;
-    
-    stopAttendanceScanner();
-    attScanModal.classList.add('hidden');
-
-    // Giả lập token Base64 thô tương tự quick-checkin
-    const payload = { ho_so_id: inputVal, timestamp: Date.now() };
-    const manualToken = btoa(JSON.stringify(payload));
-    await submitAttendanceScan(manualToken);
-  });
-
-  // Dọn dẹp observer khi chuyển trang
-  const observer = new MutationObserver(() => {
-    if (!document.body.contains(container)) {
-      stopAttendanceScanner();
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
 
   // Khởi chạy
   initLayout();
