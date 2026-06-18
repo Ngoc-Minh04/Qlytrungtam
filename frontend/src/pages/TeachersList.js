@@ -677,6 +677,23 @@ function showTeacherDetailModal(t, container, role) {
                 class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
             </div>
 
+            <!-- Cấu hình lương ca dạy (Cải tiến 2) -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">payments</span> Lương ca nhóm (đ/ca)
+              </label>
+              <input type="number" id="t-edit-wage-group" value="${t.don_gia_ca_nhom !== undefined ? t.don_gia_ca_nhom : 150000}" min="0" step="1000"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">payments</span> Lương ca kèm 1-1 (đ/ca)
+              </label>
+              <input type="number" id="t-edit-wage-tutor" value="${t.don_gia_ca_kem !== undefined ? t.don_gia_ca_kem : 200000}" min="0" step="1000"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
           </div>
         </div>
 
@@ -803,7 +820,9 @@ function showTeacherDetailModal(t, container, role) {
       so_dien_thoai: phoneVal,
       email: emailVal || null,
       chi_nhanh: modal.querySelector('#t-edit-branch').value.trim(),
-      avatar_url: base64AvatarData || t.avatar_url
+      avatar_url: base64AvatarData || t.avatar_url,
+      don_gia_ca_nhom: parseFloat(modal.querySelector('#t-edit-wage-group').value) || 150000,
+      don_gia_ca_kem: parseFloat(modal.querySelector('#t-edit-wage-tutor').value) || 200000
     };
 
     try {

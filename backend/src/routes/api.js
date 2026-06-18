@@ -2038,18 +2038,22 @@ router.delete('/staff/:id', verifyAccess(['admin']), async (req, res) => {
 // API PUT /api/staff/:id: Cập nhật nhân viên
 router.put('/staff/:id', verifyAccess(['admin']), async (req, res) => {
   const { id } = req.params;
-  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh, avatar_url } = req.body;
+  const { ho_ten, so_dien_thoai, email, chuc_vu, chi_nhanh, avatar_url, luong_cung_ngay } = req.body;
   try {
     const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : avatar_url;
     const updateQuery = `
       UPDATE ho_so
       SET ho_ten = $1, so_dien_thoai = $2, email = $3, chuc_vu = $4,
-          chi_nhanh = $5, avatar_url = COALESCE($6, avatar_url), ngay_cap_nhat = CURRENT_TIMESTAMP
-      WHERE id = $7 AND loai_ho_so = 'nhan_vien' AND is_deleted = 0
+          chi_nhanh = $5, avatar_url = COALESCE($6, avatar_url),
+          luong_cung_ngay = COALESCE($7, luong_cung_ngay),
+          ngay_cap_nhat = CURRENT_TIMESTAMP
+      WHERE id = $8 AND loai_ho_so = 'nhan_vien' AND is_deleted = 0
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, so_dien_thoai, email, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', finalAvatarUrl, id
+      ho_ten, so_dien_thoai, email, chuc_vu || 'Nhân viên', chi_nhanh || 'Trung tam chính', finalAvatarUrl,
+      luong_cung_ngay !== undefined ? parseFloat(luong_cung_ngay) : null,
+      id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ nhân viên' });
@@ -3959,7 +3963,7 @@ router.delete('/students/:id', verifyAccess(['admin']), async (req, res) => {
 // PUT /api/teachers/:id: Cập nhật giáo viên
 router.put('/teachers/:id', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params;
-  const { ho_ten, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, avatar_url } = req.body;
+  const { ho_ten, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, avatar_url, don_gia_ca_nhom, don_gia_ca_kem } = req.body;
   try {
     const finalAvatarUrl = avatar_url && avatar_url.startsWith('data:') ? await uploadToCloudinary(avatar_url) : avatar_url;
     const updateQuery = `
@@ -3967,12 +3971,17 @@ router.put('/teachers/:id', verifyAccess(['admin', 'le_tan']), async (req, res) 
       SET ho_ten = $1, so_dien_thoai = $2, email = $3, chuyen_mon = $4,
           kinh_nghiem = $5, chi_nhanh = $6,
           avatar_url = COALESCE($7, avatar_url),
+          don_gia_ca_nhom = COALESCE($8, don_gia_ca_nhom),
+          don_gia_ca_kem = COALESCE($9, don_gia_ca_kem),
           ngay_cap_nhat = CURRENT_TIMESTAMP
-      WHERE id = $8 AND loai_ho_so = 'giao_vien' AND is_deleted = 0
+      WHERE id = $10 AND loai_ho_so = 'giao_vien' AND is_deleted = 0
       RETURNING *
     `;
     const result = await pool.query(updateQuery, [
-      ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', finalAvatarUrl, id
+      ho_ten, so_dien_thoai, email, chuyen_mon, parseInt(kinh_nghiem) || 0, chi_nhanh || 'Trung tam chính', finalAvatarUrl,
+      don_gia_ca_nhom !== undefined ? parseFloat(don_gia_ca_nhom) : null,
+      don_gia_ca_kem !== undefined ? parseFloat(don_gia_ca_kem) : null,
+      id
     ]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ giáo viên' });
@@ -4139,7 +4148,7 @@ router.get('/attendance/export', verifyAccess(['admin', 'le_tan']), async (req, 
   }
 });
 
-// GET /api/payroll/summary: Tính toán lương tự động hàng tháng
+// GET /api/payroll/summary: Tính toán lương tự động hàng tháng (Hỗ trợ cấu hình cá nhân + Snapshot chốt lương)
 router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { month, year } = req.query;
   const now = new Date();
@@ -4147,9 +4156,15 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
   const targetYear = year ? parseInt(year) : now.getFullYear();
 
   try {
-    // 1. Lấy tất cả nhân sự hoạt động
+    // 1. Lấy tất cả nhân sự hoạt động cùng các cấu hình lương cá nhân
     const peopleRes = await pool.query(
-      "SELECT id, ma_ho_so, ho_ten, loai_ho_so FROM ho_so WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 ORDER BY loai_ho_so DESC, ho_ten ASC"
+      `SELECT id, ma_ho_so, ho_ten, loai_ho_so, 
+              COALESCE(luong_cung_ngay, 300000) as luong_cung_ngay,
+              COALESCE(don_gia_ca_nhom, 150000) as don_gia_ca_nhom,
+              COALESCE(don_gia_ca_kem, 200000) as don_gia_ca_kem
+       FROM ho_so 
+       WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 
+       ORDER BY loai_ho_so DESC, ho_ten ASC`
     );
     const people = peopleRes.rows;
 
@@ -4192,25 +4207,7 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
       tutorSessionsMap[r.giao_vien_id] = parseInt(r.sessions);
     });
 
-    // 5. Kiểm tra bảng thanh toán lương (giả sử lưu trạng thái đã thanh toán)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS bang_luong (
-        id SERIAL PRIMARY KEY,
-        ho_so_id INT REFERENCES ho_so(id),
-        thang INT NOT NULL,
-        nam INT NOT NULL,
-        luong_cung NUMERIC DEFAULT 0,
-        luong_ca_day NUMERIC DEFAULT 0,
-        phu_cap NUMERIC DEFAULT 0,
-        thuc_linh NUMERIC DEFAULT 0,
-        trang_thai VARCHAR(20) DEFAULT 'chua_thanh_toan',
-        ngay_thanh_toan TIMESTAMPTZ,
-        ngay_tao TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(ho_so_id, thang, nam)
-      );
-    `);
-
-    // Lấy trạng thái từ bảng bang_luong
+    // Lấy trạng thái chốt từ bảng bang_luong (Snapshot)
     const payrollRes = await pool.query(
       "SELECT * FROM bang_luong WHERE thang = $1 AND nam = $2",
       [targetMonth, targetYear]
@@ -4226,19 +4223,41 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
       const groupSessions = groupSessionsMap[p.id] || 0;
       const tutorSessions = tutorSessionsMap[p.id] || 0;
 
+      // CẢI TIẾN 4: Nếu lương của nhân viên tháng này ĐÃ THANH TOÁN -> lấy dữ liệu Snapshot trong DB làm chuẩn
+      if (dbRecord && dbRecord.trang_thai === 'da_thanh_toan') {
+        return {
+          id: p.id,
+          ma_ho_so: p.ma_ho_so,
+          ho_ten: p.ho_ten,
+          loai_ho_so: p.loai_ho_so,
+          work_days: workDays, // Hiển thị số ngày/ca thực tế hiện tại để đối chiếu nếu có lệch
+          group_sessions: groupSessions,
+          tutor_sessions: tutorSessions,
+          luong_cung: parseFloat(dbRecord.luong_cung),
+          luong_ca_day: parseFloat(dbRecord.luong_ca_day),
+          phu_cap: parseFloat(dbRecord.phu_cap),
+          khau_tru: parseFloat(dbRecord.khau_tru || 0),
+          thuc_linh: parseFloat(dbRecord.thuc_linh),
+          trang_thai: dbRecord.trang_thai,
+          ngay_thanh_toan: dbRecord.ngay_thanh_toan
+        };
+      }
+
+      // CHƯA THANH TOÁN -> Tính toán động dựa trên cấu hình ho_so của từng cá nhân (CẢI TIẾN 2)
       let luongCung = 0;
       let luongCaDay = 0;
       let phuCap = 0;
+      let khauTru = 0; // Mặc định chưa thanh toán thì khấu trừ = 0, có thể chỉnh sửa ở frontend
 
       if (p.loai_ho_so === 'giao_vien') {
-        luongCaDay = (groupSessions * 150000) + (tutorSessions * 200000);
+        luongCaDay = (groupSessions * parseFloat(p.don_gia_ca_nhom)) + (tutorSessions * parseFloat(p.don_gia_ca_kem));
         phuCap = workDays > 15 ? 500000 : 0; 
       } else {
-        luongCung = workDays * 300000; 
+        luongCung = workDays * parseFloat(p.luong_cung_ngay); 
         phuCap = workDays > 22 ? 800000 : 0; 
       }
 
-      const calculatedThucLinh = luongCung + luongCaDay + phuCap;
+      const calculatedThucLinh = luongCung + luongCaDay + phuCap - khauTru;
 
       return {
         id: p.id,
@@ -4248,12 +4267,17 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
         work_days: workDays,
         group_sessions: groupSessions,
         tutor_sessions: tutorSessions,
-        luong_cung: dbRecord ? parseFloat(dbRecord.luong_cung) : luongCung,
-        luong_ca_day: dbRecord ? parseFloat(dbRecord.luong_ca_day) : luongCaDay,
-        phu_cap: dbRecord ? parseFloat(dbRecord.phu_cap) : phuCap,
-        thuc_linh: dbRecord ? parseFloat(dbRecord.thuc_linh) : calculatedThucLinh,
-        trang_thai: dbRecord ? dbRecord.trang_thai : 'chua_thanh_toan',
-        ngay_thanh_toan: dbRecord ? dbRecord.ngay_thanh_toan : null
+        luong_cung: luongCung,
+        luong_ca_day: luongCaDay,
+        phu_cap: phuCap,
+        khau_tru: khauTru,
+        thuc_linh: calculatedThucLinh,
+        trang_thai: 'chua_thanh_toan',
+        ngay_thanh_toan: null,
+        // Đính kèm thêm thông tin cấu hình lương gốc để frontend hiển thị ghi chú trực quan
+        luong_cung_ngay: parseFloat(p.luong_cung_ngay),
+        don_gia_ca_nhom: parseFloat(p.don_gia_ca_nhom),
+        don_gia_ca_kem: parseFloat(p.don_gia_ca_kem)
       };
     });
 
@@ -4263,10 +4287,10 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
   }
 });
 
-// PUT /api/payroll/:id/pay: Xác nhận thanh toán lương cho nhân sự
+// PUT /api/payroll/:id/pay: Xác nhận thanh toán lương cho nhân sự (Hỗ trợ lưu khấu trừ và chốt snapshot)
 router.put('/payroll/:id/pay', verifyAccess(['admin', 'le_tan']), async (req, res) => {
   const { id } = req.params; 
-  const { month, year, luong_cung, luong_ca_day, phu_cap, thuc_linh } = req.body;
+  const { month, year, luong_cung, luong_ca_day, phu_cap, khau_tru, thuc_linh } = req.body;
 
   if (!month || !year) {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin tháng và năm để thanh toán lương' });
@@ -4274,20 +4298,21 @@ router.put('/payroll/:id/pay', verifyAccess(['admin', 'le_tan']), async (req, re
 
   try {
     const query = `
-      INSERT INTO bang_luong (ho_so_id, thang, nam, luong_cung, luong_ca_day, phu_cap, thuc_linh, trang_thai, ngay_thanh_toan)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'da_thanh_toan', CURRENT_TIMESTAMP)
+      INSERT INTO bang_luong (ho_so_id, thang, nam, luong_cung, luong_ca_day, phu_cap, khau_tru, thuc_linh, trang_thai, ngay_thanh_toan)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'da_thanh_toan', CURRENT_TIMESTAMP)
       ON CONFLICT (ho_so_id, thang, nam)
       DO UPDATE SET 
         luong_cung = EXCLUDED.luong_cung,
         luong_ca_day = EXCLUDED.luong_ca_day,
         phu_cap = EXCLUDED.phu_cap,
+        khau_tru = EXCLUDED.khau_tru,
         thuc_linh = EXCLUDED.thuc_linh,
         trang_thai = 'da_thanh_toan',
         ngay_thanh_toan = CURRENT_TIMESTAMP
       RETURNING *
     `;
     const result = await pool.query(query, [
-      id, month, year, luong_cung || 0, luong_ca_day || 0, phu_cap || 0, thuc_linh || 0
+      id, month, year, luong_cung || 0, luong_ca_day || 0, phu_cap || 0, khau_tru || 0, thuc_linh || 0
     ]);
 
     await createNotification(

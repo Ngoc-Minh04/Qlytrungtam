@@ -109,6 +109,38 @@ pool.connect(async (err, client, release) => {
         ALTER TABLE tai_khoan ADD COLUMN IF NOT EXISTS lan_dang_nhap_cuoi TIMESTAMPTZ;
       `);
 
+      // Migration: Thêm cột cấu hình lương riêng biệt cho từng hồ sơ nhân sự/giáo viên
+      await client.query(`
+        ALTER TABLE ho_so ADD COLUMN IF NOT EXISTS luong_cung_ngay NUMERIC DEFAULT 300000;
+      `);
+      await client.query(`
+        ALTER TABLE ho_so ADD COLUMN IF NOT EXISTS don_gia_ca_nhom NUMERIC DEFAULT 150000;
+      `);
+      await client.query(`
+        ALTER TABLE ho_so ADD COLUMN IF NOT EXISTS don_gia_ca_kem NUMERIC DEFAULT 200000;
+      `);
+
+      // Migration: Thêm cột khấu trừ cho bảng lương
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS bang_luong (
+          id SERIAL PRIMARY KEY,
+          ho_so_id INT REFERENCES ho_so(id),
+          thang INT NOT NULL,
+          nam INT NOT NULL,
+          luong_cung NUMERIC DEFAULT 0,
+          luong_ca_day NUMERIC DEFAULT 0,
+          phu_cap NUMERIC DEFAULT 0,
+          thuc_linh NUMERIC DEFAULT 0,
+          trang_thai VARCHAR(20) DEFAULT 'chua_thanh_toan',
+          ngay_thanh_toan TIMESTAMPTZ,
+          ngay_tao TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(ho_so_id, thang, nam)
+        );
+      `);
+      await client.query(`
+        ALTER TABLE bang_luong ADD COLUMN IF NOT EXISTS khau_tru NUMERIC DEFAULT 0;
+      `);
+
       // DDL tạo bảng vai_tro
       await client.query(`
         CREATE TABLE IF NOT EXISTS vai_tro (

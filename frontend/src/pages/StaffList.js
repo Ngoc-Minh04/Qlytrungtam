@@ -610,6 +610,16 @@ function showStaffDetailModal(nv, container, role) {
                 <option value="Downtown Campus" ${nv.chi_nhanh === 'Downtown Campus' ? 'selected' : ''}>Downtown Campus</option>
               </select>
             </div>
+
+            <!-- Cấu hình lương ngày công (Cải tiến 2) -->
+            <div class="space-y-1 sm:col-span-2">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">payments</span> Lương theo ngày công (đ/ngày công)
+              </label>
+              <input type="number" id="s-edit-wage-day" value="${nv.luong_cung_ngay !== undefined ? nv.luong_cung_ngay : 300000}" min="0" step="5000"
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
           </div>
         </div>
 
@@ -747,7 +757,8 @@ function showStaffDetailModal(nv, container, role) {
       email: emailVal || null,
       chuc_vu: modal.querySelector('#s-edit-role').value,
       chi_nhanh: modal.querySelector('#s-edit-branch').value,
-      avatar_url: base64AvatarData || nv.avatar_url
+      avatar_url: base64AvatarData || nv.avatar_url,
+      luong_cung_ngay: parseFloat(modal.querySelector('#s-edit-wage-day').value) || 300000
     };
 
     try {

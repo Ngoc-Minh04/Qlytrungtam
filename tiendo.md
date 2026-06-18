@@ -1,3 +1,13 @@
+### [18/06/2026 09:24] — Tích hợp 4 Cải tiến tính năng Tính lương & Phụ cấp nhân sự
+- **Loại**: Cải tiến tính năng / UI UX & Cơ sở dữ liệu
+- **File**: `backend/src/config/db.js`, `backend/src/routes/api.js`, `frontend/src/pages/SalaryManagement.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
+- **Mô tả**:
+  - **Cải tiến 1 (Phụ cấp & Khấu trừ động)**: Cho phép sửa Phụ cấp & Khấu trừ trực tiếp bằng ô nhập liệu định dạng tiền tệ trên giao diện, tự động tính lại Thực lĩnh và Bento KPI tổng lương real-time. Lưu thành công trường khấu trừ vào database.
+  - **Cải tiến 2 (Lương theo cấu hình riêng)**: Bổ sung 3 trường cấu hình lương (`luong_cung_ngay`, `don_gia_ca_nhom`, `don_gia_ca_kem`) vào bảng `ho_so` và form edit của Nhân viên/Giáo viên. API tự động tính lương theo đơn giá riêng của từng người.
+  - **Cải tiến 3 (Xem chi tiết công & ca dạy)**: Chuyển text thống kê công quét và số ca dạy thành link liên kết, click vào sẽ mở modal chi tiết danh sách ngày quét thẻ (cho nhân sự) hoặc ca dạy học đã hoàn thành (cho giáo viên) trong tháng chọn lọc để đối chiếu.
+  - **Cải tiến 4 (Snapshot chốt lương)**: Lưu trữ và chốt số liệu cứng sau khi bấm "Thanh toán". Lương tháng đã thanh toán sẽ hiển thị số liệu từ Snapshot trong bảng `bang_luong`, không bị thay đổi động khi phát sinh ngày công/ca dạy mới.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 09:01] — Lọc lượt quét Vào - Ra trong ngày và cải tiến cuộn dọc danh sách
 - **Loại**: Cải tiến giao diện / Trải nghiệm người dùng
 - **File**: `frontend/src/pages/CheckinLogs.js`
