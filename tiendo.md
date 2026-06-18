@@ -1,3 +1,27 @@
+### [18/06/2026 11:44] — Sửa lỗi 500 khi lưu nhận xét do thiếu các trường người gửi trong SQL Insert
+- **Loại**: Sửa bug Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Sửa lỗi 500 do Database yêu cầu `nguoi_gui_id` không được null (`violates not-null constraint`). Cập nhật câu lệnh `INSERT INTO so_lien_lac` để bóc tách và ghi nhận đầy đủ các thông tin: `nguoi_gui_id`, `vai_tro_gui`, `loai_nhat_ky` từ request body của frontend gửi lên.
+- **Kết quả**: Thành công
+
+### [18/06/2026 11:40] — Tối ưu hóa liên kết tài khoản Admin/Lễ tân & Loại trừ tính lương Admin
+- **Loại**: Cải tiến dữ liệu & Backend
+- **File**: `backend/src/routes/api.js`, Database (tai_khoan)
+- **Mô tả**:
+  - **Liên kết tài khoản**: Cập nhật cơ sở dữ liệu để liên kết tài khoản `admin` với hồ sơ nhân sự `Nguyễn Văn Admin` (ho_so_id = 1), và tài khoản `letan01` với hồ sơ `Test Nhan Vien 2` (ho_so_id = 49).
+  - **Loại trừ Admin khỏi bảng lương**:
+    - Cập nhật API `GET /api/payroll/summary` để tự động loại trừ các hồ sơ bắt đầu bằng mã `AD` (Admin) khỏi danh sách tính lương hàng tháng của trung tâm.
+    - Cập nhật API `GET /api/payroll/my-salary` để trả về lỗi 404 (Không có phiếu lương) nếu tài khoản tra cứu thuộc diện Admin.
+- **Kết quả**: Thành công
+
+### [18/06/2026 11:18] — Sửa lỗi gửi nhận xét sổ liên lạc từ Admin & Lỗi thiếu hàm showToast ở Frontend
+- **Loại**: Sửa bug hệ thống
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **api.js (Sửa lỗi 500 khi Admin gửi nhận xét)**: Thêm kiểm tra `giao_vien_id` truyền lên từ client. Nếu ID này không tồn tại trong bảng `ho_so` (do tài khoản Admin chưa liên kết hồ sơ nhân sự), hệ thống tự động tìm và gán một hồ sơ nhân viên/giáo viên hợp lệ trong DB làm đại diện thay thế, ngăn chặn lỗi vi phạm khóa ngoại (foreign key constraint).
+  - **LessonDiary.js (Sửa lỗi ReferenceError)**: Import hàm `showToast` từ `./_shared.js` vào đầu file để hiển thị popup thông báo thành công/thất bại khi lưu sổ liên lạc.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 11:08] — Bổ sung API Sổ liên lạc & Nhật ký học tập của học viên ở Backend
 - **Loại**: Sửa bug / Bổ sung tính năng Backend
 - **File**: `backend/src/routes/api.js`

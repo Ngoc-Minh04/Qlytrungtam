@@ -1,4 +1,5 @@
 // LessonDiary.js - Nhật ký học tập & Sổ liên lạc điện tử
+import { showToast } from './_shared.js';
 const API_BASE = 'http://localhost:3006/api';
 
 export async function renderLessonDiary(container) {

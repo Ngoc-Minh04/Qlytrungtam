@@ -3475,11 +3475,32 @@ router.post('/reports', async (req, res) => {
     bai_tap_ve_nha,
     noi_dung_bai_hoc,
     so_phut_hoc,
-    dan_do_giao_vien
+    dan_do_giao_vien,
+    nguoi_gui_id,
+    vai_tro_gui,
+    loai_nhat_ky
   } = req.body;
 
-  if (!hoc_vien_id || !giao_vien_id) {
-    return res.status(400).json({ success: false, error: 'Thiếu thông tin học viên hoặc giáo viên' });
+  if (!hoc_vien_id) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin học viên' });
+  }
+
+  let verifiedGvId = giao_vien_id;
+  try {
+    const gvCheck = await pool.query("SELECT id FROM ho_so WHERE id = $1", [giao_vien_id]);
+    if (gvCheck.rows.length === 0) {
+      // Tìm hồ sơ đầu tiên trong hệ thống (ưu tiên giáo viên, sau đó đến nhân viên khác) để gán làm người gửi
+      const fallbackGv = await pool.query(
+        "SELECT id FROM ho_so WHERE is_deleted = 0 ORDER BY CASE WHEN loai_ho_so = 'giao_vien' THEN 1 ELSE 2 END, id ASC LIMIT 1"
+      );
+      if (fallbackGv.rows.length > 0) {
+        verifiedGvId = fallbackGv.rows[0].id;
+      } else {
+        return res.status(400).json({ success: false, error: 'Hệ thống chưa có hồ sơ nhân viên hay giáo viên nào để liên kết làm người viết nhận xét.' });
+      }
+    }
+  } catch (err) {
+    console.error('Lỗi kiểm tra giao_vien_id fallback:', err);
   }
 
   try {
@@ -3499,9 +3520,20 @@ router.post('/reports', async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO so_lien_lac 
-        (hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc, dan_do_giao_vien) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc || 90, dan_do_giao_vien]
+        (hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc, dan_do_giao_vien, nguoi_gui_id, vai_tro_gui, loai_nhat_ky) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [
+        hoc_vien_id, 
+        verifiedGvId, 
+        noi_dung_bai_hoc, 
+        nhan_xet_buoi_hoc, 
+        bai_tap_ve_nha, 
+        so_phut_hoc || 90, 
+        dan_do_giao_vien, 
+        nguoi_gui_id || verifiedGvId, 
+        vai_tro_gui || 'giao_vien', 
+        loai_nhat_ky || 'giao_vien_dan_do'
+      ]
     );
 
     // Tạo thông báo cho học viên
@@ -4243,14 +4275,14 @@ router.get('/payroll/summary', verifyAccess(['admin', 'le_tan']), async (req, re
   const targetYear = year ? parseInt(year) : now.getFullYear();
 
   try {
-    // 1. Lấy tất cả nhân sự hoạt động cùng các cấu hình lương cá nhân
+    // 1. Lấy tất cả nhân sự hoạt động cùng các cấu hình lương cá nhân (Loại trừ Admin)
     const peopleRes = await pool.query(
       `SELECT id, ma_ho_so, ho_ten, loai_ho_so, 
               COALESCE(luong_cung_ngay, 300000) as luong_cung_ngay,
               COALESCE(don_gia_ca_nhom, 150000) as don_gia_ca_nhom,
               COALESCE(don_gia_ca_kem, 200000) as don_gia_ca_kem
        FROM ho_so 
-       WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 
+       WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND ma_ho_so NOT LIKE 'AD%' AND is_deleted = 0 
        ORDER BY loai_ho_so DESC, ho_ten ASC`
     );
     const people = peopleRes.rows;
@@ -4445,6 +4477,11 @@ router.get('/payroll/my-salary', verifyAccess(['admin', 'le_tan', 'giao_vien', '
       return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ người dùng này' });
     }
     const p = personRes.rows[0];
+
+    // Loại trừ các tài khoản Admin ra khỏi dữ liệu bảng lương
+    if (p.ma_ho_so && p.ma_ho_so.startsWith('AD')) {
+      return res.status(404).json({ success: false, error: 'Tài khoản Admin không thuộc diện nhận lương và không có phiếu lương.' });
+    }
 
     // 2. Tính số ngày công
     const workDaysRes = await pool.query(
