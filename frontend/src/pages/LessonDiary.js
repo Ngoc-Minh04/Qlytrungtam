@@ -4,7 +4,7 @@ const API_BASE = 'http://localhost:3006/api';
 
 export async function renderLessonDiary(container) {
   const userRole = localStorage.getItem('userRole') || 'hoc_vien';
-  const hoSoId   = localStorage.getItem('hoSoId') || localStorage.getItem('taiKhoanId') || '';
+  const hoSoId = localStorage.getItem('hoSoId') || localStorage.getItem('taiKhoanId') || '';
 
   container.innerHTML = `
     <div class="flex items-center justify-center min-h-[300px]">
@@ -156,17 +156,13 @@ async function loadDiaryData(container, userRole, students, studentId) {
       <div class="space-y-6 animate-fadeIn">
         <!-- Header & Top Actions -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-800">Nhật ký Học tập & Sổ liên lạc</h2>
-            <p class="text-xs text-slate-500">Xem nhận xét bài học, bài tập về nhà và đánh giá từ giáo viên.</p>
-          </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <!-- Nút Tải lại đồng bộ thiết kế -->
             <button id="btn-refresh-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             
-            ${(userRole === 'admin' || userRole === 'giao_vien') ? `
+            ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
               <button id="btn-create-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
                 <span class="material-symbols-outlined text-[16px]">rate_review</span>Viết nhận xét
               </button>
@@ -198,11 +194,11 @@ async function loadDiaryData(container, userRole, students, studentId) {
 
           <div class="relative pl-6 border-l-2 border-slate-100 space-y-8">
             ${diaries.map(item => {
-              const createdDate = new Date(item.ngay_tao).toLocaleDateString('vi-VN', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-              });
-              const createdTime = new Date(item.ngay_tao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-              return `
+      const createdDate = new Date(item.ngay_tao).toLocaleDateString('vi-VN', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const createdTime = new Date(item.ngay_tao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      return `
                 <!-- Timeline Item -->
                 <div class="relative">
                   <!-- Bullet point on timeline -->
@@ -223,7 +219,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
                           ${item.so_phut_hoc} phút học
                         </span>
-                        ${(userRole === 'admin' || userRole === 'giao_vien') ? `
+                        ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
                           <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-all" data-id="${item.id}" title="Sửa nhận xét">
                             <span class="material-symbols-outlined text-[15px] block">edit</span>
                           </button>
@@ -266,7 +262,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
                   </div>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
 
             ${diaries.length === 0 ? `
               <div class="py-8 text-center text-slate-400 text-xs">

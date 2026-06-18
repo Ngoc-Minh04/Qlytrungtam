@@ -1,3 +1,15 @@
+### [18/06/2026 13:38] — Tích hợp tính năng Sửa, Xóa nhận xét vào Cổng Giáo viên
+- **Loại**: Cải tiến tính năng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**: Tích hợp các nút Sửa, Xóa và Modal chỉnh sửa nhận xét buổi học vào mục Sổ liên lạc của Cổng Giáo viên (`TeacherPortal.js`), đồng bộ hóa trải nghiệm quản lý chất lượng đào tạo với Cổng Admin và Cổng Lễ tân.
+- **Kết quả**: Thành công
+
+### [18/06/2026 13:34] — Mở rộng quyền Viết, Sửa, Xóa nhận xét sổ liên lạc cho Nhân viên Lễ tân
+- **Loại**: Cải tiến tính năng / Phân quyền
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**: Cập nhật điều kiện hiển thị nút "Viết nhận xét", "Sửa nhận xét" và "Xóa nhận xét" để hỗ trợ thêm cả vai trò Nhân viên Lễ tân (`le_tan`) thao tác trực tiếp, thay vì chỉ giới hạn cho Admin và Giáo viên như trước.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 13:16] — Sửa lỗi hiển thị sai tên người nhận xét, Cập nhật chức vụ Admin & Tích hợp Sửa/Xóa nhận xét
 - **Loại**: Cải tiến tính năng & Sửa bug
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`, Database (ho_so)

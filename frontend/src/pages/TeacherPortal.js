@@ -637,13 +637,118 @@ async function _tabDiary(c) {
                     <div class="w-7 h-7 rounded-xl flex items-center justify-center text-white text-[10px] font-bold" style="background:${GRAD}">${(h.ten_hoc_vien||'?').charAt(0)}</div>
                     <p class="text-xs font-bold text-slate-800">${h.ten_hoc_vien || '—'}</p>
                   </div>
-                  <p class="text-[9px] text-slate-400">${formatDate(h.ngay_tao)}</p>
+                  <div class="flex items-center gap-2">
+                    <p class="text-[9px] text-slate-400">${formatDate(h.ngay_tao)}</p>
+                    <button class="btn-edit-t-diary text-blue-500 hover:text-blue-700 p-0.5 rounded transition" data-id="${h.id}" title="Sửa">
+                      <span class="material-symbols-outlined text-[13px] block">edit</span>
+                    </button>
+                    <button class="btn-delete-t-diary text-red-500 hover:text-red-700 p-0.5 rounded transition" data-id="${h.id}" title="Xóa">
+                      <span class="material-symbols-outlined text-[13px] block">delete</span>
+                    </button>
+                  </div>
                 </div>
                 ${h.noi_dung_bai_hoc ? `<div class="bg-slate-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-slate-400 mb-1">NỘI DUNG</p><p class="text-xs text-slate-700">${h.noi_dung_bai_hoc}</p></div>` : ''}
                 ${h.nhan_xet_buoi_hoc ? `<div class="rounded-2xl p-3" style="background:linear-gradient(135deg,#eff6ff,#dbeafe)"><p class="text-[8px] font-bold text-blue-400 mb-1">NHẬN XÉT</p><p class="text-xs text-blue-800">${h.nhan_xet_buoi_hoc}</p></div>` : ''}
                 ${h.bai_tap_ve_nha ? `<div class="bg-amber-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-amber-500 mb-1">BÀI TẬP</p><p class="text-xs text-amber-800">${h.bai_tap_ve_nha}</p></div>` : ''}
               </div>`)).join('')}
+      </div>
+
+      <!-- Modal Chỉnh sửa nhận xét cho GV -->
+      <div id="t-edit-diary-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100 flex flex-col max-h-[85vh]">
+          <div class="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
+            <span class="text-xs font-bold text-slate-800">Chỉnh sửa nhận xét</span>
+            <button onclick="document.getElementById('t-edit-diary-modal').classList.add('hidden')"
+              class="w-7 h-7 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition">
+              <span class="material-symbols-outlined text-[15px]">close</span>
+            </button>
+          </div>
+          <form id="t-edit-diary-form" class="p-5 space-y-3 overflow-y-auto">
+            <input type="hidden" id="t-edit-id" />
+            <div>
+              <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Nội dung bài học</label>
+              <textarea id="t-edit-content" rows="2" class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none transition resize-none" required></textarea>
+            </div>
+            <div>
+              <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Nhận xét buổi học</label>
+              <textarea id="t-edit-comment" rows="3" class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none transition resize-none" required></textarea>
+            </div>
+            <div>
+              <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Bài tập về nhà</label>
+              <textarea id="t-edit-hw" rows="2" class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none transition resize-none"></textarea>
+            </div>
+            <button type="submit" class="w-full text-white text-xs font-bold py-2.5 rounded-2xl transition shadow-md hover:opacity-90 active:scale-[.98]"
+              style="background:${GRAD}">
+              Cập nhật sổ liên lạc
+            </button>
+          </form>
+        </div>
       </div>`;
+
+    c.querySelectorAll('.btn-edit-t-diary').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        const item = hist.find(h => h.id === id);
+        if (item) {
+          document.getElementById('t-edit-id').value = item.id;
+          document.getElementById('t-edit-content').value = item.noi_dung_bai_hoc || '';
+          document.getElementById('t-edit-comment').value = item.nhan_xet_buoi_hoc || '';
+          document.getElementById('t-edit-hw').value = item.bai_tap_ve_nha || '';
+          document.getElementById('t-edit-diary-modal').classList.remove('hidden');
+        }
+      });
+    });
+
+    document.getElementById('t-edit-diary-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('t-edit-id').value;
+      const noi_dung_bai_hoc = document.getElementById('t-edit-content').value.trim();
+      const nhan_xet_buoi_hoc = document.getElementById('t-edit-comment').value.trim();
+      const bai_tap_ve_nha = document.getElementById('t-edit-hw').value.trim();
+
+      try {
+        const r = await fetch(`${API_BASE}/reports/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({
+            noi_dung_bai_hoc,
+            nhan_xet_buoi_hoc,
+            bai_tap_ve_nha
+          })
+        });
+        const res = await r.json();
+        if (res.success) {
+          document.getElementById('t-edit-diary-modal').classList.add('hidden');
+          _renderTab('diary');
+        } else {
+          alert(res.error || 'Cập nhật thất bại');
+        }
+      } catch (_) {
+        alert('Lỗi kết nối máy chủ');
+      }
+    });
+
+    c.querySelectorAll('.btn-delete-t-diary').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.id);
+        if (confirm('Bạn có chắc chắn muốn xóa nhận xét này không?')) {
+          try {
+            const r = await fetch(`${API_BASE}/reports/${id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+            });
+            const res = await r.json();
+            if (res.success) {
+              _renderTab('diary');
+            } else {
+              alert(res.error || 'Xóa thất bại');
+            }
+          } catch (_) {
+            alert('Lỗi kết nối máy chủ');
+          }
+        }
+      });
+    });
 
     document.getElementById('d-student')?.addEventListener('change', async e => {
       const sid = e.target.value; if (!sid) return;
