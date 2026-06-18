@@ -38,13 +38,13 @@ async function renderAdminOverview(container, role) {
     fetch(`${API_BASE}/ratings`, { headers: { 'X-User-Role': 'admin' } }),
   ]);
 
-  const students    = studentsRes.status === 'fulfilled'  ? (await studentsRes.value.json()).data  || [] : [];
-  const teachers    = teachersRes.status === 'fulfilled'  ? (await teachersRes.value.json()).data  || [] : [];
-  const regs        = regRes.status === 'fulfilled'       ? (await regRes.value.json()).data       || [] : [];
-  const checkins    = checkinRes.status === 'fulfilled'   ? (await checkinRes.value.json()).data   || [] : [];
-  const bookings    = bookingRes.status === 'fulfilled'   ? (await bookingRes.value.json()).data   || [] : [];
-  const ratingsData = ratingsRes.status === 'fulfilled'   ? await ratingsRes.value.json()                : {};
-  const ratings     = ratingsData.data || [];
+  const students = studentsRes.status === 'fulfilled' ? (await studentsRes.value.json()).data || [] : [];
+  const teachers = teachersRes.status === 'fulfilled' ? (await teachersRes.value.json()).data || [] : [];
+  const regs = regRes.status === 'fulfilled' ? (await regRes.value.json()).data || [] : [];
+  const checkins = checkinRes.status === 'fulfilled' ? (await checkinRes.value.json()).data || [] : [];
+  const bookings = bookingRes.status === 'fulfilled' ? (await bookingRes.value.json()).data || [] : [];
+  const ratingsData = ratingsRes.status === 'fulfilled' ? await ratingsRes.value.json() : {};
+  const ratings = ratingsData.data || [];
   const ratingStats = ratingsData.stats || [];
 
   // --- Stats tính toán ---
@@ -54,11 +54,11 @@ async function renderAdminOverview(container, role) {
     ? [...checkinsToday].sort((a, b) => a.gio_quet.localeCompare(b.gio_quet))[0]
     : null;
 
-  const paidRegs   = regs.filter(r => r.trang_thai_thanh_toan === 'da_thanh_toan');
+  const paidRegs = regs.filter(r => r.trang_thai_thanh_toan === 'da_thanh_toan');
   const unpaidRegs = regs.filter(r => r.trang_thai_thanh_toan !== 'da_thanh_toan' && r.trang_thai !== 'huy');
 
-  const totalRevenue   = paidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
-  const unpaidRevenue  = unpaidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
+  const totalRevenue = paidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
+  const unpaidRevenue = unpaidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -67,7 +67,7 @@ async function renderAdminOverview(container, role) {
     .reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
 
   const pendingBookings = bookings.filter(b => b.trang_thai === 'cho_duyet');
-  const cancelRequests  = regs.filter(r => r.trang_thai === 'huy');
+  const cancelRequests = regs.filter(r => r.trang_thai === 'huy');
 
   // Gói bán chạy
   const pkgMap = {};
@@ -112,7 +112,6 @@ async function renderAdminOverview(container, role) {
       <!-- Header row -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-[17px] font-bold text-slate-800 tracking-tight">Tổng quan hệ thống</h1>
           <p class="text-[11px] text-slate-400 mt-0.5">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</p>
         </div>
         <button id="btn-refresh-overview"
@@ -169,7 +168,7 @@ async function renderAdminOverview(container, role) {
           <div class="text-[11px] font-medium text-slate-500 mt-1">Check-in hôm nay</div>
           <div class="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
             <span class="material-symbols-outlined text-[12px] text-amber-400">arrow_forward</span>
-            ${earliestCheckin ? `Sớm nhất: ${earliestCheckin.ho_ten.split(' ').pop()} (${earliestCheckin.gio_quet.slice(0,5)})` : 'Xem lượt vào-ra'}
+            ${earliestCheckin ? `Sớm nhất: ${earliestCheckin.ho_ten.split(' ').pop()} (${earliestCheckin.gio_quet.slice(0, 5)})` : 'Xem lượt vào-ra'}
           </div>
         </div>
 
@@ -236,7 +235,7 @@ async function renderAdminOverview(container, role) {
           </div>
           <div class="space-y-2.5">
             ${bestSellers.length === 0 ? `<p class="text-xs text-slate-400 py-2 text-center">Chưa có dữ liệu</p>` :
-              bestSellers.map(([name, count], idx) => `
+      bestSellers.map(([name, count], idx) => `
                 <div class="flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold shrink-0
                     ${idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-slate-300 text-slate-700' : 'bg-orange-300 text-white'}">${idx + 1}</span>
@@ -249,7 +248,7 @@ async function renderAdminOverview(container, role) {
                   <span class="text-[10px] font-bold text-indigo-600 shrink-0">${count}</span>
                 </div>
               `).join('')
-            }
+    }
           </div>
           <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
             <span class="material-symbols-outlined text-[12px] text-indigo-400">arrow_forward</span>Quản lý gói học
@@ -275,7 +274,7 @@ async function renderAdminOverview(container, role) {
               <div class="text-4xl font-extrabold text-slate-800 tracking-tight leading-none">${avgRating}</div>
               <div>
                 <div class="flex gap-0.5 mb-1">
-                  ${Array.from({length:5}).map((_,i)=>`<span class="material-symbols-outlined fill-current text-[14px] ${i<Math.round(parseFloat(avgRating))?'text-amber-400':'text-slate-200'}">star</span>`).join('')}
+                  ${Array.from({ length: 5 }).map((_, i) => `<span class="material-symbols-outlined fill-current text-[14px] ${i < Math.round(parseFloat(avgRating)) ? 'text-amber-400' : 'text-slate-200'}">star</span>`).join('')}
                 </div>
                 <div class="text-[10px] text-slate-400">${ratings.length} lượt đánh giá</div>
               </div>
@@ -325,7 +324,7 @@ async function renderAdminOverview(container, role) {
                 <span class="material-symbols-outlined text-slate-400 text-[16px]">how_to_reg</span>
                 <span class="text-[11px] font-semibold text-slate-700">Đăng ký đang hoạt động</span>
               </div>
-              <span class="text-base font-extrabold text-slate-700">${regs.filter(r=>r.trang_thai==='dang_hoat_dong').length}</span>
+              <span class="text-base font-extrabold text-slate-700">${regs.filter(r => r.trang_thai === 'dang_hoat_dong').length}</span>
             </div>
           </div>
           <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
@@ -343,18 +342,18 @@ async function renderAdminOverview(container, role) {
           </div>
           <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1 custom-scroll">
             ${feedItems.length === 0 ? `<p class="text-xs text-slate-400 text-center py-6">Chưa có hoạt động nào.</p>` :
-              feedItems.map(item => `
+      feedItems.map(item => `
                 <div class="flex items-start gap-2.5 py-2 border-b border-[#f3f3f5] last:border-0 cursor-pointer hover:bg-slate-50 rounded-lg px-1 transition-colors feed-item" data-nav="${item.page}">
                   <div class="p-1.5 rounded-lg shrink-0 ${item.color}">
                     <span class="material-symbols-outlined text-[14px]">${item.icon}</span>
                   </div>
                   <div class="min-w-0">
                     <p class="text-[11px] text-slate-700 leading-relaxed">${item.text}</p>
-                    <span class="text-[9px] text-slate-400">${item.time.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} — ${item.time.toLocaleDateString('vi-VN')}</span>
+                    <span class="text-[9px] text-slate-400">${item.time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${item.time.toLocaleDateString('vi-VN')}</span>
                   </div>
                 </div>
               `).join('')
-            }
+    }
           </div>
         </div>
 
@@ -373,7 +372,7 @@ async function renderAdminOverview(container, role) {
               <div class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Check-in hôm nay</div>
               <div class="text-white font-bold text-sm mt-0.5">
                 <span class="text-2xl font-extrabold text-emerald-400">${checkinsToday.length}</span> lượt vào — sớm nhất:
-                ${earliestCheckin ? `<span class="text-emerald-300">${earliestCheckin.ho_ten}</span> lúc <span class="text-emerald-300">${earliestCheckin.gio_quet.slice(0,5)}</span>` : '—'}
+                ${earliestCheckin ? `<span class="text-emerald-300">${earliestCheckin.ho_ten}</span> lúc <span class="text-emerald-300">${earliestCheckin.gio_quet.slice(0, 5)}</span>` : '—'}
               </div>
             </div>
           </div>
@@ -458,10 +457,10 @@ async function renderTeacherOverview(container, role) {
       <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm space-y-3">
         <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-[#f3f3f5]">Các ca giảng dạy hôm nay</h3>
         ${schedules.length === 0 ? `<p class="text-slate-400 text-xs py-6 text-center">Hôm nay bạn không có lịch dạy.</p>` :
-          schedules.map(item => `
+      schedules.map(item => `
             <div class="bg-[#fafafc] rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border border-[#e2e2e4]/65 hover:border-blue-300 transition-colors">
               <div>
-                <span class="font-bold text-slate-800 text-sm block">${item.gio_bat_dau.slice(0,5)} – ${item.gio_ket_thuc.slice(0,5)}</span>
+                <span class="font-bold text-slate-800 text-sm block">${item.gio_bat_dau.slice(0, 5)} – ${item.gio_ket_thuc.slice(0, 5)}</span>
                 <span class="text-[11px] text-slate-500 mt-0.5 block">HV: <strong class="text-slate-700">${item.ten_hoc_vien}</strong> · ${item.loai_buoi === 'ca_nhan' ? 'Kèm 1-1' : 'Lớp nhóm'}</span>
               </div>
               <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -469,7 +468,7 @@ async function renderTeacherOverview(container, role) {
                   <button onclick="window.confirmAttendance(${item.id}, 'da_hoc')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-[10.5px] font-semibold active:scale-95 transition">Điểm danh</button>
                   <button onclick="window.confirmAttendance(${item.id}, 'vang')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full text-[10.5px] font-semibold active:scale-95 transition">Vắng</button>
                 ` : `
-                  <span class="px-3 py-1.5 rounded-full text-[10.5px] font-bold ${item.trang_thai==='da_hoc'?'bg-emerald-50 text-emerald-700':'bg-red-50 text-red-600'}">${item.trang_thai==='da_hoc'?'Đã dạy':'Vắng mặt'}</span>
+                  <span class="px-3 py-1.5 rounded-full text-[10.5px] font-bold ${item.trang_thai === 'da_hoc' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}">${item.trang_thai === 'da_hoc' ? 'Đã dạy' : 'Vắng mặt'}</span>
                 `}
                 <button onclick="window.openReportModal(${item.id}, ${item.hoc_vien_id}, ${item.giao_vien_id}, '${item.ten_hoc_vien}')"
                   class="border border-[#e2e2e4] bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-full text-[10.5px] font-semibold active:scale-95 transition shadow-sm">
@@ -478,7 +477,7 @@ async function renderTeacherOverview(container, role) {
               </div>
             </div>
           `).join('')
-        }
+    }
       </div>
     </div>
   `;

@@ -7,29 +7,45 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE, getAuthHeaders } from '../../api/client';
-import { User, Calendar, Award, Star, LogOut, CheckCircle, Clock } from 'lucide-react-native';
+import { User, Calendar, Award, Star, LogOut, CheckCircle, Clock, CreditCard, ChevronRight, X } from 'lucide-react-native';
 
 export default function TeacherHome({ onLogout }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', code: '' });
+  const [salary, setSalary] = useState(null);
+  const [showSalaryModal, setShowSalaryModal] = useState(false);
 
   const fetchOverview = async () => {
     try {
       const headers = await getAuthHeaders();
       const name = await AsyncStorage.getItem('userName') || 'Giáo viên';
       const code = await AsyncStorage.getItem('userCode') || '';
+      const hoSoId = await AsyncStorage.getItem('hoSoId') || '';
       setUserInfo({ name, code });
 
       const res = await fetch(`${API_BASE}/teacher-portal/overview`, { headers });
       const result = await res.json();
       if (result.success) {
         setData(result.data);
+      }
+
+      // Tra cứu thêm phiếu lương tháng hiện tại (Cải tiến di động)
+      if (hoSoId) {
+        const now = new Date();
+        const m = now.getMonth() + 1;
+        const y = now.getFullYear();
+        const salRes = await fetch(`${API_BASE}/payroll/my-salary?month=${m}&year=${y}&ho_so_id=${hoSoId}`, { headers });
+        const salResult = await salRes.json();
+        if (salResult.success) {
+          setSalary(salResult.data);
+        }
       }
     } catch (e) {
       console.error('Lỗi tải dữ liệu giáo viên:', e);
@@ -91,7 +107,7 @@ export default function TeacherHome({ onLogout }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff6b35" />
+        <ActivityIndicator size="large" color="#0066cc" />
         <Text style={styles.loadingText}>Đang tải lịch dạy...</Text>
       </View>
     );
@@ -103,7 +119,7 @@ export default function TeacherHome({ onLogout }) {
   return (
     <ScrollView 
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#ff6b35']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0066cc']} />}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -163,6 +179,33 @@ export default function TeacherHome({ onLogout }) {
         </View>
       </View>
 
+      {/* Phiếu lương bento (Cải tiến di động) */}
+      {salary && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tài chính cá nhân</Text>
+          <TouchableOpacity 
+            style={[styles.salaryBentoCard, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
+            onPress={() => setShowSalaryModal(true)}
+          >
+            <View style={styles.salaryBentoLeft}>
+              <View style={styles.salaryIconBox}>
+                <CreditCard size={20} color="#16a34a" />
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.salaryBentoTitle}>Phiếu lương tháng {new Date().getMonth() + 1}</Text>
+                <Text style={styles.salaryBentoAmount}>{salary.thuc_linh.toLocaleString('vi-VN')}đ</Text>
+              </View>
+            </View>
+            <View style={styles.salaryBentoRight}>
+              <View style={[styles.miniStatusBadge, salary.trang_thai === 'da_thanh_toan' ? styles.bgSuccess : styles.bgDanger]}>
+                <Text style={styles.miniStatusText}>{salary.trang_thai === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chờ duyệt'}</Text>
+              </View>
+              <ChevronRight size={18} color="#94a3b8" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Lịch dạy hôm nay */}
       <View style={[styles.section, { marginBottom: 30 }]}>
         <View style={styles.sectionHeaderRow}>
@@ -220,6 +263,81 @@ export default function TeacherHome({ onLogout }) {
           </View>
         )}
       </View>
+
+      {/* Modal chi tiết phiếu lương (Cải tiến di động) */}
+      {salary && (
+        <Modal
+          visible={showSalaryModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowSalaryModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={styles.modalTitle}>Chi tiết phiếu lương</Text>
+                  <Text style={styles.modalSubtitle}>Kỳ lương Tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</Text>
+                </View>
+                <TouchableOpacity style={styles.closeBtn} onPress={() => setShowSalaryModal(false)}>
+                  <X size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalContent}>
+                {/* Tổng thực lĩnh */}
+                <View style={styles.totalSalaryCard}>
+                  <Text style={styles.totalSalaryLabel}>Thực lĩnh chuyển khoản</Text>
+                  <Text style={styles.totalSalaryText}>{salary.thuc_linh.toLocaleString('vi-VN')} VNĐ</Text>
+                  <View style={[styles.statusBadgeLarge, salary.trang_thai === 'da_thanh_toan' ? styles.bgSuccess : styles.bgDanger]}>
+                    <Text style={salary.trang_thai === 'da_thanh_toan' ? styles.textSuccess : styles.textDanger}>
+                      {salary.trang_thai === 'da_thanh_toan' ? 'Đã thanh toán thành công' : 'Đang chờ duyệt chi'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Các khoản cộng */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Các khoản lương & ca dạy</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Lương dạy lớp nhóm</Text>
+                    <Text style={styles.detailVal}>{salary.group_sessions} ca (x${salary.don_gia_ca_nhom ? salary.don_gia_ca_nhom.toLocaleString('vi-VN') : '150.000'}đ)</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Lương dạy học kèm 1-1</Text>
+                    <Text style={styles.detailVal}>{salary.tutor_sessions} ca (x${salary.don_gia_ca_kem ? salary.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ)</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={[styles.detailLabel, { fontWeight: 'bold' }]}>Tổng lương ca dạy</Text>
+                    <Text style={[styles.detailVal, { fontWeight: 'bold', color: '#0066cc' }]}>{(salary.luong_ca_day || 0).toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                </View>
+
+                {/* Phụ cấp & khấu trừ */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Phụ cấp & Khấu trừ</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Cộng phụ cấp & thưởng</Text>
+                    <Text style={[styles.detailVal, { color: '#10b981', fontWeight: 'bold' }]}>+{salary.phu_cap.toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.detailLabel}>Khấu trừ / Phạt / Tạm ứng</Text>
+                    <Text style={[styles.detailVal, { color: '#ef4444', fontWeight: 'bold' }]}>-${(salary.khau_tru || 0).toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.detailSection, { marginBottom: 30 }]}>
+                  <Text style={styles.detailSectionTitle}>Thông tin chấm công đối chiếu</Text>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.detailLabel}>Số ngày công quét thẻ/vân tay</Text>
+                    <Text style={styles.detailVal}>{salary.work_days} ngày công</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
     </ScrollView>
   );
 }
@@ -417,5 +535,168 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 12,
     color: '#94a3b8',
+  },
+
+  // --- Salary Bento Card ---
+  salaryBentoCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  salaryBentoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  salaryIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#dcfce7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  salaryBentoTitle: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  salaryBentoAmount: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#15803d',
+    marginTop: 2,
+  },
+  salaryBentoRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  miniStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  miniStatusText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#15803d',
+  },
+
+  // --- Modal phiếu lương ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    paddingBottom: 30,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 3,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  totalSalaryCard: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  totalSalaryLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  totalSalaryText: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#15803d',
+    marginVertical: 8,
+  },
+  statusBadgeLarge: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  detailSection: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  detailSectionTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#475569',
+    flex: 1,
+  },
+  detailVal: {
+    fontSize: 13,
+    color: '#0f172a',
+    fontWeight: '600',
+    textAlign: 'right',
+    marginLeft: 8,
   },
 });

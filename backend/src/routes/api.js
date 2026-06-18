@@ -3433,6 +3433,93 @@ router.get('/reports/teacher/:teacherId?', async (req, res) => {
   }
 });
 
+// GET /api/reports/student/:studentId: Lấy danh sách sổ liên lạc của học viên
+router.get('/reports/student/:studentId', async (req, res) => {
+  const { studentId } = req.params;
+  if (!studentId || studentId === 'undefined' || studentId === 'null') {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin ID học viên' });
+  }
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS so_lien_lac (
+        id SERIAL PRIMARY KEY,
+        hoc_vien_id INTEGER REFERENCES ho_so(id),
+        giao_vien_id INTEGER REFERENCES ho_so(id),
+        noi_dung_bai_hoc TEXT,
+        nhan_xet_buoi_hoc TEXT,
+        bai_tap_ve_nha TEXT,
+        so_phut_hoc INTEGER DEFAULT 90,
+        dan_do_giao_vien TEXT,
+        ngay_tao TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    const result = await pool.query(`
+      SELECT s.*, hs_gv.ho_ten as ten_giao_vien
+      FROM so_lien_lac s
+      LEFT JOIN ho_so hs_gv ON s.giao_vien_id = hs_gv.id
+      WHERE s.hoc_vien_id = $1
+      ORDER BY s.ngay_tao DESC
+    `, [studentId]);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/reports: Giáo viên tạo nhật ký học tập / sổ liên lạc mới
+router.post('/reports', async (req, res) => {
+  const {
+    hoc_vien_id,
+    giao_vien_id,
+    nhan_xet_buoi_hoc,
+    bai_tap_ve_nha,
+    noi_dung_bai_hoc,
+    so_phut_hoc,
+    dan_do_giao_vien
+  } = req.body;
+
+  if (!hoc_vien_id || !giao_vien_id) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin học viên hoặc giáo viên' });
+  }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS so_lien_lac (
+        id SERIAL PRIMARY KEY,
+        hoc_vien_id INTEGER REFERENCES ho_so(id),
+        giao_vien_id INTEGER REFERENCES ho_so(id),
+        noi_dung_bai_hoc TEXT,
+        nhan_xet_buoi_hoc TEXT,
+        bai_tap_ve_nha TEXT,
+        so_phut_hoc INTEGER DEFAULT 90,
+        dan_do_giao_vien TEXT,
+        ngay_tao TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    const result = await pool.query(
+      `INSERT INTO so_lien_lac 
+        (hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc, dan_do_giao_vien) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc || 90, dan_do_giao_vien]
+    );
+
+    // Tạo thông báo cho học viên
+    await createNotification(
+      'so_lien_lac', 
+      'Bạn có nhận xét mới từ giáo viên',
+      nhan_xet_buoi_hoc && nhan_xet_buoi_hoc.length > 80 ? nhan_xet_buoi_hoc.slice(0, 80) + '…' : nhan_xet_buoi_hoc,
+      result.rows[0].id, 
+      'so_lien_lac', 
+      'hoc_vien'
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/notes: GV ghi chú dặn dò riêng cho học viên
 router.post('/notes', async (req, res) => {
   const ho_so_id = req.headers['x-ho-so-id'];
@@ -4325,6 +4412,133 @@ router.put('/payroll/:id/pay', verifyAccess(['admin', 'le_tan']), async (req, re
     );
 
     res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/payroll/my-salary: Người dùng tự tra cứu phiếu lương cá nhân của họ
+router.get('/payroll/my-salary', verifyAccess(['admin', 'le_tan', 'giao_vien', 'hoc_vien']), async (req, res) => {
+  const { month, year, ho_so_id } = req.query;
+  const now = new Date();
+  const targetMonth = month ? parseInt(month) : (now.getMonth() + 1);
+  const targetYear = year ? parseInt(year) : now.getFullYear();
+
+  // Xác thực ho_so_id, nếu không truyền tự động tìm
+  if (!ho_so_id) {
+    return res.status(400).json({ success: false, error: 'Thiếu ho_so_id tra cứu' });
+  }
+
+  try {
+    // 1. Đọc hồ sơ cùng cấu hình lương
+    const personRes = await pool.query(
+      `SELECT id, ma_ho_so, ho_ten, loai_ho_so, 
+              COALESCE(luong_cung_ngay, 300000) as luong_cung_ngay,
+              COALESCE(don_gia_ca_nhom, 150000) as don_gia_ca_nhom,
+              COALESCE(don_gia_ca_kem, 200000) as don_gia_ca_kem
+       FROM ho_so 
+       WHERE id = $1 AND is_deleted = 0`,
+      [ho_so_id]
+    );
+
+    if (personRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ người dùng này' });
+    }
+    const p = personRes.rows[0];
+
+    // 2. Tính số ngày công
+    const workDaysRes = await pool.query(
+      `SELECT COUNT(DISTINCT thoi_diem::date) as work_days
+       FROM luot_vao_ra
+       WHERE ho_so_id = $1 AND EXTRACT(MONTH FROM thoi_diem) = $2 AND EXTRACT(YEAR FROM thoi_diem) = $3`,
+      [ho_so_id, targetMonth, targetYear]
+    );
+    const workDays = parseInt(workDaysRes.rows[0].work_days) || 0;
+
+    // 3. Tính số ca dạy nhóm
+    const groupSessionsRes = await pool.query(
+      `SELECT COUNT(*) as sessions
+       FROM lich_hoc_nhom
+       WHERE giao_vien_id = $1 AND EXTRACT(MONTH FROM ngay_hoc) = $2 AND EXTRACT(YEAR FROM ngay_hoc) = $3 AND trang_thai = 'da_hoc'`,
+      [ho_so_id, targetMonth, targetYear]
+    );
+    const groupSessions = parseInt(groupSessionsRes.rows[0].sessions) || 0;
+
+    // 4. Tính số ca dạy kèm 1-1
+    const tutorSessionsRes = await pool.query(
+      `SELECT COUNT(*) as sessions
+       FROM lich_hoc
+       WHERE giao_vien_id = $1 AND EXTRACT(MONTH FROM ngay_hoc) = $2 AND EXTRACT(YEAR FROM ngay_hoc) = $3 AND trang_thai = 'da_hoc'`,
+      [ho_so_id, targetMonth, targetYear]
+    );
+    const tutorSessions = parseInt(tutorSessionsRes.rows[0].sessions) || 0;
+
+    // 5. Kiểm tra chốt trong bảng bang_luong
+    const payrollRes = await pool.query(
+      "SELECT * FROM bang_luong WHERE ho_so_id = $1 AND thang = $2 AND nam = $3",
+      [ho_so_id, targetMonth, targetYear]
+    );
+
+    if (payrollRes.rows.length > 0) {
+      const dbRecord = payrollRes.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          id: p.id,
+          ma_ho_so: p.ma_ho_so,
+          ho_ten: p.ho_ten,
+          loai_ho_so: p.loai_ho_so,
+          work_days: workDays,
+          group_sessions: groupSessions,
+          tutor_sessions: tutorSessions,
+          luong_cung: parseFloat(dbRecord.luong_cung),
+          luong_ca_day: parseFloat(dbRecord.luong_ca_day),
+          phu_cap: parseFloat(dbRecord.phu_cap),
+          khau_tru: parseFloat(dbRecord.khau_tru || 0),
+          thuc_linh: parseFloat(dbRecord.thuc_linh),
+          trang_thai: dbRecord.trang_thai,
+          ngay_thanh_toan: dbRecord.ngay_thanh_toan
+        }
+      });
+    }
+
+    // Chưa thanh toán -> Tính toán động
+    let luongCung = 0;
+    let luongCaDay = 0;
+    let phuCap = 0;
+
+    if (p.loai_ho_so === 'giao_vien') {
+      luongCaDay = (groupSessions * parseFloat(p.don_gia_ca_nhom)) + (tutorSessions * parseFloat(p.don_gia_ca_kem));
+      phuCap = workDays > 15 ? 500000 : 0;
+    } else {
+      luongCung = workDays * parseFloat(p.luong_cung_ngay);
+      phuCap = workDays > 22 ? 800000 : 0;
+    }
+
+    const thucLinh = luongCung + luongCaDay + phuCap;
+
+    res.json({
+      success: true,
+      data: {
+        id: p.id,
+        ma_ho_so: p.ma_ho_so,
+        ho_ten: p.ho_ten,
+        loai_ho_so: p.loai_ho_so,
+        work_days: workDays,
+        group_sessions: groupSessions,
+        tutor_sessions: tutorSessions,
+        luong_cung: luongCung,
+        luong_ca_day: luongCaDay,
+        phu_cap: phuCap,
+        khau_tru: 0,
+        thuc_linh: thucLinh,
+        trang_thai: 'chua_thanh_toan',
+        ngay_thanh_toan: null,
+        luong_cung_ngay: parseFloat(p.luong_cung_ngay),
+        don_gia_ca_nhom: parseFloat(p.don_gia_ca_nhom),
+        don_gia_ca_kem: parseFloat(p.don_gia_ca_kem)
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

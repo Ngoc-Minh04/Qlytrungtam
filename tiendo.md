@@ -1,3 +1,20 @@
+### [18/06/2026 11:08] — Bổ sung API Sổ liên lạc & Nhật ký học tập của học viên ở Backend
+- **Loại**: Sửa bug / Bổ sung tính năng Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Tạo bảng `so_lien_lac` tự động**: Tự động tạo bảng `so_lien_lac` lưu trữ thông tin học tập của học viên nếu chưa tồn tại.
+  - **API GET `/api/reports/student/:studentId`**: Định nghĩa endpoint để lấy lịch sử sổ liên lạc của một học sinh, kèm tên giáo viên dạy thông qua JOIN.
+  - **API POST `/api/reports`**: Định nghĩa endpoint cho phép giáo viên gửi nhận xét, bài tập về nhà, số phút học và dặn dò của buổi học, đồng thời gửi thông báo tự động cho học viên.
+- **Kết quả**: Thành công
+
+### [18/06/2026 10:53] — Hoàn thiện CSS Styles phiếu lương Mobile & Tích hợp xem phiếu lương cho Admin/Lễ tân
+- **Loại**: Cải tiến tính năng / UI UX Mobile App
+- **File**: `mobile/src/screens/teacher/TeacherHome.js`, `mobile/src/screens/admin/AdminHome.js`
+- **Mô tả**:
+  - **TeacherHome.js — Bổ sung StyleSheet**: Khai báo đầy đủ 23 class CSS còn thiếu cho phần Bento Card "Tài chính cá nhân" và Modal chi tiết phiếu lương tháng của Giáo viên (`salaryBentoCard`, `salaryBentoLeft`, `salaryIconBox`, `salaryBentoTitle`, `salaryBentoAmount`, `salaryBentoRight`, `miniStatusBadge`, `miniStatusText`, `modalOverlay`, `modalContainer`, `modalHeader`, `modalTitle`, `modalSubtitle`, `closeBtn`, `modalContent`, `totalSalaryCard`, `totalSalaryLabel`, `totalSalaryText`, `statusBadgeLarge`, `detailSection`, `detailSectionTitle`, `detailRow`, `detailLabel`, `detailVal`).
+  - **AdminHome.js — Tích hợp phiếu lương cá nhân**: Import thêm `Modal`, `ScrollView` từ React Native và các icon `CreditCard`, `ChevronRight`, `X` từ lucide. Thêm state `salary` + `showSalaryModal`. Gọi API `/api/payroll/my-salary` khi có `hoSoId` để tra cứu lương tháng hiện tại của chính Admin/Lễ tân. Hiển thị Bento Card "Tài chính cá nhân" với số tiền thực lĩnh và trạng thái thanh toán. Modal chi tiết hiển thị lương ngày công, đơn giá ngày, phụ cấp, khấu trừ và tổng thực lĩnh. Bổ sung đầy đủ 23 class CSS tương ứng vào StyleSheet.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 09:24] — Tích hợp 4 Cải tiến tính năng Tính lương & Phụ cấp nhân sự
 - **Loại**: Cải tiến tính năng / UI UX & Cơ sở dữ liệu
 - **File**: `backend/src/config/db.js`, `backend/src/routes/api.js`, `frontend/src/pages/SalaryManagement.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`

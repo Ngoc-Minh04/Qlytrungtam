@@ -42,6 +42,7 @@ const TABS = [
   { id: 'students',  label: 'Học viên',     icon: 'group' },
   { id: 'diary',     label: 'Sổ liên lạc',  icon: 'edit_note' },
   { id: 'stats',     label: 'Thống kê',     icon: 'bar_chart' },
+  { id: 'salary',    label: 'Phiếu lương',  icon: 'payments' },
   { id: 'profile',   label: 'Hồ sơ',        icon: 'person' },
 ];
 
@@ -215,6 +216,7 @@ async function _renderTab(tab) {
     case 'students':  await _tabStudents(c);  break;
     case 'diary':     await _tabDiary(c);     break;
     case 'stats':     await _tabStats(c);     break;
+    case 'salary':    await _tabSalary(c);    break;
     case 'profile':   await _tabProfile(c);   break;
   }
 }
@@ -776,6 +778,161 @@ async function _tabStats(c) {
   } catch (err) {
     c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
   }
+}
+
+/* ── TAB: PHIẾU LƯƠNG ── */
+async function _tabSalary(c) {
+  const now = new Date();
+  let selMonth = now.getMonth() + 1;
+  let selYear  = now.getFullYear();
+  const hoSoId = localStorage.getItem('hoSoId');
+
+  async function loadSalary(m, y) {
+    const res = await fetch(`${API_BASE}/payroll/my-salary?month=${m}&year=${y}&ho_so_id=${hoSoId}`, {
+      headers: getAuthHeaders()
+    });
+    const result = await res.json();
+    if (!result.success) throw new Error(result.error || 'Lỗi tải phiếu lương');
+    return result.data || {};
+  }
+
+  async function render() {
+    try {
+      const s = await loadSalary(selMonth, selYear);
+      const isPaid = s.trang_thai === 'da_thanh_toan';
+
+      const statusClass = isPaid 
+        ? 'bg-emerald-100 text-emerald-800' 
+        : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+      const statusLabel = isPaid 
+        ? 'Đã thanh toán' 
+        : 'Chờ duyệt chi';
+
+      const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+
+      c.innerHTML = `
+        <div class="space-y-4">
+          <!-- Chọn kỳ lương -->
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-black text-slate-800">Phiếu lương cá nhân</h2>
+            <div class="flex items-center gap-2">
+              <button id="prev-salary-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+              </button>
+              <span class="text-xs font-bold text-slate-700">${monthNames[selMonth-1]} ${selYear}</span>
+              <button id="next-salary-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Trạng thái phiếu lương -->
+          <div class="flex items-center justify-between p-4 rounded-3xl bg-white border border-blue-50 shadow-md">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Trạng thái thanh toán</p>
+              <span class="inline-block px-3 py-1 rounded-full text-[10.5px] font-black mt-1.5 ${statusClass}">${statusLabel}</span>
+            </div>
+            ${s.ngay_thanh_toan ? `
+            <div class="text-right">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ngày thanh toán</p>
+              <p class="text-xs font-bold text-slate-700 mt-1">${new Date(s.ngay_thanh_toan).toLocaleDateString('vi-VN')} ${new Date(s.ngay_thanh_toan).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</p>
+            </div>` : ''}
+          </div>
+
+          <!-- Chi tiết lương Bento -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- Bento thực lĩnh -->
+            <div class="bg-gradient-to-br from-[#0066cc] to-[#0a6ebd] rounded-3xl p-6 text-white shadow-xl shadow-blue-400/20 md:col-span-2 relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-10 translate-x-10"></div>
+              <span class="text-[10px] opacity-75 font-bold uppercase tracking-wider block">Thực lĩnh nhận được</span>
+              <span class="text-3xl font-black block mt-2 tracking-tight">${s.thuc_linh.toLocaleString('vi-VN')} VNĐ</span>
+              <p class="text-[10.5px] opacity-60 mt-3">Công thức: Thực lĩnh = Lương dạy ca + Phụ cấp - Khấu trừ</p>
+            </div>
+
+            <!-- Bento lương ca dạy học -->
+            ${_card(`
+              ${_sec('school','Chi tiết ca dạy học')}
+              <div class="p-5 space-y-3">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-slate-500 font-medium">Lớp nhóm:</span>
+                  <span class="font-bold text-slate-700">${s.group_sessions} ca (x${s.don_gia_ca_nhom ? s.don_gia_ca_nhom.toLocaleString('vi-VN') : '150.000'}đ)</span>
+                </div>
+                <div class="flex justify-between items-center text-xs border-b border-slate-50 pb-3">
+                  <span class="text-slate-500 font-medium">Học kèm 1-1:</span>
+                  <span class="font-bold text-slate-700">${s.tutor_sessions} ca (x${s.don_gia_ca_kem ? s.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ)</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-slate-800">
+                  <span>Tổng tiền ca dạy:</span>
+                  <span class="text-apple-blue font-extrabold text-sm">${(s.luong_ca_day || 0).toLocaleString('vi-VN')}đ</span>
+                </div>
+              </div>
+            `)}
+
+            <!-- Bento phụ cấp & khấu trừ -->
+            ${_card(`
+              ${_sec('payments','Cộng & Trừ lương')}
+              <div class="p-5 space-y-3.5">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-slate-500 font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Phụ cấp & Thưởng:</span>
+                  <span class="font-bold text-emerald-600">+${s.phu_cap.toLocaleString('vi-VN')}đ</span>
+                </div>
+                <div class="flex justify-between items-center text-xs border-b border-slate-50 pb-3">
+                  <span class="text-slate-500 font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Khấu trừ / Tạm ứng:</span>
+                  <span class="font-bold text-red-600">-${(s.khau_tru || 0).toLocaleString('vi-VN')}đ</span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-slate-500 font-medium">Công quét vân tay/thẻ:</span>
+                  <span class="font-bold text-slate-700">${s.work_days} ngày công</span>
+                </div>
+              </div>
+            `)}
+
+          </div>
+        </div>`;
+
+      document.getElementById('prev-salary-month')?.addEventListener('click', async () => {
+        selMonth--; if (selMonth < 1) { selMonth = 12; selYear--; }
+        await render();
+      });
+      document.getElementById('next-salary-month')?.addEventListener('click', async () => {
+        selMonth++; if (selMonth > 12) { selMonth = 1; selYear++; }
+        await render();
+      });
+    } catch (err) {
+      c.innerHTML = `
+        <div class="space-y-4">
+          <!-- Chọn kỳ lương khi lỗi -->
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-black text-slate-800">Phiếu lương cá nhân</h2>
+            <div class="flex items-center gap-2">
+              <button id="prev-salary-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+              </button>
+              <span class="text-xs font-bold text-slate-700">${monthNames[selMonth-1]} ${selYear}</span>
+              <button id="next-salary-month" class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition">
+                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+          <div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs text-center">
+            Không tìm thấy thông tin phiếu lương cho kỳ này.
+          </div>
+        </div>
+      `;
+      document.getElementById('prev-salary-month')?.addEventListener('click', async () => {
+        selMonth--; if (selMonth < 1) { selMonth = 12; selYear--; }
+        await render();
+      });
+      document.getElementById('next-salary-month')?.addEventListener('click', async () => {
+        selMonth++; if (selMonth > 12) { selMonth = 1; selYear++; }
+        await render();
+      });
+    }
+  }
+
+  c.innerHTML = `<div class="flex items-center justify-center min-h-[200px]"><div class="animate-spin w-6 h-6 rounded-full border-2 border-blue-200 border-t-blue-600"></div></div>`;
+  await render();
 }
 
 /* ── TAB: HỒ SƠ ── */
