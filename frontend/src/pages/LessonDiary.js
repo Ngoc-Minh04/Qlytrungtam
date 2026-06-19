@@ -68,9 +68,10 @@ export async function renderLessonDiary(container) {
     const content = document.getElementById('lt-content');
     content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div></div>`;
     try {
+      const headers = { 'x-user-role': userRole, 'x-ho-so-id': hoSoId };
       const [stdRes, notesRes] = await Promise.all([
-        fetch(`${API_BASE}/students`, { headers: { 'x-user-role': userRole, 'x-ho-so-id': hoSoId } }),
-        fetch(`${API_BASE}/notes`, { headers: { 'x-user-role': 'admin', 'x-ho-so-id': hoSoId } })
+        fetch(`${API_BASE}/students`, { headers }),
+        fetch(`${API_BASE}/notes`, { headers })
       ]);
       const students = (await stdRes.json()).data || [];
       let notes = (await notesRes.json()).data || [];
@@ -78,19 +79,78 @@ export async function renderLessonDiary(container) {
 
       function renderNotes(list) {
         if (list.length === 0) return `<div class="py-12 text-center text-xs text-slate-400"><span class="material-symbols-outlined text-4xl text-slate-200 block mb-2">sticky_note_2</span>Chưa có ghi chú dặn dò nào</div>`;
-        return list.map(n => `
-          <div class="flex gap-3 p-4 bg-amber-50/40 border border-amber-100/60 rounded-2xl">
+        return list.map(n => {
+          const showActionBtns = (userRole === 'admin' || userRole === 'le_tan' || String(n.giao_vien_id) === String(hoSoId));
+          return `
+          <div class="flex gap-3 p-4 bg-amber-50/40 border border-amber-100/60 rounded-2xl relative group">
             <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
               <span class="material-symbols-outlined text-amber-600 text-[17px]">sticky_note_2</span>
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-2 mb-1">
                 <p class="text-xs font-bold text-slate-800">GV: ${n.ten_giao_vien || '—'} → HV: ${n.ten_hoc_vien || '—'}</p>
-                <p class="text-[9px] text-slate-400 flex-shrink-0">${new Date(n.ngay_tao).toLocaleDateString('vi-VN')}</p>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <p class="text-[9px] text-slate-400">${new Date(n.ngay_tao).toLocaleDateString('vi-VN')}</p>
+                  ${showActionBtns ? `
+                    <button class="btn-edit-note text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-0.5 rounded transition-all" data-id="${n.id}" title="Sửa ghi chú">
+                      <span class="material-symbols-outlined text-[13px] block">edit</span>
+                    </button>
+                    <button class="btn-delete-note text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 rounded transition-all" data-id="${n.id}" title="Xóa ghi chú">
+                      <span class="material-symbols-outlined text-[13px] block">delete</span>
+                    </button>
+                  ` : ''}
+                </div>
               </div>
               <p class="text-xs text-slate-700 leading-relaxed">${n.noi_dung}</p>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
+      }
+
+      function bindNoteActionEvents() {
+        // Sự kiện Sửa dặn dò
+        content.querySelectorAll('.btn-edit-note').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            const item = notes.find(n => n.id === id);
+            if (item) {
+              document.getElementById('edit-note-id').value = item.id;
+              document.getElementById('edit-note-content').value = item.noi_dung || '';
+              document.getElementById('edit-note-modal').classList.remove('hidden');
+            }
+          });
+        });
+
+        // Sự kiện Xóa dặn dò
+        content.querySelectorAll('.btn-delete-note').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            if (confirm('Bạn có chắc chắn muốn xóa ghi chú dặn dò này không?')) {
+              try {
+                const res = await fetch(`${API_BASE}/notes/${id}`, {
+                  method: 'DELETE',
+                  headers: { 'x-user-role': userRole, 'x-ho-so-id': hoSoId }
+                });
+                const result = await res.json();
+                if (result.success) {
+                  showToast('Xóa ghi chú dặn dò thành công!');
+                  // Tải lại danh sách notes
+                  const url = filterStudentId
+                    ? `${API_BASE}/notes?hoc_vien_id=${filterStudentId}`
+                    : `${API_BASE}/notes`;
+                  const updatedRes = await fetch(url, { headers });
+                  notes = (await updatedRes.json()).data || [];
+                  document.getElementById('notes-list').innerHTML = renderNotes(notes);
+                  bindNoteActionEvents();
+                } else {
+                  showToast(result.error || 'Lỗi khi xóa ghi chú', 'error');
+                }
+              } catch (err) {
+                showToast('Lỗi máy chủ', 'error');
+              }
+            }
+          });
+        });
       }
 
       content.innerHTML = `
@@ -101,19 +161,177 @@ export async function renderLessonDiary(container) {
               <option value="">Tất cả học viên</option>
               ${students.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
             </select>
-            <span class="text-[10px] text-slate-400 ml-auto">${notes.length} ghi chú</span>
+            
+            ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
+              <button id="btn-create-note" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px] sm:ml-2">
+                <span class="material-symbols-outlined text-[16px]">add_comment</span>Thêm dặn dò
+              </button>
+            ` : ''}
+            
+            <span class="text-[10px] text-slate-400 ml-auto" id="notes-count-badge">${notes.length} ghi chú</span>
           </div>
           <div id="notes-list" class="space-y-3">${renderNotes(notes)}</div>
-        </div>`;
+        </div>
+        
+        <!-- Modal Thêm dặn dò mới -->
+        <div id="note-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
+          <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tạo dặn dò / Ghi chú mới</h3>
+              <button id="close-note-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            
+            <form id="create-note-form" class="p-5 space-y-4">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Chọn học viên</label>
+                <select name="hoc_vien_id" id="modal-note-select-student" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+                  <option value="">-- Chọn học viên --</option>
+                  ${students.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung dặn dò / Ghi chú</label>
+                <textarea name="noi_dung" required rows="4" placeholder="Nhập nội dung dặn dò hoặc lưu ý cho học viên..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+              </div>
+
+              <div class="pt-2 shrink-0">
+                <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+                  Lưu dặn dò
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal Chỉnh sửa dặn dò -->
+        <div id="edit-note-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
+          <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Chỉnh sửa dặn dò / Ghi chú</h3>
+              <button id="close-edit-note-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            
+            <form id="edit-note-form" class="p-5 space-y-4">
+              <input type="hidden" name="note_id" id="edit-note-id" />
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung dặn dò / Ghi chú</label>
+                <textarea name="noi_dung" id="edit-note-content" required rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+              </div>
+
+              <div class="pt-2 shrink-0">
+                <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+                  Cập nhật dặn dò
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+
+      bindNoteActionEvents();
+
+      // Sự kiện mở/đóng modal note
+      const noteModal = document.getElementById('note-modal');
+      document.getElementById('btn-create-note')?.addEventListener('click', () => {
+        if (filterStudentId) {
+          document.getElementById('modal-note-select-student').value = filterStudentId;
+        }
+        noteModal.classList.remove('hidden');
+      });
+      document.getElementById('close-note-modal')?.addEventListener('click', () => {
+        noteModal.classList.add('hidden');
+      });
+      document.getElementById('close-edit-note-modal')?.addEventListener('click', () => {
+        document.getElementById('edit-note-modal').classList.add('hidden');
+      });
+
+      // Submit form tạo dặn dò
+      document.getElementById('create-note-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const targetHocVienId = parseInt(formData.get('hoc_vien_id'));
+        const noi_dung = formData.get('noi_dung');
+
+        try {
+          const res = await fetch(`${API_BASE}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({
+              hoc_vien_id: targetHocVienId,
+              noi_dung
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast('Thêm ghi chú dặn dò thành công!');
+            noteModal.classList.add('hidden');
+            e.target.reset();
+            
+            // Tải lại danh sách
+            const url = filterStudentId
+              ? `${API_BASE}/notes?hoc_vien_id=${filterStudentId}`
+              : `${API_BASE}/notes`;
+            const updatedRes = await fetch(url, { headers });
+            notes = (await updatedRes.json()).data || [];
+            document.getElementById('notes-list').innerHTML = renderNotes(notes);
+            document.getElementById('notes-count-badge').textContent = `${notes.length} ghi chú`;
+            bindNoteActionEvents();
+          } else {
+            showToast(result.error || 'Lỗi lưu dữ liệu', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi kết nối máy chủ', 'error');
+        }
+      });
+
+      // Submit form Sửa dặn dò
+      document.getElementById('edit-note-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const noteId = document.getElementById('edit-note-id').value;
+        const noi_dung = document.getElementById('edit-note-content').value.trim();
+
+        try {
+          const res = await fetch(`${API_BASE}/notes/${noteId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ noi_dung })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast('Cập nhật ghi chú dặn dò thành công!');
+            document.getElementById('edit-note-modal').classList.add('hidden');
+            
+            // Tải lại danh sách
+            const url = filterStudentId
+              ? `${API_BASE}/notes?hoc_vien_id=${filterStudentId}`
+              : `${API_BASE}/notes`;
+            const updatedRes = await fetch(url, { headers });
+            notes = (await updatedRes.json()).data || [];
+            document.getElementById('notes-list').innerHTML = renderNotes(notes);
+            bindNoteActionEvents();
+          } else {
+            showToast(result.error || 'Lỗi cập nhật', 'error');
+          }
+        } catch (err) {
+          showToast('Lỗi kết nối máy chủ', 'error');
+        }
+      });
 
       document.getElementById('notes-filter-student')?.addEventListener('change', async e => {
         filterStudentId = e.target.value;
         const url = filterStudentId
           ? `${API_BASE}/notes?hoc_vien_id=${filterStudentId}`
           : `${API_BASE}/notes`;
-        const filtered = await (await fetch(url, { headers: { 'x-user-role': 'admin', 'x-ho-so-id': hoSoId } })).json();
+        const filtered = await (await fetch(url, { headers })).json();
         const list = filtered.data || [];
         document.getElementById('notes-list').innerHTML = renderNotes(list);
+        document.getElementById('notes-count-badge').textContent = `${list.length} ghi chú`;
+        bindDeleteEvents();
       });
     } catch (err) {
       content.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs"><strong>Lỗi:</strong> ${err.message}</div>`;

@@ -1,3 +1,35 @@
+### [19/06/2026 10:30] — Gộp lịch dạy/học lớp nhóm vào các Portal và chuẩn hóa trạng thái Chờ học
+- **Loại**: Cải tiến tính năng & Sửa bug
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/TeacherPortal.js`, `frontend/src/pages/StudentPortal.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật các API `GET /api/schedule/today`, `GET /api/teacher-portal/overview` và `GET /api/student-portal/overview` thực hiện `UNION ALL` kết hợp lịch dạy học từ bảng `lich_hoc` (kèm 1-1) và bảng `lich_hoc_nhom` (lớp học nhóm), giúp giáo viên và học viên thấy đầy đủ lịch giảng dạy/học tập của mình trên Portal.
+  - **Frontend**:
+    - Sửa file `ClassManagement.js`: Đổi nhãn trạng thái tổng quát của lớp nhóm từ "Đang học" thành "Đang hoạt động" để tránh hiểu nhầm khi chưa đến giờ học.
+    - Sửa file `TeacherPortal.js` và `StudentPortal.js`: Đổi nhãn hiển thị của các ca học ở trạng thái `cho_hoc` từ "Sắp dạy" / "Sắp học" thành "Chờ học" để thống nhất trạng thái.
+- **Kết quả**: Thành công
+
+### [19/06/2026 10:07] — Hoàn thiện tính năng Sửa và Xóa dặn dò GV
+- **Loại**: Cải tiến tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **Backend**: Bổ sung API `PUT /api/notes/:id` cho phép cập nhật nội dung ghi chú dặn dò đã viết.
+  - **Frontend**: Hiển thị thêm nút **Sửa** (icon bút chì màu xanh) trên mỗi thẻ dặn dò có quyền. Phát triển modal chỉnh sửa dặn dò `edit-note-modal` và kết nối API gửi cập nhật thành công.
+- **Kết quả**: Thành công
+
+### [19/06/2026 10:05] — Phát triển và tối ưu hóa phân hệ Ghi chú dặn dò GV
+- **Loại**: Cải tiến tính năng & Sửa bug
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `GET /api/notes` hỗ trợ vai trò `admin`/`le_tan` truy xuất toàn bộ danh sách ghi chú từ giáo viên gửi học viên. Thêm API `DELETE /api/notes/:id` để hỗ trợ xóa ghi chú dặn dò dư thừa.
+  - **Frontend**: Khắc phục lỗi truyền thiếu role khiến tab "Ghi chú dặn dò GV" trống rỗng. Thêm nút Xóa dặn dò cho Admin, Lễ tân và Giáo viên tạo ghi chú đó.
+- **Kết quả**: Thành công
+
+### [19/06/2026 08:38] — Dọn dẹp code trùng lặp và sửa lỗi cú pháp dặn dò giáo viên trong TeacherPortal.js
+- **Loại**: Sửa bug & Cải tiến tính năng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**: Loại bỏ khối lệnh submit form trùng lặp dư thừa ở cuối hàm `_tabDiary` gây lỗi cú pháp JS trong Cổng giáo viên.
+- **Kết quả**: Thành công
+
 ### [18/06/2026 13:38] — Tích hợp tính năng Sửa, Xóa nhận xét vào Cổng Giáo viên
 - **Loại**: Cải tiến tính năng
 - **File**: `frontend/src/pages/TeacherPortal.js`

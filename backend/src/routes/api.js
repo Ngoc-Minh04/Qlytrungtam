@@ -2277,36 +2277,104 @@ router.get('/students', async (req, res) => {
 });
 
 
-// Lấy danh sách lịch dạy hôm nay từ bảng lich_hoc (dành cho Giáo viên)
+// Lấy danh sách lịch dạy hôm nay từ bảng lich_hoc và lich_hoc_nhom (dành cho Giáo viên)
 router.get('/schedule/today', async (req, res) => {
-  const { gvId } = req.query;
+  let gvId = req.query.gvId || req.headers['x-ho-so-id'];
   try {
-    let queryStr = `
-      SELECT 
-        lh.id, 
-        lh.dang_ky_hoc_kem_id, 
-        lh.ngay_hoc, 
-        lh.gio_bat_dau, 
-        lh.gio_ket_thuc, 
-        lh.loai_buoi, 
-        lh.trang_thai, 
-        lh.da_checkin, 
-        lh.pt_xac_nhan, 
-        lh.hv_xac_nhan,
-        hs_hv.ho_ten as ten_hoc_vien, 
-        hs_hv.ma_ho_so as ma_hoc_vien,
-        lh.hoc_vien_id,
-        lh.giao_vien_id
-      FROM lich_hoc lh
-      JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
-      WHERE lh.ngay_hoc = CURRENT_DATE
-    `;
+    let queryStr = '';
     const params = [];
+
     if (gvId) {
-      queryStr += ' AND lh.giao_vien_id = $1';
       params.push(gvId);
+      queryStr = `
+        SELECT 
+          lh.id, 
+          lh.dang_ky_hoc_kem_id, 
+          lh.ngay_hoc::text, 
+          lh.gio_bat_dau, 
+          lh.gio_ket_thuc, 
+          'ca_nhan' as loai_buoi, 
+          lh.trang_thai, 
+          lh.da_checkin, 
+          lh.pt_xac_nhan, 
+          lh.hv_xac_nhan,
+          hs_hv.ho_ten as ten_hoc_vien, 
+          hs_hv.ma_ho_so as ma_hoc_vien,
+          lh.hoc_vien_id,
+          lh.giao_vien_id
+        FROM lich_hoc lh
+        JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
+        WHERE lh.ngay_hoc = CURRENT_DATE AND lh.giao_vien_id = $1
+
+        UNION ALL
+
+        SELECT 
+          lhn.id, 
+          NULL as dang_ky_hoc_kem_id, 
+          lhn.ngay_hoc::text, 
+          lhn.gio_bat_dau, 
+          lhn.gio_ket_thuc, 
+          'nhom' as loai_buoi, 
+          lhn.trang_thai, 
+          0 as da_checkin, 
+          0 as pt_xac_nhan, 
+          0 as hv_xac_nhan,
+          lh.ten_lop as ten_hoc_vien, 
+          NULL as ma_hoc_vien,
+          NULL as hoc_vien_id,
+          lhn.giao_vien_id
+        FROM lich_hoc_nhom lhn
+        JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+        WHERE lhn.ngay_hoc = CURRENT_DATE AND lhn.giao_vien_id = $1
+
+        ORDER BY gio_bat_dau ASC
+      `;
+    } else {
+      queryStr = `
+        SELECT 
+          lh.id, 
+          lh.dang_ky_hoc_kem_id, 
+          lh.ngay_hoc::text, 
+          lh.gio_bat_dau, 
+          lh.gio_ket_thuc, 
+          'ca_nhan' as loai_buoi, 
+          lh.trang_thai, 
+          lh.da_checkin, 
+          lh.pt_xac_nhan, 
+          lh.hv_xac_nhan,
+          hs_hv.ho_ten as ten_hoc_vien, 
+          hs_hv.ma_ho_so as ma_hoc_vien,
+          lh.hoc_vien_id,
+          lh.giao_vien_id
+        FROM lich_hoc lh
+        JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
+        WHERE lh.ngay_hoc = CURRENT_DATE
+
+        UNION ALL
+
+        SELECT 
+          lhn.id, 
+          NULL as dang_ky_hoc_kem_id, 
+          lhn.ngay_hoc::text, 
+          lhn.gio_bat_dau, 
+          lhn.gio_ket_thuc, 
+          'nhom' as loai_buoi, 
+          lhn.trang_thai, 
+          0 as da_checkin, 
+          0 as pt_xac_nhan, 
+          0 as hv_xac_nhan,
+          lh.ten_lop as ten_hoc_vien, 
+          NULL as ma_hoc_vien,
+          NULL as hoc_vien_id,
+          lhn.giao_vien_id
+        FROM lich_hoc_nhom lhn
+        JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+        WHERE lhn.ngay_hoc = CURRENT_DATE
+
+        ORDER BY gio_bat_dau ASC
+      `;
     }
-    queryStr += ' ORDER BY lh.gio_bat_dau ASC';
+
     const result = await pool.query(queryStr, params);
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -2957,27 +3025,53 @@ router.get('/student-portal/overview', async (req, res) => {
       [ho_so_id]
     );
 
-    // Lịch học sắp tới (7 ngày tới)
+    // Lịch học sắp tới (7 ngày tới) (gồm kèm 1-1 và lớp nhóm)
     const lichSapToiRes = await pool.query(
-      `SELECT lh.*, hs.ho_ten as ten_giao_vien
+      `SELECT lh.id, lh.giao_vien_id, lh.hoc_vien_id, lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, 
+              lh.trang_thai, hs.ho_ten as ten_giao_vien, 'ca_nhan' as loai_buoi
        FROM lich_hoc lh
        LEFT JOIN ho_so hs ON lh.giao_vien_id = hs.id
        WHERE lh.hoc_vien_id = $1
          AND lh.ngay_hoc >= CURRENT_DATE
          AND lh.ngay_hoc <= CURRENT_DATE + INTERVAL '7 days'
          AND lh.trang_thai = 'cho_hoc'
-       ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC
+
+       UNION ALL
+
+       SELECT lhn.id, lhn.giao_vien_id, lhv.hoc_vien_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc,
+              lhn.trang_thai, hs.ho_ten as ten_giao_vien, 'nhom' as loai_buoi
+       FROM lich_hoc_nhom lhn
+       JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+       LEFT JOIN ho_so hs ON lhn.giao_vien_id = hs.id
+       WHERE lhv.hoc_vien_id = $1
+         AND lhn.ngay_hoc >= CURRENT_DATE
+         AND lhn.ngay_hoc <= CURRENT_DATE + INTERVAL '7 days'
+         AND lhn.trang_thai = 'cho_hoc'
+
+       ORDER BY ngay_hoc ASC, gio_bat_dau ASC
        LIMIT 5`,
       [ho_so_id]
     );
 
-    // Buổi học gần nhất đã học
+    // Buổi học gần nhất đã học (gồm kèm 1-1 và lớp nhóm)
     const lichDaHocRes = await pool.query(
-      `SELECT lh.*, hs.ho_ten as ten_giao_vien
+      `SELECT lh.id, lh.giao_vien_id, lh.hoc_vien_id, lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc,
+              lh.trang_thai, hs.ho_ten as ten_giao_vien, 'ca_nhan' as loai_buoi
        FROM lich_hoc lh
        LEFT JOIN ho_so hs ON lh.giao_vien_id = hs.id
        WHERE lh.hoc_vien_id = $1 AND lh.trang_thai = 'da_hoc'
-       ORDER BY lh.ngay_hoc DESC LIMIT 3`,
+
+       UNION ALL
+
+       SELECT lhn.id, lhn.giao_vien_id, lhv.hoc_vien_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc,
+              lhn.trang_thai, hs.ho_ten as ten_giao_vien, 'nhom' as loai_buoi
+       FROM lich_hoc_nhom lhn
+       JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+       LEFT JOIN ho_so hs ON lhn.giao_vien_id = hs.id
+       WHERE lhv.hoc_vien_id = $1 AND lhn.trang_thai = 'da_hoc'
+
+       ORDER BY ngay_hoc DESC
+       LIMIT 3`,
       [ho_so_id]
     );
 
@@ -3025,36 +3119,64 @@ router.get('/teacher-portal/overview', async (req, res) => {
   }
 
   try {
-    // Lịch dạy hôm nay
+    // Lịch dạy hôm nay (gồm kèm 1-1 và lớp nhóm)
     const homNayRes = await pool.query(
-      `SELECT lh.*, hs.ho_ten as ten_hoc_vien, hs.so_dien_thoai as sdt_hoc_vien
+      `SELECT lh.id, lh.dang_ky_hoc_kem_id, lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, 
+              'ca_nhan' as loai_buoi, lh.trang_thai, lh.da_checkin, lh.pt_xac_nhan, lh.hv_xac_nhan,
+              hs.ho_ten as ten_hoc_vien, hs.so_dien_thoai as sdt_hoc_vien, lh.giao_vien_id
        FROM lich_hoc lh
        LEFT JOIN ho_so hs ON lh.hoc_vien_id = hs.id
        WHERE lh.giao_vien_id = $1 AND lh.ngay_hoc = CURRENT_DATE
-       ORDER BY lh.gio_bat_dau ASC`,
+
+       UNION ALL
+
+       SELECT lhn.id, NULL as dang_ky_hoc_kem_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc,
+              'nhom' as loai_buoi, lhn.trang_thai, 0 as da_checkin, 0 as pt_xac_nhan, 0 as hv_xac_nhan,
+              lh.ten_lop as ten_hoc_vien, NULL as sdt_hoc_vien, lhn.giao_vien_id
+       FROM lich_hoc_nhom lhn
+       JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+       WHERE lhn.giao_vien_id = $1 AND lhn.ngay_hoc = CURRENT_DATE
+
+       ORDER BY gio_bat_dau ASC`,
       [ho_so_id]
     );
 
-    // Lịch dạy tuần này
-    const tuan_nay_start = `DATE_TRUNC('week', CURRENT_DATE)`;
+    // Lịch dạy tuần này (gồm kèm 1-1 và lớp nhóm)
     const tuanNayRes = await pool.query(
-      `SELECT lh.*, hs.ho_ten as ten_hoc_vien
+      `SELECT lh.id, lh.dang_ky_hoc_kem_id, lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc,
+              'ca_nhan' as loai_buoi, lh.trang_thai, hs.ho_ten as ten_hoc_vien, lh.giao_vien_id
        FROM lich_hoc lh
        LEFT JOIN ho_so hs ON lh.hoc_vien_id = hs.id
        WHERE lh.giao_vien_id = $1
          AND lh.ngay_hoc >= DATE_TRUNC('week', CURRENT_DATE)
          AND lh.ngay_hoc < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
-       ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC`,
+
+       UNION ALL
+
+       SELECT lhn.id, NULL as dang_ky_hoc_kem_id, lhn.ngay_hoc::text, lhn.gio_bat_dau, lhn.gio_ket_thuc,
+              'nhom' as loai_buoi, lhn.trang_thai, lh.ten_lop as ten_hoc_vien, lhn.giao_vien_id
+       FROM lich_hoc_nhom lhn
+       JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
+       WHERE lhn.giao_vien_id = $1
+         AND lhn.ngay_hoc >= DATE_TRUNC('week', CURRENT_DATE)
+         AND lhn.ngay_hoc < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+
+       ORDER BY ngay_hoc ASC, gio_bat_dau ASC`,
       [ho_so_id]
     );
 
-    // Thống kê tháng này
+    // Thống kê tháng này (cộng gộp từ cả 2 bảng)
     const thongKeRes = await pool.query(
-      `SELECT
+      `WITH all_sessions AS (
+         SELECT trang_thai, ngay_hoc, giao_vien_id FROM lich_hoc
+         UNION ALL
+         SELECT trang_thai, ngay_hoc, giao_vien_id FROM lich_hoc_nhom
+       )
+       SELECT
          COUNT(*) FILTER (WHERE trang_thai = 'da_hoc') as tong_buoi_da_day,
          COUNT(*) FILTER (WHERE trang_thai = 'vang') as tong_buoi_hoc_vien_vang,
          COUNT(*) FILTER (WHERE trang_thai = 'cho_hoc' AND ngay_hoc >= CURRENT_DATE) as buoi_sap_toi
-       FROM lich_hoc
+       FROM all_sessions
        WHERE giao_vien_id = $1
          AND ngay_hoc >= DATE_TRUNC('month', CURRENT_DATE)`,
       [ho_so_id]
@@ -3628,14 +3750,30 @@ router.post('/notes', async (req, res) => {
   }
 });
 
-// GET /api/notes: Lấy ghi chú dặn dò (GV lấy theo hoc_vien_id; HV lấy của mình)
+// GET /api/notes: Lấy ghi chú dặn dò (GV lấy theo hoc_vien_id; HV lấy của mình; Admin/Lễ tân lấy tất cả hoặc lọc theo học viên)
 router.get('/notes', async (req, res) => {
   const ho_so_id = req.headers['x-ho-so-id'];
   const user_role = req.headers['x-user-role'];
   const { hoc_vien_id } = req.query;
   try {
     let result;
-    if (user_role === 'giao_vien') {
+    if (user_role === 'admin' || user_role === 'le_tan') {
+      const params = [];
+      let q = `
+        SELECT g.*, 
+               hs_gv.ho_ten as ten_giao_vien, 
+               hs_hv.ho_ten as ten_hoc_vien 
+        FROM ghi_chu_giao_vien g 
+        LEFT JOIN ho_so hs_gv ON g.giao_vien_id = hs_gv.id 
+        LEFT JOIN ho_so hs_hv ON g.hoc_vien_id = hs_hv.id
+      `;
+      if (hoc_vien_id) {
+        params.push(hoc_vien_id);
+        q += ` WHERE g.hoc_vien_id = $1`;
+      }
+      q += ' ORDER BY g.ngay_tao DESC LIMIT 100';
+      result = await pool.query(q, params);
+    } else if (user_role === 'giao_vien') {
       const params = [ho_so_id];
       let q = `SELECT g.*, hs.ho_ten as ten_hoc_vien FROM ghi_chu_giao_vien g LEFT JOIN ho_so hs ON g.hoc_vien_id = hs.id WHERE g.giao_vien_id = $1`;
       if (hoc_vien_id) { params.push(hoc_vien_id); q += ` AND g.hoc_vien_id = $${params.length}`; }
@@ -3650,6 +3788,65 @@ router.get('/notes', async (req, res) => {
     res.json({ success: true, data: result.rows });
   } catch (err) {
     if (err.message.includes('does not exist')) return res.json({ success: true, data: [] });
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/notes/:id: Xóa ghi chú dặn dò (Admin, Lễ tân hoặc Giáo viên tạo ghi chú được quyền xóa)
+router.delete('/notes/:id', async (req, res) => {
+  const { id } = req.params;
+  const ho_so_id = req.headers['x-ho-so-id'];
+  const user_role = req.headers['x-user-role'];
+  if (!ho_so_id || !user_role) {
+    return res.status(401).json({ success: false, error: 'Thiếu thông tin xác thực' });
+  }
+  try {
+    const noteRes = await pool.query('SELECT * FROM ghi_chu_giao_vien WHERE id = $1', [id]);
+    if (noteRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy ghi chú' });
+    }
+    const note = noteRes.rows[0];
+    
+    // Quyền xóa: Admin, Lễ tân hoặc Giáo viên đã tạo ghi chú đó
+    if (user_role === 'admin' || user_role === 'le_tan' || String(note.giao_vien_id) === String(ho_so_id)) {
+      await pool.query('DELETE FROM ghi_chu_giao_vien WHERE id = $1', [id]);
+      return res.json({ success: true, message: 'Đã xóa ghi chú dặn dò thành công' });
+    } else {
+      return res.status(430).json({ success: false, error: 'Bạn không có quyền xóa ghi chú này' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/notes/:id: Cập nhật ghi chú dặn dò (Admin, Lễ tân hoặc Giáo viên tạo ghi chú được quyền sửa)
+router.put('/notes/:id', async (req, res) => {
+  const { id } = req.params;
+  const ho_so_id = req.headers['x-ho-so-id'];
+  const user_role = req.headers['x-user-role'];
+  const { noi_dung } = req.body;
+  
+  if (!ho_so_id || !user_role || !noi_dung) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin cập nhật' });
+  }
+  try {
+    const noteRes = await pool.query('SELECT * FROM ghi_chu_giao_vien WHERE id = $1', [id]);
+    if (noteRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy ghi chú' });
+    }
+    const note = noteRes.rows[0];
+    
+    // Quyền sửa: Admin, Lễ tân hoặc Giáo viên đã tạo ghi chú đó
+    if (user_role === 'admin' || user_role === 'le_tan' || String(note.giao_vien_id) === String(ho_so_id)) {
+      const result = await pool.query(
+        'UPDATE ghi_chu_giao_vien SET noi_dung = $1 WHERE id = $2 RETURNING *',
+        [noi_dung, id]
+      );
+      return res.json({ success: true, message: 'Cập nhật ghi chú dặn dò thành công', data: result.rows[0] });
+    } else {
+      return res.status(430).json({ success: false, error: 'Bạn không có quyền chỉnh sửa ghi chú này' });
+    }
+  } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });

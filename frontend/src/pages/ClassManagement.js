@@ -949,7 +949,7 @@ export async function renderClassManagement(container) {
           giao_vien_id: item.giao_vien_id,
           si_so: item.si_so || 0,
           trang_thai: pendingClassSessions > 0 ? 'cho_hoc' : 'da_hoc',
-          trang_thai_label: pendingClassSessions > 0 ? 'Đang học' : 'Hoàn thành',
+          trang_thai_label: pendingClassSessions > 0 ? 'Đang hoạt động' : 'Hoàn thành',
           trang_thai_class: pendingClassSessions > 0 ? 'bg-blue-50 text-apple-blue border border-blue-200' : 'bg-emerald-100 text-emerald-800',
           tu_ngay: item.tu_ngay,
           den_ngay: item.den_ngay,

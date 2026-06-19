@@ -28,7 +28,7 @@ const STS_CLS = {
   vang: 'bg-red-100 text-red-700 border border-red-200',
   da_huy: 'bg-slate-100 text-slate-500 border border-slate-200',
 };
-const STS_LBL = { da_hoc: 'Đã dạy', cho_hoc: 'Sắp dạy', vang: 'HV Vắng', da_huy: 'Đã hủy' };
+const STS_LBL = { da_hoc: 'Đã dạy', cho_hoc: 'Chờ học', vang: 'HV Vắng', da_huy: 'Đã hủy' };
 
 const NAV  = '#1a3a5c';
 const NAV2 = '#0a6ebd';
@@ -609,6 +609,7 @@ async function _tabDiary(c) {
                 ['d-content','Nội dung bài học','Nội dung bài học hôm nay...'],
                 ['d-comment','Nhận xét buổi học','Nhận xét về tiến độ, thái độ học tập...'],
                 ['d-hw','Bài tập về nhà','Bài tập giao về nhà...'],
+                ['d-dan-do','Dặn dò / Ghi chú thêm','Ví dụ: Ôn tập từ vựng chuẩn bị kiểm tra 15p buổi tới...'],
               ].map(([id, lbl, ph]) => `
                 <div>
                   <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${lbl}</label>
@@ -622,7 +623,7 @@ async function _tabDiary(c) {
               </button>
             </form>
           </div>`)}
-
+ 
         <!-- Lịch sử đã viết -->
         <div class="flex items-center justify-between">
           <h3 class="text-xs font-black text-slate-700">Lịch sử đã viết</h3>
@@ -650,6 +651,7 @@ async function _tabDiary(c) {
                 ${h.noi_dung_bai_hoc ? `<div class="bg-slate-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-slate-400 mb-1">NỘI DUNG</p><p class="text-xs text-slate-700">${h.noi_dung_bai_hoc}</p></div>` : ''}
                 ${h.nhan_xet_buoi_hoc ? `<div class="rounded-2xl p-3" style="background:linear-gradient(135deg,#eff6ff,#dbeafe)"><p class="text-[8px] font-bold text-blue-400 mb-1">NHẬN XÉT</p><p class="text-xs text-blue-800">${h.nhan_xet_buoi_hoc}</p></div>` : ''}
                 ${h.bai_tap_ve_nha ? `<div class="bg-amber-50 rounded-2xl p-3"><p class="text-[8px] font-bold text-amber-500 mb-1">BÀI TẬP</p><p class="text-xs text-amber-800">${h.bai_tap_ve_nha}</p></div>` : ''}
+                ${h.dan_do_giao_vien ? `<div class="bg-blue-50/40 rounded-2xl p-3 border border-blue-100/30"><p class="text-[8px] font-bold text-blue-500 mb-1">DẶN DÒ / GHI CHÚ</p><p class="text-xs text-slate-700">${h.dan_do_giao_vien}</p></div>` : ''}
               </div>`)).join('')}
       </div>
 
@@ -677,6 +679,10 @@ async function _tabDiary(c) {
               <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Bài tập về nhà</label>
               <textarea id="t-edit-hw" rows="2" class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none transition resize-none"></textarea>
             </div>
+            <div>
+              <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Dặn dò / Ghi chú thêm</label>
+              <textarea id="t-edit-dan-do" rows="2" class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none transition resize-none"></textarea>
+            </div>
             <button type="submit" class="w-full text-white text-xs font-bold py-2.5 rounded-2xl transition shadow-md hover:opacity-90 active:scale-[.98]"
               style="background:${GRAD}">
               Cập nhật sổ liên lạc
@@ -694,6 +700,7 @@ async function _tabDiary(c) {
           document.getElementById('t-edit-content').value = item.noi_dung_bai_hoc || '';
           document.getElementById('t-edit-comment').value = item.nhan_xet_buoi_hoc || '';
           document.getElementById('t-edit-hw').value = item.bai_tap_ve_nha || '';
+          document.getElementById('t-edit-dan-do').value = item.dan_do_giao_vien || '';
           document.getElementById('t-edit-diary-modal').classList.remove('hidden');
         }
       });
@@ -705,6 +712,7 @@ async function _tabDiary(c) {
       const noi_dung_bai_hoc = document.getElementById('t-edit-content').value.trim();
       const nhan_xet_buoi_hoc = document.getElementById('t-edit-comment').value.trim();
       const bai_tap_ve_nha = document.getElementById('t-edit-hw').value.trim();
+      const dan_do_giao_vien = document.getElementById('t-edit-dan-do').value.trim();
 
       try {
         const r = await fetch(`${API_BASE}/reports/${id}`, {
@@ -713,7 +721,8 @@ async function _tabDiary(c) {
           body: JSON.stringify({
             noi_dung_bai_hoc,
             nhan_xet_buoi_hoc,
-            bai_tap_ve_nha
+            bai_tap_ve_nha,
+            dan_do_giao_vien
           })
         });
         const res = await r.json();
@@ -771,6 +780,7 @@ async function _tabDiary(c) {
             noi_dung_bai_hoc: document.getElementById('d-content').value.trim(),
             nhan_xet_buoi_hoc: document.getElementById('d-comment').value.trim(),
             bai_tap_ve_nha: document.getElementById('d-hw').value.trim(),
+            dan_do_giao_vien: document.getElementById('d-dan-do').value.trim(),
             vai_tro_gui: 'giao_vien'
           })
         });

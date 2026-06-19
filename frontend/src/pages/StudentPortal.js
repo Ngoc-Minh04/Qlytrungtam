@@ -40,7 +40,7 @@ const STS_CLS = {
   tu_choi: 'bg-red-100 text-red-700 border border-red-200',
 };
 const STS_LBL = {
-  da_hoc: 'Đã học', cho_hoc: 'Sắp học', vang: 'Vắng mặt', da_huy: 'Đã hủy',
+  da_hoc: 'Đã học', cho_hoc: 'Chờ học', vang: 'Vắng mặt', da_huy: 'Đã hủy',
   con_han: 'Còn hạn', sap_het_han: 'Sắp hết hạn', het_han: 'Hết hạn', chua_dang_ky: 'Chưa đăng ký',
   cho_duyet: 'Chờ duyệt', da_duyet: 'Đã duyệt', tu_choi: 'Từ chối',
 };
@@ -411,7 +411,7 @@ async function _tabSchedule(c) {
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-black text-slate-800">Lịch học của tôi</h2>
           <div class="flex gap-1.5 flex-wrap">
-            ${[['bg-orange-400','Sắp học'],['bg-green-400','Đã học'],['bg-red-400','Vắng']].map(([cl,lb])=>`
+            ${[['bg-orange-400','Chờ học'],['bg-green-400','Đã học'],['bg-red-400','Vắng']].map(([cl,lb])=>`
               <span class="flex items-center gap-1 text-[9px] text-slate-500 font-semibold">
                 <span class="w-1.5 h-1.5 rounded-full ${cl} inline-block"></span>${lb}</span>`).join('')}
           </div>
