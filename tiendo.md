@@ -1,3 +1,11 @@
+### [19/06/2026 11:12] — Tích hợp hiển thị nội dung và cho phép chỉnh sửa đánh giá giáo viên
+- **Loại**: Cải tiến tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentPortal.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật query `GET /api/schedules` thực hiện `LEFT JOIN` với bảng `danh_gia_giao_vien` để lấy lại số sao và nhận xét cũ của học viên. Cập nhật `POST /api/ratings` để tự động chuyển sang cơ chế `UPDATE` bản ghi nếu học viên đã đánh giá buổi học đó, thay vì chặn lỗi.
+  - **Frontend**: Nút "Đánh giá GV" sẽ đổi trạng thái thành "Sửa đánh giá (X★)" nếu học viên đã đánh giá. Khi click vào, modal tự động tải lại các thông tin đánh giá cũ (số sao, nhận xét) cho phép học viên xem lại và lưu cập nhật đè lên.
+- **Kết quả**: Thành công
+
 ### [19/06/2026 11:00] — Khắc phục lỗi 500 khi Học viên đánh giá giáo viên lớp học nhóm
 - **Loại**: Sửa bug database & Backend
 - **File**: `backend/src/config/db.js`, `backend/src/routes/api.js`, Database (danh_gia_giao_vien)

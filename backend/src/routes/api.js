@@ -2504,11 +2504,14 @@ router.get('/schedules', async (req, res) => {
         hs_hv.ho_ten as ten_hoc_vien, 
         hs_gv.ho_ten as ten_giao_vien,
         dk.tu_ngay::text as tu_ngay,
-        dk.den_ngay::text as den_ngay
+        dk.den_ngay::text as den_ngay,
+        dg.so_sao as rating_so_sao,
+        dg.nhan_xet as rating_nhan_xet
       FROM lich_hoc lh
       JOIN ho_so hs_hv ON lh.hoc_vien_id = hs_hv.id
       LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
       LEFT JOIN dang_ky_hoc_kem dk ON lh.dang_ky_hoc_kem_id = dk.id
+      LEFT JOIN danh_gia_giao_vien dg ON lh.id = dg.lich_hoc_id AND lh.hoc_vien_id = dg.hoc_vien_id
       ${whereTutor}
 
       UNION ALL
@@ -2522,12 +2525,15 @@ router.get('/schedules', async (req, res) => {
         hs_hv.ho_ten as ten_hoc_vien,
         hs_gv.ho_ten as ten_giao_vien,
         (SELECT MIN(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = lhn.lop_hoc_id AND trang_thai != 'da_huy') as tu_ngay,
-        (SELECT MAX(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = lhn.lop_hoc_id AND trang_thai != 'da_huy') as den_ngay
+        (SELECT MAX(ngay_hoc)::text FROM lich_hoc_nhom WHERE lop_hoc_id = lhn.lop_hoc_id AND trang_thai != 'da_huy') as den_ngay,
+        dg.so_sao as rating_so_sao,
+        dg.nhan_xet as rating_nhan_xet
       FROM lich_hoc_nhom lhn
       JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
       LEFT JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
       LEFT JOIN ho_so hs_hv ON lhv.hoc_vien_id = hs_hv.id
       LEFT JOIN ho_so hs_gv ON lhn.giao_vien_id = hs_gv.id
+      LEFT JOIN danh_gia_giao_vien dg ON lhn.id = dg.lich_hoc_nhom_id AND lhv.hoc_vien_id = dg.hoc_vien_id
       ${whereGroup}
 
       ORDER BY ngay_hoc DESC, gio_bat_dau ASC
@@ -3328,7 +3334,13 @@ router.post('/ratings', async (req, res) => {
       
       const dup = await pool.query(dupQuery, [ho_so_id, lich_hoc_id]);
       if (dup.rows.length > 0) {
-        return res.status(400).json({ success: false, error: 'Bạn đã đánh giá buổi học này rồi' });
+        // Thực hiện UPDATE nếu đã có đánh giá cũ
+        const updateQuery = `
+          UPDATE danh_gia_giao_vien 
+          SET so_sao = $1, nhan_xet = $2, ngay_cap_nhat = NOW() 
+          WHERE id = $3 RETURNING *`;
+        const updateResult = await pool.query(updateQuery, [so_sao, nhan_xet || '', dup.rows[0].id]);
+        return res.json({ success: true, message: 'Đã cập nhật đánh giá thành công', data: updateResult.rows[0] });
       }
     }
 

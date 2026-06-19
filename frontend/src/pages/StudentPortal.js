@@ -459,56 +459,59 @@ async function _tabSchedule(c) {
                       <div class="flex gap-1.5 mt-2 flex-wrap">
                         ${canConfirm ? `<button onclick="window._spConfirm(${l.id})" class="text-[9px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-2.5 py-1 font-bold transition flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">thumb_up</span>Xác nhận đã học</button>` : ''}
                         ${l.hv_xac_nhan ? `<span class="text-[9px] text-green-600 font-semibold flex items-center gap-0.5"><span class="material-symbols-outlined text-[11px]">verified</span>Đã xác nhận</span>` : ''}
-                        ${canRate ? `<button onclick="window._spOpenRate(${l.id},${l.giao_vien_id},'${l.ten_giao_vien||''}')" class="text-[9px] bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl px-2.5 py-1 font-bold transition flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">star</span>Đánh giá GV</button>` : ''}
+                        ${canRate ? (l.rating_so_sao 
+                          ? `<button onclick="window._spOpenRate(${l.id},${l.giao_vien_id},'${(l.ten_giao_vien||'').replace(/'/g, "\\'")}',${l.rating_so_sao},'${(l.rating_nhan_xet||'').replace(/'/g, "\\'").replace(/\n/g, "\\n")}')" class="text-[9px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl px-2.5 py-1 font-bold transition flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">edit_note</span>Sửa đánh giá (${l.rating_so_sao}★)</button>`
+                          : `<button onclick="window._spOpenRate(${l.id},${l.giao_vien_id},'${(l.ten_giao_vien||'').replace(/'/g, "\\'")}',0,'')" class="text-[9px] bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl px-2.5 py-1 font-bold transition flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">star</span>Đánh giá GV</button>`) : ''}
                       </div>
                     </div>
                     <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                   </div>`;}).join('')}
-              </div>`)).join('')}
-      </div>
-
-      <!-- Modal đánh giá -->
-      <div id="rate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.4)">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-          <h3 class="text-sm font-black text-slate-800 mb-1">Đánh giá giáo viên</h3>
-          <p id="rate-gv-name" class="text-xs text-slate-400 mb-4"></p>
-          <div class="flex gap-2 justify-center mb-4" id="star-row">
-            ${[1,2,3,4,5].map(i=>`<button data-star="${i}" onclick="window._spSetStar(${i})" class="star-btn text-3xl text-slate-300 hover:text-amber-400 transition-colors">★</button>`).join('')}
-          </div>
-          <textarea id="rate-comment" rows="3" placeholder="Nhận xét về giáo viên (tùy chọn)..."
-            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs resize-none focus:outline-none focus:border-orange-400 mb-3"></textarea>
-          <p id="rate-msg" class="hidden text-[10px] mb-2"></p>
-          <div class="flex gap-2">
-            <button onclick="document.getElementById('rate-modal').classList.add('hidden')"
-              class="flex-1 py-2.5 rounded-2xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Hủy</button>
-            <button onclick="window._spSubmitRate()"
-              class="flex-1 py-2.5 rounded-2xl text-xs font-semibold text-white shadow-md hover:opacity-90 transition"
-              style="background:linear-gradient(135deg,#FF6B35,#FF9500)">Gửi đánh giá</button>
-          </div>
-        </div>
-      </div>`;
-
-    let _rateData = { lichHocId: null, giaoVienId: null, soSao: 0 };
-
-    window._spConfirm = async (id) => {
-      try {
-        const r = await fetch(`${API_BASE}/attendance/${id}/confirm`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-          body: JSON.stringify({ hv_xac_nhan: 1 })
-        });
-        const res = await r.json();
-        if (res.success) await _renderTab('schedule');
-      } catch (_) {}
-    };
-
-    window._spOpenRate = (lichHocId, giaoVienId, tenGv) => {
-      _rateData = { lichHocId, giaoVienId, soSao: 0 };
-      document.getElementById('rate-gv-name').textContent = `GV: ${tenGv}`;
-      document.getElementById('rate-msg').classList.add('hidden');
-      document.getElementById('rate-comment').value = '';
-      _spSetStar(0);
-      document.getElementById('rate-modal').classList.remove('hidden');
-    };
+               </div>`)).join('')}
+       </div>
+ 
+       <!-- Modal đánh giá -->
+       <div id="rate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.4)">
+         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+           <h3 id="rate-modal-title" class="text-sm font-black text-slate-800 mb-1">Đánh giá giáo viên</h3>
+           <p id="rate-gv-name" class="text-xs text-slate-400 mb-4"></p>
+           <div class="flex gap-2 justify-center mb-4" id="star-row">
+             ${[1,2,3,4,5].map(i=>`<button data-star="${i}" onclick="window._spSetStar(${i})" class="star-btn text-3xl text-slate-300 hover:text-amber-400 transition-colors">★</button>`).join('')}
+           </div>
+           <textarea id="rate-comment" rows="3" placeholder="Nhận xét về giáo viên (tùy chọn)..."
+             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs resize-none focus:outline-none focus:border-orange-400 mb-3"></textarea>
+           <p id="rate-msg" class="hidden text-[10px] mb-2"></p>
+           <div class="flex gap-2">
+             <button onclick="document.getElementById('rate-modal').classList.add('hidden')"
+               class="flex-1 py-2.5 rounded-2xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Hủy</button>
+             <button onclick="window._spSubmitRate()"
+               class="flex-1 py-2.5 rounded-2xl text-xs font-semibold text-white shadow-md hover:opacity-90 transition"
+               style="background:linear-gradient(135deg,#FF6B35,#FF9500)">Gửi đánh giá</button>
+           </div>
+         </div>
+       </div>`;
+ 
+     let _rateData = { lichHocId: null, giaoVienId: null, soSao: 0 };
+ 
+     window._spConfirm = async (id) => {
+       try {
+         const r = await fetch(`${API_BASE}/attendance/${id}/confirm`, {
+           method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+           body: JSON.stringify({ hv_xac_nhan: 1 })
+         });
+         const res = await r.json();
+         if (res.success) await _renderTab('schedule');
+       } catch (_) {}
+     };
+ 
+     window._spOpenRate = (lichHocId, giaoVienId, tenGv, soSao = 0, nhanXet = '') => {
+       _rateData = { lichHocId, giaoVienId, soSao };
+       document.getElementById('rate-gv-name').textContent = `GV: ${tenGv}`;
+       document.getElementById('rate-modal-title').textContent = soSao > 0 ? 'Chỉnh sửa đánh giá giáo viên' : 'Đánh giá giáo viên';
+       document.getElementById('rate-msg').classList.add('hidden');
+       document.getElementById('rate-comment').value = nhanXet;
+       _spSetStar(soSao);
+       document.getElementById('rate-modal').classList.remove('hidden');
+     };
 
     window._spSetStar = (n) => {
       _rateData.soSao = n;
