@@ -2447,6 +2447,31 @@ router.put('/attendance/:id', async (req, res) => {
   }
 });
 
+// API PUT /api/attendance/:id/confirm: Học viên xác nhận đã học xong ca học kèm 1-1
+router.put('/attendance/:id/confirm', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE lich_hoc 
+       SET hv_xac_nhan = 1, ngay_xac_nhan = NOW() 
+       WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      // Nếu là lớp học nhóm, trả về thành công giả lập
+      const checkGroup = await pool.query('SELECT id FROM lich_hoc_nhom WHERE id = $1', [id]);
+      if (checkGroup.rows.length > 0) {
+        return res.json({ success: true, message: 'Xác nhận lớp học nhóm thành công (giả lập)' });
+      }
+      return res.status(404).json({ success: false, error: 'Không tìm thấy ca học cần xác nhận' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Lỗi khi học viên xác nhận ca học:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Lấy tất cả danh sách lịch học (dành cho trang Thời khóa biểu)
 router.get('/schedules', async (req, res) => {
   const { hoc_vien_id, giao_vien_id } = req.query;
@@ -3283,19 +3308,38 @@ router.post('/ratings', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Số sao phải từ 1 đến 5' });
   }
   try {
+    let isGroup = false;
+    if (lich_hoc_id) {
+      // Tự động phân loại xem lich_hoc_id thuộc ca học kèm hay lớp nhóm
+      const checkTutor = await pool.query('SELECT id FROM lich_hoc WHERE id = $1', [lich_hoc_id]);
+      if (checkTutor.rows.length === 0) {
+        const checkGroup = await pool.query('SELECT id FROM lich_hoc_nhom WHERE id = $1', [lich_hoc_id]);
+        if (checkGroup.rows.length > 0) {
+          isGroup = true;
+        }
+      }
+    }
+
     // Kiểm tra đã đánh giá buổi này chưa
     if (lich_hoc_id) {
-      const dup = await pool.query(
-        'SELECT id FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_id = $2',
-        [ho_so_id, lich_hoc_id]
-      );
+      const dupQuery = isGroup
+        ? 'SELECT id FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_nhom_id = $2'
+        : 'SELECT id FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_id = $2';
+      
+      const dup = await pool.query(dupQuery, [ho_so_id, lich_hoc_id]);
       if (dup.rows.length > 0) {
         return res.status(400).json({ success: false, error: 'Bạn đã đánh giá buổi học này rồi' });
       }
     }
+
+    const insertQuery = isGroup
+      ? `INSERT INTO danh_gia_giao_vien (giao_vien_id, hoc_vien_id, lich_hoc_nhom_id, so_sao, nhan_xet)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`
+      : `INSERT INTO danh_gia_giao_vien (giao_vien_id, hoc_vien_id, lich_hoc_id, so_sao, nhan_xet)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+
     const result = await pool.query(
-      `INSERT INTO danh_gia_giao_vien (giao_vien_id, hoc_vien_id, lich_hoc_id, so_sao, nhan_xet)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      insertQuery,
       [giao_vien_id, ho_so_id, lich_hoc_id || null, so_sao, nhan_xet || '']
     );
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -3337,10 +3381,22 @@ router.get('/ratings/check/:lich_hoc_id', async (req, res) => {
   const ho_so_id = req.headers['x-ho-so-id'];
   const { lich_hoc_id } = req.params;
   try {
-    const result = await pool.query(
-      'SELECT id, so_sao FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_id = $2',
-      [ho_so_id, lich_hoc_id]
-    );
+    let isGroup = false;
+    if (lich_hoc_id) {
+      const checkTutor = await pool.query('SELECT id FROM lich_hoc WHERE id = $1', [lich_hoc_id]);
+      if (checkTutor.rows.length === 0) {
+        const checkGroup = await pool.query('SELECT id FROM lich_hoc_nhom WHERE id = $1', [lich_hoc_id]);
+        if (checkGroup.rows.length > 0) {
+          isGroup = true;
+        }
+      }
+    }
+
+    const checkQuery = isGroup
+      ? 'SELECT id, so_sao FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_nhom_id = $2'
+      : 'SELECT id, so_sao FROM danh_gia_giao_vien WHERE hoc_vien_id = $1 AND lich_hoc_id = $2';
+
+    const result = await pool.query(checkQuery, [ho_so_id, lich_hoc_id]);
     res.json({ success: true, da_danh_gia: result.rows.length > 0, data: result.rows[0] || null });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

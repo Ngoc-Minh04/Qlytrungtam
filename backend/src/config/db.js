@@ -178,6 +178,12 @@ pool.connect(async (err, client, release) => {
         );
       `);
 
+      // Vá lỗi thiếu cột nhan_xet trong bảng danh_gia_giao_vien thực tế
+      await client.query(`
+        ALTER TABLE danh_gia_giao_vien ADD COLUMN IF NOT EXISTS nhan_xet TEXT;
+        ALTER TABLE danh_gia_giao_vien ADD COLUMN IF NOT EXISTS lich_hoc_nhom_id INT REFERENCES lich_hoc_nhom(id) ON DELETE CASCADE;
+      `);
+
       // DDL tạo bảng yeu_cau_dat_lich
       await client.query(`
         CREATE TABLE IF NOT EXISTS yeu_cau_dat_lich (

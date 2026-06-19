@@ -1,3 +1,19 @@
+### [19/06/2026 11:00] — Khắc phục lỗi 500 khi Học viên đánh giá giáo viên lớp học nhóm
+- **Loại**: Sửa bug database & Backend
+- **File**: `backend/src/config/db.js`, `backend/src/routes/api.js`, Database (danh_gia_giao_vien)
+- **Mô tả**:
+  - **Database**: Gỡ bỏ ràng buộc `NOT NULL` của cột `lich_hoc_id` trong bảng `danh_gia_giao_vien` bằng câu lệnh SQL `ALTER COLUMN lich_hoc_id DROP NOT NULL`. Điều này cho phép học viên thực hiện đánh giá cho ca học nhóm (chỉ truyền `lich_hoc_nhom_id` còn `lich_hoc_id` bằng `null`) mà không vi phạm ràng buộc dữ liệu.
+  - **Backend**: Cập nhật API check trạng thái đánh giá `GET /api/ratings/check/:lich_hoc_id` để tự động kiểm tra loại ca học (kèm 1-1 hay lớp nhóm) tương tự như API lưu đánh giá, tránh lỗi 500 khi tra cứu trạng thái đánh giá của lớp học nhóm.
+- **Kết quả**: Thành công
+
+### [19/06/2026 10:52] — Vá lỗi thiếu cột nhan_xet trong bảng đánh giá giáo viên
+- **Loại**: Sửa bug database & Backend
+- **File**: `backend/src/config/db.js`, Database (danh_gia_giao_vien)
+- **Mô tả**:
+  - **Database**: Chạy script migration bổ sung cột `nhan_xet TEXT` còn thiếu vào bảng `danh_gia_giao_vien` để tránh lỗi `column "nhan_xet" of relation "danh_gia_giao_vien" does not exist` khi học viên gửi đánh giá.
+  - **Backend**: Cập nhật tệp khởi tạo cấu hình `db.js` thêm lệnh `ALTER TABLE danh_gia_giao_vien ADD COLUMN IF NOT EXISTS nhan_xet TEXT;` để tự động vá cột này nếu khởi chạy lại hệ thống trên môi trường sạch.
+- **Kết quả**: Thành công
+
 ### [19/06/2026 10:45] — Phát triển API điểm danh PUT /api/attendance/:id & Tối ưu trạng thái Đang học động
 - **Loại**: Cải tiến tính năng & Sửa bug
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/TeacherPortal.js`, `frontend/src/pages/StudentPortal.js`

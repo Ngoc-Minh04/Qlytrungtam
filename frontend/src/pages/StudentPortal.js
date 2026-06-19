@@ -445,7 +445,7 @@ async function _tabSchedule(c) {
               <div class="divide-y divide-slate-50">
                 ${items.map(l => {
                   const cc = l.trang_thai === 'da_hoc' ? '#22c55e' : l.trang_thai === 'vang' ? '#ef4444' : '#FF6B35';
-                  const canConfirm = l.trang_thai === 'da_hoc' && !l.hv_xac_nhan;
+                  const canConfirm = l.trang_thai === 'da_hoc' && !l.hv_xac_nhan && l.loai_buoi === 'ca_nhan';
                   const canRate    = l.trang_thai === 'da_hoc';
                   return `<div class="flex items-start gap-3.5 px-5 py-3">
                     <div class="w-10 h-10 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${cc}18">
