@@ -30,6 +30,26 @@ const STS_CLS = {
 };
 const STS_LBL = { da_hoc: 'Đã dạy', cho_hoc: 'Chờ học', vang: 'HV Vắng', da_huy: 'Đã hủy' };
 
+function getSessionStatusLabel(l) {
+  if (l.trang_thai !== 'cho_hoc') return STS_LBL[l.trang_thai] || l.trang_thai;
+  const now = new Date();
+  const datePart = l.ngay_hoc.substring(0, 10);
+  const startTime = new Date(`${datePart}T${l.gio_bat_dau.slice(0, 5)}`);
+  const endTime = new Date(`${datePart}T${l.gio_ket_thuc.slice(0, 5)}`);
+  if (now >= startTime && now <= endTime) return 'Đang học';
+  return 'Chờ học';
+}
+
+function getSessionStatusClass(l) {
+  if (l.trang_thai !== 'cho_hoc') return STS_CLS[l.trang_thai] || 'bg-slate-100 text-slate-500';
+  const now = new Date();
+  const datePart = l.ngay_hoc.substring(0, 10);
+  const startTime = new Date(`${datePart}T${l.gio_bat_dau.slice(0, 5)}`);
+  const endTime = new Date(`${datePart}T${l.gio_ket_thuc.slice(0, 5)}`);
+  if (now >= startTime && now <= endTime) return 'bg-blue-100 text-blue-700 border border-blue-200';
+  return STS_CLS.cho_hoc;
+}
+
 const NAV  = '#1a3a5c';
 const NAV2 = '#0a6ebd';
 const GRAD = `linear-gradient(135deg,${NAV} 0%,${NAV2} 100%)`;
@@ -308,7 +328,7 @@ async function _tabOverview(c) {
                     <p class="text-[10px] text-slate-400">${l.sdt_hoc_vien || ''}</p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
-                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                     ${l.trang_thai === 'cho_hoc' ? `
                     <div class="flex gap-1">
                       <button onclick="window._tpAttend(${l.id},'da_hoc')"
@@ -373,7 +393,7 @@ async function _tabToday(c) {
                         <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
                     </div>` : ''}
                   </div>
-                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                 </div>`).join('')}
           </div>`)}
       </div>`;
@@ -425,7 +445,7 @@ async function _tabWeek(c) {
                       <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien||'—'}</p>
                       <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
                     </div>
-                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${STS_CLS[l.trang_thai]||'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai]||l.trang_thai}</span>
+                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                   </div>`).join('')}
               </div>`)).join('')}
       </div>`;

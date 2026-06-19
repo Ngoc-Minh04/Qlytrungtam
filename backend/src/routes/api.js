@@ -2383,6 +2383,70 @@ router.get('/schedule/today', async (req, res) => {
   }
 });
 
+// API PUT /api/attendance/:id: Giáo viên / nhân viên điểm danh ca học (hỗ trợ cả lich_hoc và lich_hoc_nhom)
+router.put('/attendance/:id', async (req, res) => {
+  const { id } = req.params;
+  const { trang_thai } = req.body; // 'da_hoc' hoặc 'vang'
+
+  if (!trang_thai || !['da_hoc', 'vang'].includes(trang_thai)) {
+    return res.status(400).json({ success: false, error: 'Trạng thái điểm danh không hợp lệ' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Thử tìm trong bảng lich_hoc (Học kèm 1-1)
+    const checkTutor = await client.query('SELECT * FROM lich_hoc WHERE id = $1', [id]);
+    
+    if (checkTutor.rows.length > 0) {
+      const lesson = checkTutor.rows[0];
+      
+      // Update trạng thái ca học kèm
+      const updateRes = await client.query(
+        `UPDATE lich_hoc 
+         SET trang_thai = $1, da_checkin = 1, pt_xac_nhan = 1, hv_xac_nhan = 1, ngay_xac_nhan = NOW() 
+         WHERE id = $2 RETURNING *`,
+        [trang_thai, id]
+      );
+
+      if (lesson.dang_ky_hoc_kem_id && lesson.trang_thai === 'cho_hoc') {
+        await client.query(
+          'UPDATE dang_ky_hoc_kem SET so_buoi_da_hoc = so_buoi_da_hoc + 1 WHERE id = $1',
+          [lesson.dang_ky_hoc_kem_id]
+        );
+      }
+
+      await client.query('COMMIT');
+      return res.json({ success: true, data: updateRes.rows[0], loai: 'ca_nhan' });
+    }
+
+    // 2. Nếu không có ở lich_hoc, thử tìm trong bảng lich_hoc_nhom (Lớp học nhóm)
+    const checkGroup = await client.query('SELECT * FROM lich_hoc_nhom WHERE id = $1', [id]);
+    if (checkGroup.rows.length > 0) {
+      const updateRes = await client.query(
+        `UPDATE lich_hoc_nhom 
+         SET trang_thai = $1 
+         WHERE id = $2 RETURNING *`,
+        [trang_thai, id]
+      );
+
+      await client.query('COMMIT');
+      return res.json({ success: true, data: updateRes.rows[0], loai: 'nhom' });
+    }
+
+    await client.query('ROLLBACK');
+    return res.status(404).json({ success: false, error: 'Không tìm thấy ca học cần điểm danh' });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Lỗi khi điểm danh:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // Lấy tất cả danh sách lịch học (dành cho trang Thời khóa biểu)
 router.get('/schedules', async (req, res) => {
   const { hoc_vien_id, giao_vien_id } = req.query;

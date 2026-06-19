@@ -1078,8 +1078,26 @@ export async function renderClassManagement(container) {
             const subNgayStr = sub.ngay_hoc ? sub.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
             const subThu = getDayOfWeekLabel(sub.ngay_hoc);
             const subGio = (sub.gio_bat_dau && sub.gio_ket_thuc) ? `${sub.gio_bat_dau.slice(0, 5)} - ${sub.gio_ket_thuc.slice(0, 5)}` : '—';
-            const subStatusLabel = sub.trang_thai === 'da_hoc' ? 'Đã học' : sub.trang_thai === 'vang' ? 'Vắng' : 'Chờ học';
-            const subStatusClass = sub.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : sub.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+            
+            let subStatusLabel = 'Chờ học';
+            let subStatusClass = 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+
+            if (sub.trang_thai === 'da_hoc') {
+              subStatusLabel = 'Đã học';
+              subStatusClass = 'bg-emerald-100 text-emerald-800';
+            } else if (sub.trang_thai === 'vang') {
+              subStatusLabel = 'Vắng';
+              subStatusClass = 'bg-rose-100 text-rose-800';
+            } else if (sub.trang_thai === 'cho_hoc') {
+              const now = new Date();
+              const datePart = sub.ngay_hoc.substring(0, 10);
+              const startTime = new Date(`${datePart}T${sub.gio_bat_dau.slice(0, 5)}`);
+              const endTime = new Date(`${datePart}T${sub.gio_ket_thuc.slice(0, 5)}`);
+              if (now >= startTime && now <= endTime) {
+                subStatusLabel = 'Đang học';
+                subStatusClass = 'bg-blue-50 text-apple-blue border border-blue-200';
+              }
+            }
 
             subRowsHtml += `
               <div class="flex items-center justify-between py-2 border-b border-apple-divider/30 last:border-0 hover:bg-slate-50 px-2 rounded-lg">
@@ -1147,8 +1165,26 @@ export async function renderClassManagement(container) {
             const subNgayStr = sub.ngay_hoc ? sub.ngay_hoc.substring(0, 10).split('-').reverse().join('/') : '—';
             const subThu = getDayOfWeekLabel(sub.ngay_hoc);
             const subGio = (sub.gio_bat_dau && sub.gio_ket_thuc) ? `${sub.gio_bat_dau.slice(0, 5)} - ${sub.gio_ket_thuc.slice(0, 5)}` : '—';
-            const subStatusLabel = sub.trang_thai === 'da_hoc' ? 'Đã học' : sub.trang_thai === 'vang' ? 'Vắng' : 'Chờ học';
-            const subStatusClass = sub.trang_thai === 'da_hoc' ? 'bg-emerald-100 text-emerald-800' : sub.trang_thai === 'vang' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+            
+            let subStatusLabel = 'Chờ học';
+            let subStatusClass = 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+
+            if (sub.trang_thai === 'da_hoc') {
+              subStatusLabel = 'Đã học';
+              subStatusClass = 'bg-emerald-100 text-emerald-800';
+            } else if (sub.trang_thai === 'vang') {
+              subStatusLabel = 'Vắng';
+              subStatusClass = 'bg-rose-100 text-rose-800';
+            } else if (sub.trang_thai === 'cho_hoc') {
+              const now = new Date();
+              const datePart = sub.ngay_hoc.substring(0, 10);
+              const startTime = new Date(`${datePart}T${sub.gio_bat_dau.slice(0, 5)}`);
+              const endTime = new Date(`${datePart}T${sub.gio_ket_thuc.slice(0, 5)}`);
+              if (now >= startTime && now <= endTime) {
+                subStatusLabel = 'Đang học';
+                subStatusClass = 'bg-blue-50 text-apple-blue border border-blue-200';
+              }
+            }
 
             subRowsHtml += `
               <div class="flex items-center justify-between py-2 border-b border-apple-divider/30 last:border-0 hover:bg-slate-50 px-2 rounded-lg">

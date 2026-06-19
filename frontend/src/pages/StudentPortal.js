@@ -45,6 +45,26 @@ const STS_LBL = {
   cho_duyet: 'Chờ duyệt', da_duyet: 'Đã duyệt', tu_choi: 'Từ chối',
 };
 
+function getSessionStatusLabel(l) {
+  if (l.trang_thai !== 'cho_hoc') return STS_LBL[l.trang_thai] || l.trang_thai;
+  const now = new Date();
+  const datePart = l.ngay_hoc.substring(0, 10);
+  const startTime = new Date(`${datePart}T${l.gio_bat_dau.slice(0, 5)}`);
+  const endTime = new Date(`${datePart}T${l.gio_ket_thuc.slice(0, 5)}`);
+  if (now >= startTime && now <= endTime) return 'Đang học';
+  return 'Chờ học';
+}
+
+function getSessionStatusClass(l) {
+  if (l.trang_thai !== 'cho_hoc') return STS_CLS[l.trang_thai] || 'bg-slate-100 text-slate-500';
+  const now = new Date();
+  const datePart = l.ngay_hoc.substring(0, 10);
+  const startTime = new Date(`${datePart}T${l.gio_bat_dau.slice(0, 5)}`);
+  const endTime = new Date(`${datePart}T${l.gio_ket_thuc.slice(0, 5)}`);
+  if (now >= startTime && now <= endTime) return 'bg-blue-100 text-blue-700 border border-blue-200';
+  return STS_CLS.cho_hoc;
+}
+
 const TABS = [
   { id: 'overview',  label: 'Tổng quan',  icon: 'home' },
   { id: 'my-qr',     label: 'Mã QR của tôi', icon: 'qr_code' },
@@ -335,7 +355,7 @@ async function _tabOverview(c) {
                     <p class="text-xs font-semibold text-slate-800">GV: ${l.ten_giao_vien || '—'}</p>
                     <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
                   </div>
-                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${STS_CLS[l.trang_thai] || 'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai] || l.trang_thai}</span>
+                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                 </div>`).join('')}
           </div>`)}
 
@@ -442,7 +462,7 @@ async function _tabSchedule(c) {
                         ${canRate ? `<button onclick="window._spOpenRate(${l.id},${l.giao_vien_id},'${l.ten_giao_vien||''}')" class="text-[9px] bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl px-2.5 py-1 font-bold transition flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">star</span>Đánh giá GV</button>` : ''}
                       </div>
                     </div>
-                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STS_CLS[l.trang_thai] || 'bg-slate-100 text-slate-500'}">${STS_LBL[l.trang_thai] || l.trang_thai}</span>
+                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                   </div>`;}).join('')}
               </div>`)).join('')}
       </div>

@@ -1,12 +1,12 @@
-### [19/06/2026 10:30] — Gộp lịch dạy/học lớp nhóm vào các Portal và chuẩn hóa trạng thái Chờ học
+### [19/06/2026 10:45] — Phát triển API điểm danh PUT /api/attendance/:id & Tối ưu trạng thái Đang học động
 - **Loại**: Cải tiến tính năng & Sửa bug
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/TeacherPortal.js`, `frontend/src/pages/StudentPortal.js`
 - **Mô tả**:
-  - **Backend**: Cập nhật các API `GET /api/schedule/today`, `GET /api/teacher-portal/overview` và `GET /api/student-portal/overview` thực hiện `UNION ALL` kết hợp lịch dạy học từ bảng `lich_hoc` (kèm 1-1) và bảng `lich_hoc_nhom` (lớp học nhóm), giúp giáo viên và học viên thấy đầy đủ lịch giảng dạy/học tập của mình trên Portal.
-  - **Frontend**:
-    - Sửa file `ClassManagement.js`: Đổi nhãn trạng thái tổng quát của lớp nhóm từ "Đang học" thành "Đang hoạt động" để tránh hiểu nhầm khi chưa đến giờ học.
-    - Sửa file `TeacherPortal.js` và `StudentPortal.js`: Đổi nhãn hiển thị của các ca học ở trạng thái `cho_hoc` từ "Sắp dạy" / "Sắp học" thành "Chờ học" để thống nhất trạng thái.
+  - **Backend**: Xây dựng mới hoàn toàn API `PUT /api/attendance/:id` hỗ trợ tự động định tuyến và điểm danh (Đã dạy/Vắng) cho cả ca học kèm `lich_hoc` lẫn ca học nhóm `lich_hoc_nhom`, giải quyết triệt để lỗi 404 Not Found từ Cổng Giáo viên.
+  - **Frontend**: Phát triển helper check động thời gian thực tế ở cả 3 trang Portal Admin, Cổng Giáo viên và Cổng Học viên. Nếu buổi học ở trạng thái "Chờ học" nhưng thời gian hiện tại đã bước vào khung giờ học, nhãn hiển thị sẽ tự động chuyển sang màu xanh dương **"Đang học"**, ngược lại hiển thị màu vàng **"Chờ học"**.
 - **Kết quả**: Thành công
+
+### [19/06/2026 10:30] — Gộp lịch dạy/học lớp nhóm vào các Portal và chuẩn hóa trạng thái Chờ học
 
 ### [19/06/2026 10:07] — Hoàn thiện tính năng Sửa và Xóa dặn dò GV
 - **Loại**: Cải tiến tính năng
