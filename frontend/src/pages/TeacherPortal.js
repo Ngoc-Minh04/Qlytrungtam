@@ -22,6 +22,17 @@ function parseSafeDate(d) {
   return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
+function sortSessions(sessions) {
+  if (!sessions || !Array.isArray(sessions)) return [];
+  return [...sessions].sort((a, b) => {
+    const statusOrder = { cho_hoc: 1, da_hoc: 2, vang: 2, da_huy: 3 };
+    const orderA = statusOrder[a.trang_thai] || 2;
+    const orderB = statusOrder[b.trang_thai] || 2;
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || '');
+  });
+}
+
 function formatDate(d) {
   if (!d) return '—';
   const parsed = parseSafeDate(d);
@@ -64,8 +75,7 @@ const GRAD = `linear-gradient(135deg,${NAV} 0%,${NAV2} 100%)`;
 const TABS = [
   { id: 'overview',  label: 'Tổng quan',    icon: 'home' },
   { id: 'my-qr',     label: 'Mã QR của tôi', icon: 'qr_code' },
-  { id: 'today',     label: 'Hôm nay',      icon: 'today' },
-  { id: 'week',      label: 'Tuần này',     icon: 'calendar_month' },
+  { id: 'schedule',  label: 'Lịch dạy',     icon: 'calendar_month' },
   { id: 'students',  label: 'Học viên',     icon: 'group' },
   { id: 'diary',     label: 'Sổ liên lạc',  icon: 'edit_note' },
   { id: 'stats',     label: 'Thống kê',     icon: 'bar_chart' },
@@ -238,8 +248,7 @@ async function _renderTab(tab) {
   switch (tab) {
     case 'overview':  await _tabOverview(c);  break;
     case 'my-qr':     await renderMyQR(c);    break;
-    case 'today':     await _tabToday(c);     break;
-    case 'week':      await _tabWeek(c);      break;
+    case 'schedule':  await _tabSchedule(c);  break;
     case 'students':  await _tabStudents(c);  break;
     case 'diary':     await _tabDiary(c);     break;
     case 'stats':     await _tabStats(c);     break;
@@ -275,7 +284,7 @@ async function _tabOverview(c) {
     const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
     const data = await res.json();
     const d    = data.data || {};
-    const hn   = d.lich_hom_nay || [];
+    const hn   = sortSessions(d.lich_hom_nay || []);
     const tk   = d.thong_ke    || {};
     const dg   = d.danh_gia   || {};
     const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -362,104 +371,165 @@ async function _tabOverview(c) {
   }
 }
 
-/* ── TAB: HÔM NAY ── */
-async function _tabToday(c) {
-  const hoSoId = localStorage.getItem('hoSoId');
-  try {
-    const res  = await fetch(`${API_BASE}/schedule/today`, { headers: getAuthHeaders() });
-    const data = await res.json();
-    const all  = (data.data || []).filter(l => String(l.giao_vien_id) === String(hoSoId));
+let _subScheduleTab = 'today';
 
-    c.innerHTML = `
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-black text-slate-800">Lịch dạy hôm nay</h2>
-          <span class="text-[10px] text-slate-400 font-medium">${new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit'})}</span>
+async function _tabSchedule(c) {
+  c.innerHTML = `
+    <div class="space-y-4">
+      <!-- Sub Tab Switcher -->
+      <div class="flex justify-between items-center bg-white/70 backdrop-blur-xl rounded-2xl p-1 shadow-sm border border-blue-50/50">
+        <div class="flex gap-1 w-full">
+          <button id="subtab-today-btn" 
+            class="flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 
+            ${_subScheduleTab === 'today' ? 'text-white shadow-md shadow-blue-500/20' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}"
+            ${_subScheduleTab === 'today' ? `style="background:${GRAD}"` : ''}>
+            Hôm nay
+          </button>
+          <button id="subtab-week-btn" 
+            class="flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 
+            ${_subScheduleTab === 'week' ? 'text-white shadow-md shadow-blue-500/20' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}"
+            ${_subScheduleTab === 'week' ? `style="background:${GRAD}"` : ''}>
+            Tuần này
+          </button>
         </div>
-        ${_card(`
-          <div class="divide-y divide-slate-50">
-            ${all.length === 0
-              ? `<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">today</span><p class="text-xs text-slate-400 mt-2">Hôm nay không có buổi dạy</p></div>`
-              : all.map(l => `
-                <div class="flex items-start gap-3.5 px-5 py-4">
-                  <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
-                    <span class="text-xs font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
-                    <span class="text-[8px]" style="color:${NAV}70">${formatTime(l.gio_ket_thuc)}</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-slate-800">${l.ten_hoc_vien||l.ho_ten||'—'}</p>
-                    <p class="text-[10px] text-slate-400 mt-0.5">#${l.id}</p>
-                    ${l.ghi_chu ? `<p class="text-[9px] text-amber-600 mt-1">${l.ghi_chu}</p>` : ''}
-                    ${l.trang_thai === 'cho_hoc' ? `
-                    <div class="flex gap-2 mt-2.5">
-                      <button onclick="window._tpQuick(${l.id},'da_hoc')"
-                        class="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-3 py-1.5 font-bold transition">
-                        <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
-                      <button onclick="window._tpQuick(${l.id},'vang')"
-                        class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
-                        <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
-                    </div>` : ''}
-                  </div>
-                  <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
-                </div>`).join('')}
-          </div>`)}
-      </div>`;
+      </div>
+      
+      <!-- Sub Tab Container -->
+      <div id="sub-tab-content">
+        <div class="flex items-center justify-center min-h-[200px]">
+          <div class="animate-spin w-6 h-6 rounded-full border-2 border-blue-200 border-t-blue-600"></div>
+        </div>
+      </div>
+    </div>
+  `;
 
-    window._tpQuick = async (id, ts) => {
+  const contentDiv = document.getElementById('sub-tab-content');
+
+  const loadSubTab = async () => {
+    contentDiv.innerHTML = `<div class="flex items-center justify-center min-h-[200px]"><div class="animate-spin w-6 h-6 rounded-full border-2 border-blue-200 border-t-blue-600"></div></div>`;
+    if (_subScheduleTab === 'today') {
+      const hoSoId = localStorage.getItem('hoSoId');
       try {
-        const r = await fetch(`${API_BASE}/attendance/${id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-          body: JSON.stringify({ trang_thai: ts })
-        });
-        if ((await r.json()).success) await _renderTab('today');
-      } catch (_) {}
-    };
-  } catch (err) {
-    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
-  }
-}
+        const res  = await fetch(`${API_BASE}/schedule/today`, { headers: getAuthHeaders() });
+        const data = await res.json();
+        const all  = sortSessions((data.data || []).filter(l => String(l.giao_vien_id) === String(hoSoId)));
 
-/* ── TAB: TUẦN NÀY ── */
-async function _tabWeek(c) {
-  try {
-    const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
-    const data = await res.json();
-    const list = data.data?.lich_tuan_nay || [];
-
-    const grp = {};
-    list.forEach(l => {
-      const parsedDate = parseSafeDate(l.ngay_hoc);
-      const k = parsedDate ? parsedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }) : 'Không xác định';
-      if (!grp[k]) grp[k] = [];
-      grp[k].push(l);
-    });
-
-    c.innerHTML = `
-      <div class="space-y-4">
-        <h2 class="text-sm font-black text-slate-800">Lịch dạy tuần này</h2>
-        ${list.length === 0
-          ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">calendar_month</span><p class="text-xs text-slate-400 mt-2">Tuần này không có buổi dạy</p></div>`)
-          : Object.entries(grp).map(([day, items]) => _card(`
-              <div class="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">${day}</p>
-              </div>
+        contentDiv.innerHTML = `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Lịch dạy hôm nay</h2>
+              <span class="text-[10px] text-slate-400 font-medium">${new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit'})}</span>
+            </div>
+            ${_card(`
               <div class="divide-y divide-slate-50">
-                ${items.map(l => `
-                  <div class="flex items-center gap-3.5 px-5 py-3">
-                    <div class="w-10 h-10 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
-                      <span class="text-[11px] font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                ${all.length === 0
+                  ? `<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">today</span><p class="text-xs text-slate-400 mt-2">Hôm nay không có buổi dạy</p></div>`
+                  : all.map(l => `
+                    <div class="flex items-start gap-3.5 px-5 py-4">
+                      <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
+                        <span class="text-xs font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                        <span class="text-[8px]" style="color:${NAV}70">${formatTime(l.gio_ket_thuc)}</span>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-slate-800">${l.ten_hoc_vien||l.ho_ten||'—'}</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">#${l.id}</p>
+                        ${l.ghi_chu ? `<p class="text-[9px] text-amber-600 mt-1">${l.ghi_chu}</p>` : ''}
+                        ${l.trang_thai === 'cho_hoc' ? `
+                        <div class="flex gap-2 mt-2.5">
+                          <button onclick="window._tpQuick(${l.id},'da_hoc')"
+                            class="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-3 py-1.5 font-bold transition">
+                            <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
+                          <button onclick="window._tpQuick(${l.id},'vang')"
+                            class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
+                            <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
+                        </div>` : ''}
+                      </div>
+                      <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
+                    </div>`).join('')}
+              </div>`)}
+          </div>`;
+
+        window._tpQuick = async (id, ts) => {
+          try {
+            const r = await fetch(`${API_BASE}/attendance/${id}`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+              body: JSON.stringify({ trang_thai: ts })
+            });
+            if ((await r.json()).success) await loadSubTab();
+          } catch (_) {}
+        };
+      } catch (err) {
+        contentDiv.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+      }
+    } else {
+      // week
+      try {
+        const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
+        const data = await res.json();
+        const list = data.data?.lich_tuan_nay || [];
+
+        const grp = {};
+        list.forEach(l => {
+          const parsedDate = parseSafeDate(l.ngay_hoc);
+          const k = parsedDate ? parsedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }) : 'Không xác định';
+          if (!grp[k]) grp[k] = [];
+          grp[k].push(l);
+        });
+
+        contentDiv.innerHTML = `
+          <div class="space-y-4">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Lịch dạy tuần này</h2>
+            ${list.length === 0
+              ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">calendar_month</span><p class="text-xs text-slate-400 mt-2">Tuần này không có buổi dạy</p></div>`)
+              : Object.entries(grp).map(([day, items]) => {
+                  const sortedItems = sortSessions(items);
+                  return _card(`
+                    <div class="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+                      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">${day}</p>
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien||'—'}</p>
-                      <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
-                    </div>
-                    <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
-                  </div>`).join('')}
-              </div>`)).join('')}
-      </div>`;
-  } catch (err) {
-    c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
-  }
+                    <div class="divide-y divide-slate-50">
+                      ${sortedItems.map(l => `
+                        <div class="flex items-center gap-3.5 px-5 py-3">
+                          <div class="w-10 h-10 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
+                            <span class="text-[11px] font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien||'—'}</p>
+                            <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
+                          </div>
+                          <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
+                        </div>`).join('')}
+                    </div>`);
+                }).join('')}
+          </div>`;
+      } catch (err) {
+        contentDiv.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
+      }
+    }
+  };
+
+  const btnToday = document.getElementById('subtab-today-btn');
+  const btnWeek = document.getElementById('subtab-week-btn');
+
+  btnToday.addEventListener('click', () => {
+    _subScheduleTab = 'today';
+    btnToday.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-white shadow-md shadow-blue-500/20';
+    btnToday.style.background = GRAD;
+    btnWeek.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnWeek.style.background = '';
+    loadSubTab();
+  });
+
+  btnWeek.addEventListener('click', () => {
+    _subScheduleTab = 'week';
+    btnWeek.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-white shadow-md shadow-blue-500/20';
+    btnWeek.style.background = GRAD;
+    btnToday.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnToday.style.background = '';
+    loadSubTab();
+  });
+
+  await loadSubTab();
 }
 
 /* ── TAB: HỌC VIÊN CỦA TÔI ── */

@@ -1,3 +1,11 @@
+### [19/06/2026 11:55] — Sắp xếp thứ tự ca dạy và gộp tab Hôm nay / Tuần này thành tab Lịch dạy
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - **Sắp xếp thứ tự ca dạy**: Tạo hàm helper `sortSessions` dùng chung giúp gom nhóm và sắp xếp thứ tự ưu tiên các ca dạy trong ngày. Các ca chờ dạy (`cho_hoc`) được đưa lên trên đầu (sắp xếp tăng dần theo giờ bắt đầu), tiếp theo là các ca đã dạy/học viên vắng (`da_hoc`, `vang`), và cuối cùng là các ca đã hủy (`da_huy`). Áp dụng cho cả trang Tổng quan và trang Lịch dạy.
+  - **Gộp tab**: Xóa bỏ 2 tab riêng biệt "Hôm nay" và "Tuần này" khỏi thanh Menu chính. Thay bằng 1 tab tích hợp duy nhất mang tên "Lịch dạy" chứa hai sub-tabs nhỏ ("Hôm nay" và "Tuần này") cho phép chuyển đổi nhanh, giúp giao diện gọn gàng hơn.
+- **Kết quả**: Thành công
+
 ### [19/06/2026 11:30] — Sửa lỗi mất lịch và lệch ngày học do múi giờ ở Cổng Giáo viên
 - **Loại**: Sửa bug database & Frontend
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/TeacherPortal.js`
