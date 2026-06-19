@@ -1,9 +1,20 @@
-### [19/06/2026 11:12] — Tích hợp hiển thị nội dung và cho phép chỉnh sửa đánh giá giáo viên
+### [19/06/2026 11:30] — Sửa lỗi mất lịch và lệch ngày học do múi giờ ở Cổng Giáo viên
+- **Loại**: Sửa bug database & Frontend
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - **Backend**: Cast các giá trị ngày của `DATE_TRUNC` trong câu SQL query của `tuanNayRes` về kiểu `::date` để so sánh ngày học thuần túy, ngăn ngừa sai lệch dữ liệu do múi giờ session của cơ sở dữ liệu làm mất lịch học.
+  - **Frontend**: Khởi tạo hàm helper `parseSafeDate` parse chuỗi ngày học `YYYY-MM-DD` an toàn, tránh lệch múi giờ trên trình duyệt và áp dụng đồng bộ vào hàm format `formatDate` cùng logic gom nhóm lịch dạy tuần này `_tabWeek`.
+- **Kết quả**: Thành công
+
+### [19/06/2026 11:12] — Tích hợp hiển thị nội dung, cho phép chỉnh sửa đánh giá giáo viên và thêm thông báo Toast
 - **Loại**: Cải tiến tính năng
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentPortal.js`
 - **Mô tả**:
-  - **Backend**: Cập nhật query `GET /api/schedules` thực hiện `LEFT JOIN` với bảng `danh_gia_giao_vien` để lấy lại số sao và nhận xét cũ của học viên. Cập nhật `POST /api/ratings` để tự động chuyển sang cơ chế `UPDATE` bản ghi nếu học viên đã đánh giá buổi học đó, thay vì chặn lỗi.
-  - **Frontend**: Nút "Đánh giá GV" sẽ đổi trạng thái thành "Sửa đánh giá (X★)" nếu học viên đã đánh giá. Khi click vào, modal tự động tải lại các thông tin đánh giá cũ (số sao, nhận xét) cho phép học viên xem lại và lưu cập nhật đè lên.
+  - **Backend**: Cập nhật query `GET /api/schedules` thực hiện `LEFT JOIN` với bảng `danh_gia_giao_vien` để lấy lại số sao và nhận xét cũ của học viên. Cập nhật `POST /api/ratings` để tự động chuyển sang cơ chế `UPDATE` bản ghi nếu học viên đã đánh giá buổi học đó, thay vị chặn lỗi.
+  - **Frontend**: 
+    * Nút "Đánh giá GV" sẽ đổi trạng thái thành "Sửa đánh giá (X★)" nếu học viên đã đánh giá. Khi click vào, modal tự động tải lại các thông tin đánh giá cũ (số sao, nhận xét) cho phép học viên xem lại và lưu cập nhật đè lên.
+    * Import và tích hợp hàm `showToast` từ `_shared.js` để hiển thị popup thông báo thành công (Apple Style) khi gửi hoặc cập nhật đánh giá thành công, hoặc thông báo lỗi nếu có trục trặc.
+- **Kết quả**: Thành côngt` từ `_shared.js` để hiển thị popup thông báo thành công (Apple Style) khi gửi hoặc cập nhật đánh giá thành công, hoặc thông báo lỗi nếu có trục trặc.
 - **Kết quả**: Thành công
 
 ### [19/06/2026 11:00] — Khắc phục lỗi 500 khi Học viên đánh giá giáo viên lớp học nhóm

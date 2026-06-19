@@ -3243,8 +3243,8 @@ router.get('/teacher-portal/overview', async (req, res) => {
        FROM lich_hoc lh
        LEFT JOIN ho_so hs ON lh.hoc_vien_id = hs.id
        WHERE lh.giao_vien_id = $1
-         AND lh.ngay_hoc >= DATE_TRUNC('week', CURRENT_DATE)
-         AND lh.ngay_hoc < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+         AND lh.ngay_hoc >= (DATE_TRUNC('week', CURRENT_DATE))::date
+         AND lh.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days')::date
 
        UNION ALL
 
@@ -3253,8 +3253,8 @@ router.get('/teacher-portal/overview', async (req, res) => {
        FROM lich_hoc_nhom lhn
        JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
        WHERE lhn.giao_vien_id = $1
-         AND lhn.ngay_hoc >= DATE_TRUNC('week', CURRENT_DATE)
-         AND lhn.ngay_hoc < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+         AND lhn.ngay_hoc >= (DATE_TRUNC('week', CURRENT_DATE))::date
+         AND lhn.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days')::date
 
        ORDER BY ngay_hoc ASC, gio_bat_dau ASC`,
       [ho_so_id]

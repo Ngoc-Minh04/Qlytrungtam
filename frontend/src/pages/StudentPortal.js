@@ -1,6 +1,7 @@
 // StudentPortal.js — Portal học viên · Orange gradient · Top tab pills · Glassmorphism
 import { initChatbot } from './Chatbot.js';
 import { renderMyQR } from './MyQR.js';
+import { showToast } from './_shared.js';
 const API_BASE = 'http://localhost:3006/api';
 
 function getAuthHeaders() {
@@ -535,11 +536,15 @@ async function _tabSchedule(c) {
         const msg = document.getElementById('rate-msg');
         if (res.success) {
           document.getElementById('rate-modal').classList.add('hidden');
+          showToast(res.message || 'Đã gửi đánh giá giáo viên thành công!', 'success');
           await _renderTab('schedule');
         } else {
           msg.textContent = res.error || 'Gửi thất bại'; msg.className = 'text-[10px] text-red-500 mb-2'; msg.classList.remove('hidden');
+          showToast(res.error || 'Gửi đánh giá thất bại!', 'error');
         }
-      } catch (_) {}
+      } catch (err) {
+        showToast(err.message || 'Đã xảy ra lỗi khi gửi đánh giá!', 'error');
+      }
     };
   } catch (err) {
     c.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;

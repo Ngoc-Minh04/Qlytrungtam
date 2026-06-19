@@ -16,9 +16,16 @@ function logout() {
   window.location.hash = '/login';
 }
 
+function parseSafeDate(d) {
+  if (!d) return null;
+  const parts = d.substring(0, 10).split('-');
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
 function formatDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const parsed = parseSafeDate(d);
+  return parsed ? parsed.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 }
 function formatTime(t) { return t ? t.slice(0, 5) : ''; }
 
@@ -421,7 +428,8 @@ async function _tabWeek(c) {
 
     const grp = {};
     list.forEach(l => {
-      const k = new Date(l.ngay_hoc).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' });
+      const parsedDate = parseSafeDate(l.ngay_hoc);
+      const k = parsedDate ? parsedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }) : 'Không xác định';
       if (!grp[k]) grp[k] = [];
       grp[k].push(l);
     });
