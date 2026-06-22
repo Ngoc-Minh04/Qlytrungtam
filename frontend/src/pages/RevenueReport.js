@@ -107,7 +107,7 @@ export async function renderRevenueReport(container) {
       }
 
       const { khoa_hoc, hoc_kem, lich_su_doanh_thu, goi_pho_bien, giao_dich } = result.data;
-      const tongThu = (khoa_hoc?.thuc_thu || 0) + (hoc_kem?.thuc_thu || 0);
+      const tongThu = parseFloat(khoa_hoc?.total || 0) + parseFloat(hoc_kem?.total || 0);
 
       // 1. Render Metrics Card
       metricsContainer.innerHTML = `
@@ -118,7 +118,7 @@ export async function renderRevenueReport(container) {
           </div>
           <div>
             <p class="text-slate-400 text-[9px] uppercase font-bold tracking-wider mb-0.5">Khóa học đại trà</p>
-            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(khoa_hoc?.thuc_thu || 0).toLocaleString('vi-VN')} VNĐ</h3>
+            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(khoa_hoc?.total || 0).toLocaleString('vi-VN')} VNĐ</h3>
           </div>
         </div>
 
@@ -129,7 +129,7 @@ export async function renderRevenueReport(container) {
           </div>
           <div>
             <p class="text-slate-400 text-[9px] uppercase font-bold tracking-wider mb-0.5">Dạy kèm 1-1 / Nhóm nhỏ</p>
-            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(hoc_kem?.thuc_thu || 0).toLocaleString('vi-VN')} VNĐ</h3>
+            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(hoc_kem?.total || 0).toLocaleString('vi-VN')} VNĐ</h3>
           </div>
         </div>
 

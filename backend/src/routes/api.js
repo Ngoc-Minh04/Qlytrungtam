@@ -1083,29 +1083,56 @@ router.post('/checkin/scan', async (req, res) => {
 
 // GET /api/reports/revenue: Lấy dữ liệu báo cáo doanh thu động (Có lọc theo kỳ ngày)
 router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, res) => {
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, filter } = req.query;
+
+  let finalStartDate = start_date;
+  let finalEndDate = end_date;
+
+  if (filter) {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localToday = new Date(today.getTime() - tzOffset);
+    const todayStr = localToday.toISOString().split('T')[0];
+
+    if (filter === 'today') {
+      finalStartDate = todayStr;
+      finalEndDate = todayStr;
+    } else if (filter === 'yesterday') {
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000 - tzOffset);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      finalStartDate = yesterdayStr;
+      finalEndDate = yesterdayStr;
+    } else if (filter === 'month') {
+      const year = localToday.getFullYear();
+      const month = String(localToday.getMonth() + 1).padStart(2, '0');
+      finalStartDate = `${year}-${month}-01`;
+      finalEndDate = todayStr;
+    }
+  }
 
   let dateCondition = '';
+  let regDateCondition = '';
   const params = [];
-  if (start_date && end_date) {
+  if (finalStartDate && finalEndDate) {
     dateCondition = ' AND d.ngay >= $1 AND d.ngay <= $2';
-    params.push(start_date, end_date);
+    regDateCondition = ' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2';
+    params.push(finalStartDate, finalEndDate);
   }
 
   try {
     // 1. Tổng tiền các gói đại trà
-    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai NOT IN ('huy', 'tam_dung')`;
-    const khRes = await pool.query(khQuery);
+    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition}`;
+    const khRes = await pool.query(khQuery, params);
 
     // 2. Tổng tiền các gói kèm 1-1
-    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai NOT IN ('huy', 'tam_dung')`;
-    const hkRes = await pool.query(hkQuery);
+    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition}`;
+    const hkRes = await pool.query(hkQuery, params);
 
     // 3. Biểu đồ doanh thu tích lũy hàng ngày trong kỳ filter
     const statsQuery = `
       SELECT d.ngay::text as ngay, d.tong_tien, d.tong_don, d.tien_khoa_hoc, d.tien_hoc_kem
       FROM doanh_thu d
-      WHERE 1=1 ${dateCondition.replace('d.ngay', 'd.ngay')}
+      WHERE 1=1 ${dateCondition}
       ORDER BY d.ngay ASC
     `;
     const statsRes = await pool.query(statsQuery, params);
@@ -1115,17 +1142,17 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       SELECT g.ten_goi, COUNT(d.id) as so_luong, SUM(d.so_tien_da_thu) as tong_doanh_thu
       FROM dang_ky_khoa_hoc d
       JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-      WHERE d.trang_thai NOT IN ('huy', 'tam_dung')
+      WHERE d.trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition.replace(/ngay_tao/g, 'd.ngay_tao')}
       GROUP BY g.ten_goi
       ORDER BY so_luong DESC
       LIMIT 3
     `;
-    const bestSellerRes = await pool.query(bestSellerQuery);
+    const bestSellerRes = await pool.query(bestSellerQuery, params);
 
     // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter
     let paymentsQuery = '';
     let paymentsRes;
-    if (start_date && end_date) {
+    if (finalStartDate && finalEndDate) {
       paymentsQuery = `
         SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
         FROM dang_ky_khoa_hoc d
@@ -1141,7 +1168,7 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
         ORDER BY ngay_tao DESC
         LIMIT 30
       `;
-      paymentsRes = await pool.query(paymentsQuery, [start_date, end_date]);
+      paymentsRes = await pool.query(paymentsQuery, [finalStartDate, finalEndDate]);
     } else {
       paymentsQuery = `
         SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
@@ -1168,7 +1195,6 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
         hoc_kem: hkRes.rows[0],
         lich_su_doanh_thu: statsRes.rows.map(r => ({
           ...r,
-          // Đảm bảo kiểu số
           tong_tien: parseFloat(r.tong_tien || 0),
           tien_khoa_hoc: parseFloat(r.tien_khoa_hoc || 0),
           tien_hoc_kem: parseFloat(r.tien_hoc_kem || 0)

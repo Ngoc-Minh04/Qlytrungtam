@@ -1,3 +1,11 @@
+### [22/06/2026 14:59] — Khắc phục lỗi hiển thị 0 VNĐ và đồng bộ bộ lọc thời gian tại tab Doanh thu
+- **Loại**: Sửa bug & Đồng bộ tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `GET /api/reports/revenue` để phân tích và hỗ trợ tham số `filter` (`today`, `yesterday`, `month`). Tự động tính toán ngày bắt đầu/kết thúc tương ứng và đưa vào lọc thời gian cho cả doanh thu đại trà lẫn học kèm.
+  - **Frontend**: Sửa lỗi lệch tên trường dữ liệu từ `thuc_thu` thành `total` để khớp với giá trị trả về của SQL query. Tích hợp `parseFloat` để tính tổng doanh thu chính xác tránh ghép chuỗi.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 14:48] — Khóa trường Số buổi học gói kèm 1-1 thành chỉ đọc (readonly)
 - **Loại**: Cải tiến bảo mật & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/StudentsList.js`
