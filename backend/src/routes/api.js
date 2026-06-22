@@ -1137,13 +1137,25 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
     `;
     const statsRes = await pool.query(statsQuery, params);
 
-    // 4. Thống kê gói học bán chạy nhất (ví dụ top 3 gói đại trà)
+    // 4. Thống kê gói học bán chạy nhất (Đại trà & Học kèm)
     const bestSellerQuery = `
-      SELECT g.ten_goi, COUNT(d.id) as so_luong, SUM(d.so_tien_da_thu) as tong_doanh_thu
-      FROM dang_ky_khoa_hoc d
-      JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-      WHERE d.trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition.replace(/ngay_tao/g, 'd.ngay_tao')}
-      GROUP BY g.ten_goi
+      WITH all_regs AS (
+        SELECT d.goi_hoc_phi_id as goi_id, 'khoa_hoc' as loai_goi, d.so_tien_da_thu, d.ngay_tao, d.trang_thai
+        FROM dang_ky_khoa_hoc d
+        UNION ALL
+        SELECT dk.goi_hoc_kem_id as goi_id, 'hoc_kem' as loai_goi, dk.so_tien_da_thu, dk.ngay_tao, dk.trang_thai
+        FROM dang_ky_hoc_kem dk
+      ),
+      all_names AS (
+        SELECT id, ten_goi, 'khoa_hoc' as loai_goi FROM goi_hoc_phi
+        UNION ALL
+        SELECT id, ten_goi, 'hoc_kem' as loai_goi FROM goi_hoc_kem
+      )
+      SELECT n.ten_goi, COUNT(r.goi_id) as so_luong, SUM(r.so_tien_da_thu) as tong_doanh_thu
+      FROM all_regs r
+      JOIN all_names n ON r.goi_id = n.id AND r.loai_goi = n.loai_goi
+      WHERE r.trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
+      GROUP BY n.ten_goi
       ORDER BY so_luong DESC
       LIMIT 3
     `;

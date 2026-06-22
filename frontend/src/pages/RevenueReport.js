@@ -27,7 +27,7 @@ export async function renderRevenueReport(container) {
 
       <!-- Charts Row -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-3xl p-6 border border-apple-divider flex flex-col shadow-sm">
+        <div class="bg-white rounded-3xl p-6 border border-apple-divider flex flex-col shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
           <h3 class="font-bold text-apple-ink text-xs mb-4 uppercase tracking-wider">Tỷ lệ hình thức thanh toán</h3>
           <div class="flex-1 flex flex-col items-center justify-center py-6">
             <div class="w-36 h-36 relative flex items-center justify-center">
@@ -46,7 +46,7 @@ export async function renderRevenueReport(container) {
           </div>
         </div>
 
-        <div class="bg-white rounded-3xl p-6 border border-apple-divider lg:col-span-2 flex flex-col justify-between shadow-sm min-h-[300px]">
+        <div class="bg-white rounded-3xl p-6 border border-apple-divider lg:col-span-2 flex flex-col justify-between shadow-sm min-h-[300px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
           <h3 class="font-bold text-apple-ink text-xs mb-4 uppercase tracking-wider">Biểu đồ xu hướng doanh thu</h3>
           <div class="flex-grow w-full relative">
             <canvas id="revenueTrendChart" style="max-height: 220px;"></canvas>
@@ -55,7 +55,7 @@ export async function renderRevenueReport(container) {
       </div>
 
       <!-- Popular Packages -->
-      <div class="bg-white rounded-3xl p-6 border border-[#e2e2e4] shadow-sm">
+      <div class="bg-white rounded-3xl p-6 border border-[#e2e2e4] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
         <h3 class="font-bold text-apple-ink text-xs mb-4 uppercase tracking-wider">Gói học phổ biến nhất</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="popular-pkgs-container">
           <!-- Sẽ render động -->
@@ -63,7 +63,7 @@ export async function renderRevenueReport(container) {
       </div>
 
       <!-- Transaction Table -->
-      <div class="bg-white rounded-3xl p-6 border border-apple-divider shadow-sm">
+      <div class="bg-white rounded-3xl p-6 border border-apple-divider shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
         <h3 class="font-bold text-apple-ink text-xs mb-4 uppercase tracking-wider">Chi tiết lịch sử thanh toán</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -111,7 +111,7 @@ export async function renderRevenueReport(container) {
 
       // 1. Render Metrics Card
       metricsContainer.innerHTML = `
-        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition hover:bg-apple-parchment">
+        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
           <div class="flex justify-between items-start mb-2">
             <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-apple-blue font-bold text-xs">KH</div>
             <span class="text-[9px] text-apple-blue font-bold bg-blue-50 px-2 py-0.5 rounded-full">Đại trà</span>
@@ -122,7 +122,7 @@ export async function renderRevenueReport(container) {
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition hover:bg-apple-parchment">
+        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
           <div class="flex justify-between items-start mb-2">
             <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-xs">1-1</div>
             <span class="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">Học kèm</span>
@@ -133,7 +133,7 @@ export async function renderRevenueReport(container) {
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-5 border-l-4 border-apple-blue flex flex-col justify-between min-h-[120px] shadow-sm transition hover:bg-apple-parchment">
+        <div class="bg-white rounded-2xl p-5 border-l-4 border-apple-blue flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
           <div class="flex justify-between items-start mb-2">
             <div class="w-8 h-8 rounded-full bg-apple-pearl flex items-center justify-center text-apple-blue font-bold text-xs">∑</div>
             <span class="text-[9px] text-apple-blue font-bold bg-blue-50 px-2 py-0.5 rounded-full">Tổng cộng</span>
@@ -147,7 +147,7 @@ export async function renderRevenueReport(container) {
 
       // 2. Render Popular Packages
       popularContainer.innerHTML = goi_pho_bien.map(pkg => `
-        <div class="bg-apple-parchment rounded-2xl p-4 border border-apple-divider/40 flex flex-col justify-between">
+        <div class="bg-apple-parchment rounded-2xl p-4 border border-apple-divider/40 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white">
           <h4 class="font-bold text-apple-ink text-xs mb-2">${pkg.ten_goi}</h4>
           <div class="flex justify-between items-center text-[10px]">
             <span class="text-slate-400">${pkg.so_luong} lượt đăng ký</span>

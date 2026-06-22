@@ -1,3 +1,15 @@
+### [22/06/2026 15:15] — Thêm hiệu ứng hover nổi và đổ bóng cho card báo cáo doanh thu
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**: Tích hợp các thuộc tính Tailwind CSS (`transition-all duration-300 hover:-translate-y-1 hover:shadow-md`) cho tất cả các card chỉ số (KPI) doanh thu, card biểu đồ tròn, card biểu đồ xu hướng, và các card hiển thị gói học phổ biến nhất. Điều này tạo hiệu ứng nổi nhẹ và đổ bóng mềm mại khi người dùng di chuột qua, nâng cao trải nghiệm thẩm mỹ cao cấp (Apple-style).
+- **Kết quả**: Thành công
+
+### [22/06/2026 15:10] — Tổng hợp cả Gói đại trà và Gói học kèm vào thống kê gói bán chạy nhất
+- **Loại**: Cải tiến tính năng & Đồng bộ dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Nâng cấp câu truy vấn `bestSellerQuery` của API `/reports/revenue`. Sử dụng cấu trúc `UNION ALL` để gộp cả giao dịch đăng ký khóa học đại trà (`dang_ky_khoa_hoc`) và gói học kèm (`dang_ky_hoc_kem`), sau đó xếp hạng chung để tìm ra top 3 gói học được đăng ký nhiều nhất, đảm bảo tính đầy đủ cho mục "Gói học phổ biến nhất" trên tab Doanh thu.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 14:59] — Khắc phục lỗi hiển thị 0 VNĐ và đồng bộ bộ lọc thời gian tại tab Doanh thu
 - **Loại**: Sửa bug & Đồng bộ tính năng
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/RevenueReport.js`
