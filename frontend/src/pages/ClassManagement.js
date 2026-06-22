@@ -906,7 +906,8 @@ export async function renderClassManagement(container) {
         const pendingClassSessions = classSessions.filter(s => s.trang_thai === 'cho_hoc').length;
 
         // Nếu sĩ số = 0 VÀ không có ca học chờ dạy (hoặc không có ca học nào), ta bỏ qua không hiển thị lớp học này nữa
-        if ((item.si_so === 0 || !item.si_so) && pendingClassSessions === 0) {
+        const currentSiSo = parseInt(item.si_so || 0, 10);
+        if (currentSiSo === 0 && pendingClassSessions === 0) {
           return;
         }
 

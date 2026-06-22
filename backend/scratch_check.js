@@ -1,34 +1,36 @@
-const { pool } = require('./src/config/db');
+const { Pool } = require('pg');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, './.env') });
 
-async function run() {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+async function main() {
   try {
-    // 1. Kiểm tra các trigger hiện có trong database
-    const triggersRes = await pool.query(`
-      SELECT trigger_name, event_manipulation, event_object_table, action_statement
-      FROM information_schema.triggers;
+    const lops = await pool.query(`
+      SELECT l.id, l.ten_lop, l.is_deleted,
+             (SELECT COUNT(*) FROM lop_hoc_hoc_vien WHERE lop_hoc_id = l.id) as si_so
+      FROM lop_hoc l
+      ORDER BY l.id DESC
+      LIMIT 10
     `);
-    console.log("=== TRIGGERS ===");
-    console.log(triggersRes.rows);
+    console.log("MỚI NHẤT LOP_HOC:");
+    console.log(lops.rows);
 
-    // 2. Kiểm tra thông tin các lớp học
-    const classesRes = await pool.query(`
-      SELECT id, ten_lop, giao_vien_id FROM lop_hoc LIMIT 10;
+    const cas = await pool.query(`
+      SELECT id, lop_hoc_id, ngay_hoc::text, trang_thai 
+      FROM lich_hoc_nhom 
+      WHERE lop_hoc_id IN (${lops.rows.map(r => r.id).join(',')})
     `);
-    console.log("\n=== LOP_HOC ===");
-    console.log(classesRes.rows);
-
-    // 3. Kiểm tra các giáo viên test
-    const teachersRes = await pool.query(`
-      SELECT id, ho_ten FROM ho_so WHERE loai_ho_so = 'giao_vien' LIMIT 10;
-    `);
-    console.log("\n=== TEACHERS ===");
-    console.log(teachersRes.rows);
-
+    console.log("CÁC CA HỌC NHÓM LIÊN QUAN:");
+    console.log(cas.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error:', err.message);
   } finally {
-    process.exit();
+    await pool.end();
   }
 }
 
-run();
+main();
