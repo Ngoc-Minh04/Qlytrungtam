@@ -1,3 +1,62 @@
+### [22/06/2026 08:20] — Duy trì trạng thái accordion và căn chỉnh các nút góc phải cùng hàng
+- **Loại**: Chỉnh sửa giao diện & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/AccountManagement.js`, `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/SalaryManagement.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Tích hợp biến trạng thái `openSubLists` để lưu trữ các ID của accordion đang được mở trong tab Lớp học & xếp lịch. Khi người dùng xóa một buổi học đơn lẻ bất kỳ và danh sách được tải lại, trạng thái accordion của ca học đó vẫn được duy trì mở.
+  - Quét toàn bộ các trang và điều chỉnh Header, thêm tiêu đề trang còn thiếu và dồn cụm nút bấm thao tác (Thêm, Tải lại) về góc bên phải cùng hàng một cách đồng bộ.
+- **Kết quả**: Thành công
+
+### [19/06/2026 14:21] — Sửa lỗi không Hủy được ca học nhóm đơn lẻ trong danh sách chi tiết
+- **Loại**: Sửa bug giao diện
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**: Bổ sung thuộc tính `data-contract-id="${item.id}"` bị thiếu ở thẻ button Hủy ca học nhóm đơn lẻ (`btn-delete-single-session`) trong template accordion. Thiếu thuộc tính này khiến hàm click listener không thể nhận diện được đây là ca học nhóm, từ đó gửi sai endpoint / sai method dẫn tới thao tác hủy không phản hồi.
+- **Kết quả**: Thành công
+
+### [19/06/2026 14:09] — Đồng bộ chặn điểm danh trước giờ học cho tab Hôm nay và Tổng quan
+- **Loại**: Sửa bug & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - Tích hợp helper `isTimeToShowAttendance` vào nút điểm danh nhanh của tab **Hôm nay** (trong phần Lịch dạy) và mục **Lịch dạy hôm nay** (trong phần Tổng quan).
+  - Làm mờ các nút điểm danh nếu ca học chưa đến giờ bắt đầu, click vào sẽ chặn thao tác và hiển thị Toast báo lỗi `"Chưa đến giờ học, không thể điểm danh trước!"`.
+- **Kết quả**: Thành công
+
+### [19/06/2026 13:55] — Tích hợp điểm danh nhanh vào tab Tuần này & Tháng này trong Cổng Giáo viên
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - Thêm cụm nút điểm danh nhanh (`✓ Đã học` và `✗ HV Vắng`) vào chế độ xem danh sách ca học của cả hai tab **Tuần này** và **Tháng này**.
+  - Tích hợp logic kiểm tra thời gian học bằng helper `isTimeToShowAttendance`:
+    - Nếu đã đến giờ học: Hiển thị nút bình thường và cho phép điểm danh thành công với thông báo Toast chúc mừng.
+    - Nếu chưa đến giờ học: Làm mờ nút (xám và thay đổi cursor) và lắng nghe sự kiện click để hiển thị Toast thông báo lỗi `"Chưa đến giờ học, không thể điểm danh trước!"`.
+- **Kết quả**: Thành công
+
+### [19/06/2026 13:45] — Tích hợp 3 nút sub-tabs: Hôm nay, Tuần này, Tháng này cho Lịch dạy của Giáo viên
+- **Loại**: Cải tiến tính năng & Giao diện người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - Tách giao diện Lịch dạy thành 3 chế độ xem riêng biệt qua thanh chuyển đổi nhanh:
+    - **Hôm nay**: Chỉ hiển thị danh sách các ca dạy trong ngày hiện tại.
+    - **Tuần này**: Lọc và chỉ hiển thị lịch dạy từ đầu tuần đến Chủ Nhật của tuần hiện tại (7 ngày).
+    - **Tháng này**: Hiển thị toàn bộ lịch dạy đã xếp trong vòng 30 ngày tới.
+  - Cả 3 tab đều áp dụng đồng bộ logic sắp xếp ưu tiên trạng thái buổi học và sắp xếp xoay vòng thời gian ngày học.
+- **Kết quả**: Thành công
+
+### [19/06/2026 13:35] — Mở rộng hiển thị lịch dạy lên 30 ngày và sắp xếp xoay vòng thời gian
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật query `tuanNayRes` trong API `/api/teacher-portal/overview` để lấy lịch dạy từ đầu tuần hiện tại đến 30 ngày tiếp theo (thay vì chỉ 7 ngày), giúp giáo viên nhìn thấy được lịch học 1 tháng đã xếp.
+  - **Frontend**:
+    * Đổi tên tiêu đề từ "Lịch dạy tuần này" thành "Lịch dạy 30 ngày tới".
+    * Cập nhật logic sắp xếp xoay vòng ngày dạy: Những ngày $\ge$ ngày hôm nay (ngày hiện tại và tương lai) sẽ được xếp lên đầu tiên và tăng dần theo thời gian. Những ngày thuộc quá khứ của tuần hiện tại đã trôi qua sẽ tự động chuyển xuống dưới cùng của danh sách.
+- **Kết quả**: Thành công
+
+### [19/06/2026 13:20] — Đưa ngày hiện tại (Hôm nay) lên đầu danh sách Lịch tuần này
+- **Loại**: Cải tiến trải nghiệm người dùng
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**: Cập nhật logic sắp xếp danh sách ngày ở tab "Tuần này". So khớp với nhãn ngày hiện tại để luôn đưa ngày "Hôm nay" lên đầu danh sách của tuần, các ngày khác được xếp sau đó theo thứ tự thời gian tăng dần, giúp giáo viên nắm bắt ngay lịch làm việc của ngày hiện tại. Đồng thời thêm tag "Hôm nay" nhỏ màu xanh bên cạnh tiêu đề ngày để dễ nhận biết.
+- **Kết quả**: Thành công
+
 ### [19/06/2026 11:55] — Sắp xếp thứ tự ca dạy và gộp tab Hôm nay / Tuần này thành tab Lịch dạy
 - **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/TeacherPortal.js`

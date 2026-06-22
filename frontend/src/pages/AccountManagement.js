@@ -2,7 +2,7 @@
 import { API_BASE, showToast } from './_shared.js';
 
 const ROLE_LABEL = { admin: 'Admin', le_tan: 'Lễ tân', giao_vien: 'Giáo viên', hoc_vien: 'Học viên' };
-const ROLE_CLS   = {
+const ROLE_CLS = {
   admin: 'bg-purple-100 text-purple-700 border border-purple-200',
   le_tan: 'bg-blue-100 text-blue-700 border border-blue-200',
   giao_vien: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
@@ -25,28 +25,30 @@ export async function renderAccountManagement(container) {
   container.innerHTML = `
     <div class="space-y-5">
       <!-- Header row -->
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <div>
-          <h1 class="text-sm font-bold text-[#1d1d1f]">Quản lý Tài khoản</h1>
-          <p class="text-[10px] text-slate-400 mt-0.5">Tạo, kích hoạt và quản lý tài khoản học viên & giáo viên</p>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h3 class="font-bold text-apple-ink text-sm">Quản lý tài khoản</h3>
+        <div class="flex items-center gap-2">
+          <button id="btn-refresh-accounts" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+          </button>
+          <button id="btn-create-account"
+            class="flex items-center gap-2 bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md shadow-[#0066cc]/20 active:scale-[.98] h-[32px]">
+            <span class="material-symbols-outlined text-[16px]">person_add</span>
+            Tạo tài khoản mới
+          </button>
         </div>
-        <button id="btn-create-account"
-          class="flex items-center gap-2 bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md shadow-[#0066cc]/20 active:scale-[.98]">
-          <span class="material-symbols-outlined text-[16px]">person_add</span>
-          Tạo tài khoản mới
-        </button>
       </div>
 
       <!-- Stats row -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="acct-stats">
-        ${[1,2,3,4].map(() => `<div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 animate-pulse h-20"></div>`).join('')}
+        ${[1, 2, 3, 4].map(() => `<div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 animate-pulse h-20"></div>`).join('')}
       </div>
 
       <!-- Filter tabs -->
       <div class="flex gap-2 flex-wrap" id="acct-filter">
-        ${['Tất cả','hoc_vien','giao_vien','le_tan','admin'].map((r,i) => `
+        ${['Tất cả', 'hoc_vien', 'giao_vien', 'le_tan', 'admin'].map((r, i) => `
           <button data-role="${r}"
-            class="acct-filter-btn ${i===0?'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30':'bg-white text-slate-500 border border-[#e2e2e4]'} text-[10px] font-semibold px-3 py-1.5 rounded-full transition hover:border-[#0066cc]/50">
+            class="acct-filter-btn ${i === 0 ? 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30' : 'bg-white text-slate-500 border border-[#e2e2e4]'} text-[10px] font-semibold px-3 py-1.5 rounded-full transition hover:border-[#0066cc]/50">
             ${i === 0 ? 'Tất cả' : ROLE_LABEL[r]}
           </button>`).join('')}
       </div>
@@ -150,13 +152,13 @@ export async function renderAccountManagement(container) {
   `;
 
   let allAccounts = [];
-  let filterRole  = 'Tất cả';
-  let searchQ     = '';
+  let filterRole = 'Tất cả';
+  let searchQ = '';
 
   // Load dữ liệu
   async function load() {
     try {
-      const res  = await fetch(`${API_BASE}/accounts`, { headers: { 'x-user-role': localStorage.getItem('userRole') || 'admin' } });
+      const res = await fetch(`${API_BASE}/accounts`, { headers: { 'x-user-role': localStorage.getItem('userRole') || 'admin' } });
       const data = await res.json();
       allAccounts = data.data || [];
       renderStats();
@@ -167,15 +169,15 @@ export async function renderAccountManagement(container) {
   }
 
   function renderStats() {
-    const total  = allAccounts.length;
+    const total = allAccounts.length;
     const active = allAccounts.filter(a => a.is_active).length;
-    const hvs    = allAccounts.filter(a => a.vai_tro === 'hoc_vien').length;
-    const gvs    = allAccounts.filter(a => a.vai_tro === 'giao_vien').length;
+    const hvs = allAccounts.filter(a => a.vai_tro === 'hoc_vien').length;
+    const gvs = allAccounts.filter(a => a.vai_tro === 'giao_vien').length;
     document.getElementById('acct-stats').innerHTML = [
-      ['group','Tổng tài khoản', total, '#0066cc'],
-      ['check_circle','Đang hoạt động', active, '#22c55e'],
-      ['school','Học viên', hvs, '#f97316'],
-      ['badge','Giáo viên', gvs, '#059669'],
+      ['group', 'Tổng tài khoản', total, '#0066cc'],
+      ['check_circle', 'Đang hoạt động', active, '#22c55e'],
+      ['school', 'Học viên', hvs, '#f97316'],
+      ['badge', 'Giáo viên', gvs, '#059669'],
     ].map(([icon, lbl, val, color]) => `
       <div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-2">
@@ -224,8 +226,8 @@ export async function renderAccountManagement(container) {
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
-                       style="background:${a.vai_tro==='hoc_vien'?'#f97316':a.vai_tro==='giao_vien'?'#059669':a.vai_tro==='admin'?'#7c3aed':'#0066cc'}">
-                    ${(a.ten_dang_nhap||'?').charAt(0).toUpperCase()}
+                       style="background:${a.vai_tro === 'hoc_vien' ? '#f97316' : a.vai_tro === 'giao_vien' ? '#059669' : a.vai_tro === 'admin' ? '#7c3aed' : '#0066cc'}">
+                    ${(a.ten_dang_nhap || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <p class="font-semibold text-[#1d1d1f]">${a.ten_dang_nhap}</p>
@@ -235,11 +237,11 @@ export async function renderAccountManagement(container) {
               </td>
               <td class="px-4 py-3.5 hidden md:table-cell">
                 ${a.ho_ten
-                  ? `<p class="font-medium text-[#1d1d1f]">${a.ho_ten}</p><p class="text-[9px] text-slate-400">${a.ma_ho_so||''}</p>`
-                  : `<span class="text-slate-300 text-[10px]">Không liên kết</span>`}
+        ? `<p class="font-medium text-[#1d1d1f]">${a.ho_ten}</p><p class="text-[9px] text-slate-400">${a.ma_ho_so || ''}</p>`
+        : `<span class="text-slate-300 text-[10px]">Không liên kết</span>`}
               </td>
               <td class="px-4 py-3.5">
-                <span class="text-[9px] font-bold px-2 py-1 rounded-full ${ROLE_CLS[a.vai_tro]||'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro]||a.vai_tro}</span>
+                <span class="text-[9px] font-bold px-2 py-1 rounded-full ${ROLE_CLS[a.vai_tro] || 'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro] || a.vai_tro}</span>
               </td>
               <td class="px-4 py-3.5 hidden sm:table-cell">
                 <p class="text-[10px] text-slate-500">${a.lan_dang_nhap_cuoi ? fmt(a.lan_dang_nhap_cuoi) : 'Chưa đăng nhập'}</p>
@@ -248,8 +250,8 @@ export async function renderAccountManagement(container) {
                 <button onclick="window._acctToggle(${a.id}, ${a.is_active}, this)"
                   class="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full transition
                     ${a.is_active
-                      ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
-                      : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
+        ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+        : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
                   <span class="material-symbols-outlined text-[11px]">${a.is_active ? 'check_circle' : 'block'}</span>
                   ${a.is_active ? 'Hoạt động' : 'Bị khóa'}
                 </button>
@@ -286,6 +288,11 @@ export async function renderAccountManagement(container) {
   // Search
   document.getElementById('acct-search')?.addEventListener('input', e => { searchQ = e.target.value; renderTable(); });
 
+  // Sự kiện tải lại
+  document.getElementById('btn-refresh-accounts')?.addEventListener('click', () => {
+    load();
+  });
+
   // Mở modal tạo
   document.getElementById('btn-create-account')?.addEventListener('click', () => {
     document.getElementById('modal-create').classList.remove('hidden');
@@ -298,7 +305,7 @@ export async function renderAccountManagement(container) {
   document.getElementById('c-role')?.addEventListener('change', async e => {
     const role = e.target.value;
     const wrap = document.getElementById('c-profile-wrap');
-    const sel  = document.getElementById('c-profile');
+    const sel = document.getElementById('c-profile');
     if (role === 'hoc_vien' || role === 'giao_vien') {
       wrap.classList.remove('hidden');
       sel.innerHTML = `<option value="">— Đang tải... —</option>`;
@@ -312,7 +319,7 @@ export async function renderAccountManagement(container) {
         sel.addEventListener('change', () => {
           const opt = sel.options[sel.selectedIndex];
           if (opt.value) {
-            const code = opt.text.match(/\(([^)]+)\)/)?.[1]?.toLowerCase().replace(/[^a-z0-9]/g,'') || '';
+            const code = opt.text.match(/\(([^)]+)\)/)?.[1]?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
             document.getElementById('c-user').value = code;
           }
         });
@@ -326,11 +333,11 @@ export async function renderAccountManagement(container) {
   document.getElementById('form-create')?.addEventListener('submit', async e => {
     e.preventDefault();
     const errEl = document.getElementById('c-err');
-    const body  = {
-      vai_tro:      document.getElementById('c-role').value,
-      ho_so_id:     document.getElementById('c-profile').value || null,
+    const body = {
+      vai_tro: document.getElementById('c-role').value,
+      ho_so_id: document.getElementById('c-profile').value || null,
       ten_dang_nhap: document.getElementById('c-user').value.trim(),
-      mat_khau:     document.getElementById('c-pw').value,
+      mat_khau: document.getElementById('c-pw').value,
     };
     try {
       const r = await fetch(`${API_BASE}/accounts`, {
@@ -351,8 +358,8 @@ export async function renderAccountManagement(container) {
   // Submit đặt lại mật khẩu
   document.getElementById('form-reset-pw')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const id  = document.getElementById('rp-id').value;
-    const pw  = document.getElementById('rp-pw').value;
+    const id = document.getElementById('rp-id').value;
+    const pw = document.getElementById('rp-pw').value;
     const err = document.getElementById('rp-err');
     try {
       const r = await fetch(`${API_BASE}/accounts/${id}/reset-password`, {

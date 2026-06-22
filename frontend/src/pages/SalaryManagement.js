@@ -2,7 +2,7 @@ import { API_BASE, showToast } from './_shared.js';
 
 export async function renderSalaryManagement(container) {
   const userRole = localStorage.getItem('userRole') || 'hoc_vien';
-  
+
   if (userRole !== 'admin' && userRole !== 'le_tan') {
     container.innerHTML = `
       <div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs">
@@ -22,11 +22,7 @@ export async function renderSalaryManagement(container) {
         
         <!-- Header & Action Row -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-800">Tính Lương & Phụ cấp nhân sự</h2>
-            <p class="text-xs text-slate-500">Tự động tính toán lương cứng, lương phụ cấp, lương ca giảng dạy dựa trên dữ liệu chấm công và điểm danh lớp học.</p>
-          </div>
-          
+          <h3 class="font-bold text-apple-ink text-sm">Bảng lương nhân sự</h3>
           <div class="flex items-center gap-2">
             <!-- Dropdown lọc kỳ lương -->
             <select id="salary-filter-month" class="border border-slate-200 rounded-full px-3 py-1.5 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue font-bold text-slate-700">
@@ -253,11 +249,11 @@ export async function renderSalaryManagement(container) {
           `;
         }
 
-        const statusClass = isPaid 
-          ? 'bg-emerald-100 text-emerald-800' 
+        const statusClass = isPaid
+          ? 'bg-emerald-100 text-emerald-800'
           : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-        const statusLabel = isPaid 
-          ? 'Đã thanh toán' 
+        const statusLabel = isPaid
+          ? 'Đã thanh toán'
           : 'Chưa thanh toán';
 
         // Cấu hình ô nhập liệu Phụ cấp & Khấu trừ (Cải tiến 1)
@@ -294,12 +290,12 @@ export async function renderSalaryManagement(container) {
               </button>
             </td>
             <td class="py-3 px-5">
-              ${isTeacher 
-                ? `<button type="button" class="btn-view-sessions text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
+              ${isTeacher
+            ? `<button type="button" class="btn-view-sessions text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
                      ${r.group_sessions + r.tutor_sessions} ca dạy
                    </button>
                    <div class="text-[9px] text-slate-400 mt-0.5">(${r.group_sessions} nhóm / ${r.tutor_sessions} kèm)</div>`
-                : '<span class="text-slate-400 font-medium">—</span>'}
+            : '<span class="text-slate-400 font-medium">—</span>'}
             </td>
             <td class="py-3 px-5">${detailLuongText}</td>
             <td class="py-3 px-5">${phuCapInput}</td>
@@ -314,9 +310,9 @@ export async function renderSalaryManagement(container) {
               ${r.ngay_thanh_toan ? `<div class="text-[9px] text-slate-400 mt-1 font-semibold">${new Date(r.ngay_thanh_toan).toLocaleDateString('vi-VN')}</div>` : ''}
             </td>
             <td class="py-3 px-5 text-right">
-              ${isPaid 
-                ? `<span class="text-slate-400 font-bold text-[11px]">Đã duyệt chi</span>` 
-                : `<button type="button" class="btn-pay-salary px-3 py-1 bg-apple-blue text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
+              ${isPaid
+            ? `<span class="text-slate-400 font-bold text-[11px]">Đã duyệt chi</span>`
+            : `<button type="button" class="btn-pay-salary px-3 py-1 bg-apple-blue text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
             </td>
           </tr>
         `;
@@ -343,7 +339,7 @@ export async function renderSalaryManagement(container) {
           r.khau_tru = khauTruVal;
 
           r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
-          
+
           document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
           updateKPICards();
         });
@@ -368,7 +364,7 @@ export async function renderSalaryManagement(container) {
           r.phu_cap = phuCapVal;
 
           r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
-          
+
           document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
           updateKPICards();
         });
@@ -406,7 +402,7 @@ export async function renderSalaryManagement(container) {
             });
             const d = await res.json();
             const allLogs = d.data || [];
-            
+
             // Lọc log thuộc về tháng này và hồ sơ này
             const filtered = allLogs.filter(log => {
               if (log.ho_so_id !== record.id) return false;
@@ -421,7 +417,7 @@ export async function renderSalaryManagement(container) {
               dayMap[log.ngay_quet].push(log.gio_quet ? log.gio_quet.slice(0, 5) : 'Quét');
             });
 
-            const sortedDays = Object.keys(dayMap).sort((a,b) => b.localeCompare(a)); // mới nhất lên đầu
+            const sortedDays = Object.keys(dayMap).sort((a, b) => b.localeCompare(a)); // mới nhất lên đầu
 
             if (sortedDays.length === 0) {
               body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Không có dữ liệu chấm quét thẻ trong tháng.</td></tr>`;
@@ -478,7 +474,7 @@ export async function renderSalaryManagement(container) {
             });
             const d = await res.json();
             const allSessions = d.data || [];
-            
+
             // Lọc các ca dạy đã học thành công của tháng hiện tại
             const filtered = allSessions.filter(s => {
               if (s.trang_thai !== 'da_hoc') return false;
@@ -492,7 +488,7 @@ export async function renderSalaryManagement(container) {
               body.innerHTML = filtered.map(s => {
                 const dateClean = s.ngay_hoc.split('-').reverse().join('/');
                 const isNhom = s.loai_buoi === 'nhom';
-                const typeTag = isNhom 
+                const typeTag = isNhom
                   ? `<span class="px-2 py-0.5 bg-blue-50 text-apple-blue border border-blue-100 rounded-full font-bold text-[9px]">Lớp nhóm</span>`
                   : `<span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full font-bold text-[9px]">Kèm 1-1</span>`;
 
@@ -533,7 +529,7 @@ export async function renderSalaryManagement(container) {
           try {
             const res = await fetch(`${API_BASE}/payroll/${record.id}/pay`, {
               method: 'PUT',
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
                 'x-user-role': userRole,
                 'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'

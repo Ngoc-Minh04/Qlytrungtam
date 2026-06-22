@@ -3120,7 +3120,7 @@ router.get('/student-portal/overview', async (req, res) => {
       [ho_so_id]
     );
 
-    // Lịch học sắp tới (7 ngày tới) (gồm kèm 1-1 và lớp nhóm)
+    // Lịch học sắp tới (30 ngày tới) (gồm kèm 1-1 và lớp nhóm)
     const lichSapToiRes = await pool.query(
       `SELECT lh.id, lh.giao_vien_id, lh.hoc_vien_id, lh.ngay_hoc::text, lh.gio_bat_dau, lh.gio_ket_thuc, 
               lh.trang_thai, hs.ho_ten as ten_giao_vien, 'ca_nhan' as loai_buoi
@@ -3128,7 +3128,7 @@ router.get('/student-portal/overview', async (req, res) => {
        LEFT JOIN ho_so hs ON lh.giao_vien_id = hs.id
        WHERE lh.hoc_vien_id = $1
          AND lh.ngay_hoc >= CURRENT_DATE
-         AND lh.ngay_hoc <= CURRENT_DATE + INTERVAL '7 days'
+         AND lh.ngay_hoc <= CURRENT_DATE + INTERVAL '30 days'
          AND lh.trang_thai = 'cho_hoc'
 
        UNION ALL
@@ -3140,7 +3140,7 @@ router.get('/student-portal/overview', async (req, res) => {
        LEFT JOIN ho_so hs ON lhn.giao_vien_id = hs.id
        WHERE lhv.hoc_vien_id = $1
          AND lhn.ngay_hoc >= CURRENT_DATE
-         AND lhn.ngay_hoc <= CURRENT_DATE + INTERVAL '7 days'
+         AND lhn.ngay_hoc <= CURRENT_DATE + INTERVAL '30 days'
          AND lhn.trang_thai = 'cho_hoc'
 
        ORDER BY ngay_hoc ASC, gio_bat_dau ASC
@@ -3244,7 +3244,7 @@ router.get('/teacher-portal/overview', async (req, res) => {
        LEFT JOIN ho_so hs ON lh.hoc_vien_id = hs.id
        WHERE lh.giao_vien_id = $1
          AND lh.ngay_hoc >= (DATE_TRUNC('week', CURRENT_DATE))::date
-         AND lh.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days')::date
+         AND lh.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '30 days')::date
 
        UNION ALL
 
@@ -3254,7 +3254,7 @@ router.get('/teacher-portal/overview', async (req, res) => {
        JOIN lop_hoc lh ON lhn.lop_hoc_id = lh.id
        WHERE lhn.giao_vien_id = $1
          AND lhn.ngay_hoc >= (DATE_TRUNC('week', CURRENT_DATE))::date
-         AND lhn.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days')::date
+         AND lhn.ngay_hoc < (DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '30 days')::date
 
        ORDER BY ngay_hoc ASC, gio_bat_dau ASC`,
       [ho_so_id]

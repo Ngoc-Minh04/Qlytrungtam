@@ -374,7 +374,8 @@ async function loadDiaryData(container, userRole, students, studentId) {
       <div class="space-y-6 animate-fadeIn">
         <!-- Header & Top Actions -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div class="flex items-center gap-2 w-full sm:w-auto">
+          <h3 class="font-bold text-apple-ink text-sm">Sổ liên lạc học tập</h3>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
             <!-- Nút Tải lại đồng bộ thiết kế -->
             <button id="btn-refresh-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại

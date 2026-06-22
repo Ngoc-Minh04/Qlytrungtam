@@ -1,6 +1,7 @@
 // TeacherPortal.js — Portal giáo viên · Navy gradient · Top tab pills · Glassmorphism
 import { initChatbot } from './Chatbot.js';
 import { renderMyQR } from './MyQR.js';
+import { showToast } from './_shared.js';
 const API_BASE = 'http://localhost:3006/api';
 
 function getAuthHeaders() {
@@ -20,6 +21,14 @@ function parseSafeDate(d) {
   if (!d) return null;
   const parts = d.substring(0, 10).split('-');
   return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function isTimeToShowAttendance(ngayHoc, gioBatDau) {
+  if (!ngayHoc || !gioBatDau) return false;
+  const datePart = ngayHoc.substring(0, 10);
+  const timePart = gioBatDau.substring(0, 5);
+  const targetTime = new Date(`${datePart}T${timePart}:00`);
+  return new Date() >= targetTime;
 }
 
 function sortSessions(sessions) {
@@ -345,13 +354,23 @@ async function _tabOverview(c) {
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
                     <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
-                    ${l.trang_thai === 'cho_hoc' ? `
-                    <div class="flex gap-1">
-                      <button onclick="window._tpAttend(${l.id},'da_hoc')"
-                        class="text-[9px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-2 py-0.5 font-bold transition">✓ Đã học</button>
-                      <button onclick="window._tpAttend(${l.id},'vang')"
-                        class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
-                    </div>` : ''}
+                    ${l.trang_thai === 'cho_hoc' ? (() => {
+                      const canAttend = isTimeToShowAttendance(l.ngay_hoc, l.gio_bat_dau);
+                      return `
+                      <div class="flex gap-1">
+                        ${canAttend ? `
+                          <button onclick="window._tpAttend(${l.id},'da_hoc')"
+                            class="text-[9px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-2 py-0.5 font-bold transition">✓ Đã học</button>
+                          <button onclick="window._tpAttend(${l.id},'vang')"
+                            class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
+                        ` : `
+                          <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                            class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition">✓ Đã học</button>
+                          <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                            class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
+                        `}
+                      </div>`;
+                    })() : ''}
                   </div>
                 </div>`).join('')}
           </div>`)}
@@ -363,7 +382,10 @@ async function _tabOverview(c) {
           method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({ trang_thai: ts })
         });
-        if ((await r.json()).success) await _renderTab('overview');
+        if ((await r.json()).success) {
+          showToast('Điểm danh thành công!', 'success');
+          await _renderTab('overview');
+        }
       } catch (_) {}
     };
   } catch (err) {
@@ -390,6 +412,12 @@ async function _tabSchedule(c) {
             ${_subScheduleTab === 'week' ? 'text-white shadow-md shadow-blue-500/20' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}"
             ${_subScheduleTab === 'week' ? `style="background:${GRAD}"` : ''}>
             Tuần này
+          </button>
+          <button id="subtab-month-btn" 
+            class="flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 
+            ${_subScheduleTab === 'month' ? 'text-white shadow-md shadow-blue-500/20' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}"
+            ${_subScheduleTab === 'month' ? `style="background:${GRAD}"` : ''}>
+            Tháng này
           </button>
         </div>
       </div>
@@ -434,15 +462,27 @@ async function _tabSchedule(c) {
                         <p class="text-xs font-bold text-slate-800">${l.ten_hoc_vien||l.ho_ten||'—'}</p>
                         <p class="text-[10px] text-slate-400 mt-0.5">#${l.id}</p>
                         ${l.ghi_chu ? `<p class="text-[9px] text-amber-600 mt-1">${l.ghi_chu}</p>` : ''}
-                        ${l.trang_thai === 'cho_hoc' ? `
-                        <div class="flex gap-2 mt-2.5">
-                          <button onclick="window._tpQuick(${l.id},'da_hoc')"
-                            class="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-3 py-1.5 font-bold transition">
-                            <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
-                          <button onclick="window._tpQuick(${l.id},'vang')"
-                            class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
-                            <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
-                        </div>` : ''}
+                        ${l.trang_thai === 'cho_hoc' ? (() => {
+                          const canAttend = isTimeToShowAttendance(l.ngay_hoc, l.gio_bat_dau);
+                          return `
+                          <div class="flex gap-2 mt-2.5">
+                            ${canAttend ? `
+                              <button onclick="window._tpQuick(${l.id},'da_hoc')"
+                                class="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-3 py-1.5 font-bold transition">
+                                <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
+                              <button onclick="window._tpQuick(${l.id},'vang')"
+                                class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
+                                <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
+                            ` : `
+                              <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                class="flex items-center gap-1 text-[10px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-3 py-1.5 font-bold transition">
+                                <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
+                              <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                class="flex items-center gap-1 text-[10px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-3 py-1.5 font-bold transition">
+                                <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
+                            `}
+                          </div>`;
+                        })() : ''}
                       </div>
                       <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
                     </div>`).join('')}
@@ -455,18 +495,46 @@ async function _tabSchedule(c) {
               method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
               body: JSON.stringify({ trang_thai: ts })
             });
-            if ((await r.json()).success) await loadSubTab();
+            if ((await r.json()).success) {
+              showToast('Điểm danh thành công!', 'success');
+              await loadSubTab();
+            }
           } catch (_) {}
         };
       } catch (err) {
         contentDiv.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-600 rounded-3xl p-5 text-xs">${err.message}</div>`;
       }
     } else {
-      // week
+      // logic loadTuần hoặc loadTháng
+      window._tpQuick = async (id, ts) => {
+        try {
+          const r = await fetch(`${API_BASE}/attendance/${id}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ trang_thai: ts })
+          });
+          if ((await r.json()).success) {
+            showToast('Điểm danh thành công!', 'success');
+            await loadSubTab();
+          }
+        } catch (_) {}
+      };
       try {
         const res  = await fetch(`${API_BASE}/teacher-portal/overview`, { headers: getAuthHeaders() });
         const data = await res.json();
-        const list = data.data?.lich_tuan_nay || [];
+        let list = data.data?.lich_tuan_nay || [];
+
+        // Nếu là tab Tuần này, chỉ lọc lấy các buổi học trong 7 ngày kể từ đầu tuần hiện tại
+        if (_subScheduleTab === 'week') {
+          // Lấy ngày cuối tuần hiện tại (Chủ Nhật)
+          const now = new Date();
+          const day = now.getDay();
+          const diffToSunday = day === 0 ? 0 : 7 - day;
+          const sundayDate = new Date(now.setDate(now.getDate() + diffToSunday));
+          sundayDate.setHours(23, 59, 59, 999);
+          const sundayStr = sundayDate.toISOString().split('T')[0];
+
+          list = list.filter(l => l.ngay_hoc.substring(0, 10) <= sundayStr);
+        }
 
         const grp = {};
         list.forEach(l => {
@@ -476,19 +544,41 @@ async function _tabSchedule(c) {
           grp[k].push(l);
         });
 
+        // Sắp xếp xoay vòng thời gian ngày học
+        const sortedEntries = Object.entries(grp).sort(([dayA, itemsA], [dayB, itemsB]) => {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const dateA = itemsA[0]?.ngay_hoc || '';
+          const dateB = itemsB[0]?.ngay_hoc || '';
+
+          const isFutureA = dateA >= todayStr;
+          const isFutureB = dateB >= todayStr;
+
+          if (isFutureA && !isFutureB) return -1;
+          if (!isFutureA && isFutureB) return 1;
+
+          return dateA.localeCompare(dateB);
+        });
+
+        const titleText = _subScheduleTab === 'week' ? 'Lịch dạy tuần này' : 'Lịch dạy tháng này';
+        const emptyText = _subScheduleTab === 'week' ? 'Tuần này không có buổi dạy' : 'Không có buổi dạy nào trong tháng này';
+
         contentDiv.innerHTML = `
           <div class="space-y-4">
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Lịch dạy tuần này</h2>
-            ${list.length === 0
-              ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">calendar_month</span><p class="text-xs text-slate-400 mt-2">Tuần này không có buổi dạy</p></div>`)
-              : Object.entries(grp).map(([day, items]) => {
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wide">${titleText}</h2>
+            ${sortedEntries.length === 0
+              ? _card(`<div class="py-14 text-center"><span class="material-symbols-outlined text-5xl text-slate-200">calendar_month</span><p class="text-xs text-slate-400 mt-2">${emptyText}</p></div>`)
+              : sortedEntries.map(([day, items]) => {
                   const sortedItems = sortSessions(items);
+                  const isToday = day.toLowerCase() === new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).toLowerCase();
                   return _card(`
-                    <div class="px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+                    <div class="px-5 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
                       <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">${day}</p>
+                      ${isToday ? `<span class="bg-blue-100 text-blue-800 text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Hôm nay</span>` : ''}
                     </div>
                     <div class="divide-y divide-slate-50">
-                      ${sortedItems.map(l => `
+                      ${sortedItems.map(l => {
+                        const canAttend = isTimeToShowAttendance(l.ngay_hoc, l.gio_bat_dau);
+                        return `
                         <div class="flex items-center gap-3.5 px-5 py-3">
                           <div class="w-10 h-10 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-sm" style="background:${NAV}15">
                             <span class="text-[11px] font-black" style="color:${NAV}">${formatTime(l.gio_bat_dau)}</span>
@@ -496,9 +586,28 @@ async function _tabSchedule(c) {
                           <div class="flex-1 min-w-0">
                             <p class="text-xs font-semibold text-slate-800">${l.ten_hoc_vien||'—'}</p>
                             <p class="text-[10px] text-slate-400">${formatTime(l.gio_bat_dau)} – ${formatTime(l.gio_ket_thuc)}</p>
+                            ${l.trang_thai === 'cho_hoc' ? `
+                            <div class="flex gap-2 mt-2">
+                              ${canAttend ? `
+                                <button onclick="window._tpQuick(${l.id},'da_hoc')"
+                                  class="text-[9px] bg-green-100 text-green-700 hover:bg-green-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
+                                  ✓ Đã học</button>
+                                <button onclick="window._tpQuick(${l.id},'vang')"
+                                  class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
+                                  ✗ Vắng</button>
+                              ` : `
+                                <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                  class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
+                                  ✓ Đã học</button>
+                                <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                  class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
+                                  ✗ Vắng</button>
+                              `}
+                            </div>` : ''}
                           </div>
                           <span class="text-[9px] font-semibold px-2.5 py-1 rounded-full ${getSessionStatusClass(l)}">${getSessionStatusLabel(l)}</span>
-                        </div>`).join('')}
+                        </div>`;
+                      }).join('')}
                     </div>`);
                 }).join('')}
           </div>`;
@@ -510,6 +619,7 @@ async function _tabSchedule(c) {
 
   const btnToday = document.getElementById('subtab-today-btn');
   const btnWeek = document.getElementById('subtab-week-btn');
+  const btnMonth = document.getElementById('subtab-month-btn');
 
   btnToday.addEventListener('click', () => {
     _subScheduleTab = 'today';
@@ -517,6 +627,8 @@ async function _tabSchedule(c) {
     btnToday.style.background = GRAD;
     btnWeek.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
     btnWeek.style.background = '';
+    btnMonth.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnMonth.style.background = '';
     loadSubTab();
   });
 
@@ -526,6 +638,19 @@ async function _tabSchedule(c) {
     btnWeek.style.background = GRAD;
     btnToday.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
     btnToday.style.background = '';
+    btnMonth.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnMonth.style.background = '';
+    loadSubTab();
+  });
+
+  btnMonth.addEventListener('click', () => {
+    _subScheduleTab = 'month';
+    btnMonth.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-white shadow-md shadow-blue-500/20';
+    btnMonth.style.background = GRAD;
+    btnToday.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnToday.style.background = '';
+    btnWeek.className = 'flex-1 text-center py-2 rounded-xl text-xs font-bold transition-all duration-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50';
+    btnWeek.style.background = '';
     loadSubTab();
   });
 

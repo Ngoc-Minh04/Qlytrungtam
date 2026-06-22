@@ -190,6 +190,7 @@ export async function renderClassManagement(container) {
   let selectedStudentIds = [];
   let selectedStartTime = '';
   let selectedDuration = 0;
+  const openSubLists = new Set();
 
   // ============ RENDER TIME GRID ============
   function renderTimeGrid(selectedDate) {
@@ -1112,7 +1113,7 @@ export async function renderClassManagement(container) {
                 <div class="flex gap-2">
                   ${sub.trang_thai === 'cho_hoc' ? `
                     <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.id}">Sửa</button>
-                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.id}">Hủy</button>
                   ` : `
                     <span class="text-[9px] text-slate-400 font-semibold italic">Đã dạy</span>
                   `}
@@ -1121,14 +1122,17 @@ export async function renderClassManagement(container) {
             `;
           });
 
+          const targetId = `sub-list-class-${item.id}`;
+          const isOpen = openSubLists.has(targetId);
+
           rows += `
             <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
               <td class="px-5 py-3.5">
                 <div class="font-bold text-apple-ink">${item.title}</div>
                 <div class="text-[9.5px] text-slate-500 mt-0.5 font-semibold flex items-center gap-1.5">
                   ${item.detail}
-                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="sub-list-class-${item.id}">
-                    <span class="material-symbols-outlined text-[14px]">unfold_more</span>Xem chi tiết ca
+                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="${targetId}">
+                    <span class="material-symbols-outlined text-[14px]">${isOpen ? 'unfold_less' : 'unfold_more'}</span>Xem chi tiết ca
                   </button>
                 </div>
                 ${dateRangeStr}
@@ -1144,7 +1148,7 @@ export async function renderClassManagement(container) {
                 <button type="button" class="btn-delete-session text-red-600 hover:underline font-bold text-[11px]" data-type="nhom" data-id="${item.id}">Hủy</button>
               </td>
             </tr>
-            <tr id="sub-list-class-${item.id}" class="hidden bg-slate-50/50 border-b border-apple-divider/40">
+            <tr id="${targetId}" class="${isOpen ? '' : 'hidden'} bg-slate-50/50 border-b border-apple-divider/40">
               <td colspan="5" class="px-6 py-3">
                 <div class="bg-white rounded-2xl border border-apple-divider/50 p-3 shadow-inner space-y-1.5 max-h-60 overflow-y-auto">
                   <div class="text-[10px] uppercase font-bold text-slate-400 border-b pb-1 mb-1.5 flex justify-between items-center">
@@ -1199,7 +1203,7 @@ export async function renderClassManagement(container) {
                 <div class="flex gap-2">
                   ${sub.trang_thai === 'cho_hoc' ? `
                     <button type="button" class="btn-edit-single-session text-apple-blue hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.dang_ky_hoc_kem_id}">Sửa</button>
-                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}">Hủy</button>
+                    <button type="button" class="btn-delete-single-session text-red-600 hover:underline font-bold text-[10px]" data-sub-id="${sub.id}" data-contract-id="${item.dang_ky_hoc_kem_id}">Hủy</button>
                   ` : `
                     <span class="text-[9px] text-slate-400 font-semibold italic">Đã chốt ca</span>
                   `}
@@ -1209,6 +1213,8 @@ export async function renderClassManagement(container) {
           });
 
           const hasPending = item.pendingSessionsCount > 0;
+          const targetId = `sub-list-${item.dang_ky_hoc_kem_id}`;
+          const isOpen = openSubLists.has(targetId);
 
           rows += `
             <tr class="hover:bg-slate-50 border-b border-apple-divider/40 transition text-xs">
@@ -1216,8 +1222,8 @@ export async function renderClassManagement(container) {
                 <div class="font-bold text-apple-ink">${item.title}</div>
                 <div class="text-[9.5px] text-slate-500 mt-0.5 font-semibold flex items-center gap-1.5">
                   ${item.detail}
-                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="sub-list-${item.dang_ky_hoc_kem_id}">
-                    <span class="material-symbols-outlined text-[14px]">unfold_more</span>Xem chi tiết ca
+                  <button type="button" class="btn-toggle-sub-sessions text-apple-blue hover:underline flex items-center font-bold text-[10px]" data-target-id="${targetId}">
+                    <span class="material-symbols-outlined text-[14px]">${isOpen ? 'unfold_less' : 'unfold_more'}</span>Xem chi tiết ca
                   </button>
                 </div>
                 ${dateRangeStr}
@@ -1237,7 +1243,7 @@ export async function renderClassManagement(container) {
                 `}
               </td>
             </tr>
-            <tr id="sub-list-${item.dang_ky_hoc_kem_id}" class="hidden bg-slate-50/50 border-b border-apple-divider/40">
+            <tr id="${targetId}" class="${isOpen ? '' : 'hidden'} bg-slate-50/50 border-b border-apple-divider/40">
               <td colspan="5" class="px-6 py-3">
                 <div class="bg-white rounded-2xl border border-apple-divider/50 p-3 shadow-inner space-y-1.5 max-h-60 overflow-y-auto">
                   <div class="text-[10px] uppercase font-bold text-slate-400 border-b pb-1 mb-1.5 flex justify-between items-center">
@@ -1334,10 +1340,15 @@ export async function renderClassManagement(container) {
           const targetId = btn.getAttribute('data-target-id');
           const subPanel = document.getElementById(targetId);
           if (subPanel) {
-            subPanel.classList.toggle('hidden');
+            const isHidden = subPanel.classList.toggle('hidden');
+            if (isHidden) {
+              openSubLists.delete(targetId);
+            } else {
+              openSubLists.add(targetId);
+            }
             const icon = btn.querySelector('.material-symbols-outlined');
             if (icon) {
-              icon.textContent = subPanel.classList.contains('hidden') ? 'unfold_more' : 'unfold_less';
+              icon.textContent = isHidden ? 'unfold_more' : 'unfold_less';
             }
           }
         });

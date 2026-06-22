@@ -17,15 +17,6 @@ export async function renderAttendanceStaff(container) {
         
         <!-- Header & Action Row -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-800">
-              ${userRole === 'giao_vien' ? 'Nhật ký & Bảng chấm công của tôi' : 'Chấm công Nhân sự & Giáo viên'}
-            </h2>
-            <p class="text-xs text-slate-500">
-              ${userRole === 'giao_vien' ? 'Xem nhật ký quét vân tay/QR và theo dõi bảng tổng hợp công đi làm hàng tháng của bạn.' : 'Quản lý lịch sử ra vào và theo dõi bảng chấm công tháng của giáo viên & nhân viên trung tâm.'}
-            </p>
-          </div>
-          
           <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button id="btn-refresh-attendance" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
@@ -181,7 +172,7 @@ export async function renderAttendanceStaff(container) {
     });
 
     updateTabStyle();
-    
+
     // Gắn sự kiện Tải lại
     document.getElementById('btn-refresh-attendance')?.addEventListener('click', () => {
       loadTabContent();
@@ -193,11 +184,11 @@ export async function renderAttendanceStaff(container) {
       const now = new Date();
       const localDate = now.toISOString().split('T')[0];
       const localTime = now.toTimeString().slice(0, 5);
-      
+
       const form = document.getElementById('add-log-form');
       form.elements['ngay_quet'].value = localDate;
       form.elements['gio_quet'].value = localTime;
-      
+
       // Load danh sách nhân sự lên modal
       try {
         const [teachersRes, staffRes] = await Promise.all([
@@ -212,8 +203,8 @@ export async function renderAttendanceStaff(container) {
         const hiddenEl = document.getElementById('modal-attendance-teacher-hidden');
 
         // Tìm tài khoản đăng nhập hiện tại
-        const currentPerson = allPeople.find(p => 
-          (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) || 
+        const currentPerson = allPeople.find(p =>
+          (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) ||
           p.so_dien_thoai === currentUsername
         );
 
@@ -223,7 +214,7 @@ export async function renderAttendanceStaff(container) {
           hiddenEl.value = currentPerson.id;
         } else {
           selectEl.disabled = false;
-          selectEl.innerHTML = '<option value="">-- Chọn Nhân sự --</option>' + 
+          selectEl.innerHTML = '<option value="">-- Chọn Nhân sự --</option>' +
             allPeople.map(p => `<option value="${p.id}" ${currentPerson && currentPerson.id === p.id ? 'selected' : ''}>${p.ho_ten} (${p.ma_ho_so} - ${p.loai_ho_so === 'giao_vien' ? 'GV' : 'NV'})</option>`).join('');
         }
       } catch (err) {
@@ -254,7 +245,7 @@ export async function renderAttendanceStaff(container) {
       try {
         const res = await fetch(`${API_BASE}/checkin-logs`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'x-user-role': userRole
           },
@@ -276,7 +267,7 @@ export async function renderAttendanceStaff(container) {
 
     // === GÁN SỰ KIỆN QUÉT QR CHẤM CÔNG DƯỚI ĐÂY (SAU KHI RENDER HTML TRONG CONTAINER) ===
     const scanModal = document.getElementById('attendance-scan-modal');
-    
+
     document.getElementById('btn-attendance-scan-qr')?.addEventListener('click', () => {
       scanModal?.classList.remove('hidden');
       setTimeout(() => {
@@ -338,7 +329,7 @@ export async function renderAttendanceStaff(container) {
       e.preventDefault();
       const inputVal = document.getElementById('attendance-scan-input').value.trim();
       if (!inputVal) return;
-      
+
       stopAttendanceScanner();
       scanModal?.classList.add('hidden');
 
@@ -395,8 +386,8 @@ export async function renderAttendanceStaff(container) {
       const allLogs = logsData.data || [];
 
       // Tìm thông tin người dùng hiện tại
-      const currentPerson = allPeople.find(p => 
-        (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) || 
+      const currentPerson = allPeople.find(p =>
+        (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) ||
         p.so_dien_thoai === currentUsername
       );
 
@@ -416,10 +407,10 @@ export async function renderAttendanceStaff(container) {
       const processedLogs = filteredLogs.map(log => {
         const timeStr = new Date(log.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         const dateStr = new Date(log.thoi_diem).toLocaleDateString('vi-VN');
-        
+
         const hour = new Date(log.thoi_diem).getHours();
         const minute = new Date(log.thoi_diem).getMinutes();
-        
+
         let isLate = false;
         if (hour > 8 || (hour === 8 && minute > 5)) {
           isLate = true;
@@ -569,8 +560,8 @@ export async function renderAttendanceStaff(container) {
 
       // Phân quyền: Nếu không phải Admin hoặc Lễ tân, chỉ hiển thị dòng của chính họ
       if (userRole !== 'admin' && userRole !== 'le_tan') {
-        summaries = summaries.filter(p => 
-          (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) || 
+        summaries = summaries.filter(p =>
+          (p.ma_ho_so && p.ma_ho_so.toLowerCase() === currentUsername.toLowerCase()) ||
           p.ho_ten.toLowerCase().replace(/\s/g, '') === currentUsername.toLowerCase()
         );
       }

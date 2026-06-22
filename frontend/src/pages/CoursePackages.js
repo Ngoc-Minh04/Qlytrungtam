@@ -51,6 +51,7 @@ export async function renderCoursePackages(container) {
     container.innerHTML = `
       <div id="course-packages-wrapper" class="space-y-6">
         <div class="flex justify-between items-center gap-2 flex-wrap">
+          <h3 class="font-bold text-apple-ink text-sm">Gói khóa học đại trà</h3>
           <div class="flex items-center gap-2">
             <!-- Nút Refresh đồng bộ kích thước -->
             <button id="btn-refresh-course-packages" class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95 shadow-sm h-[32px]">
