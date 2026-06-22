@@ -2583,7 +2583,25 @@ router.get('/registrations', async (req, res) => {
         'dai_tra' as loai_goi,
         'da_thanh_toan' as trang_thai_thanh_toan,
         r.gia_thuc_te as so_tien_phai_nop,
-        r.ngay_tao as ngay_dang_ky
+        r.ngay_tao as ngay_dang_ky,
+        COALESCE((
+          SELECT COUNT(*)::int
+          FROM lich_hoc_nhom lhn
+          JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+          WHERE lhv.hoc_vien_id = r.ho_so_id
+            AND lhn.ngay_hoc >= r.tu_ngay
+            AND lhn.ngay_hoc <= r.den_ngay
+            AND lhn.trang_thai != 'da_huy'
+        ), 0) as so_buoi_dang_ky,
+        COALESCE((
+          SELECT COUNT(*)::int
+          FROM lich_hoc_nhom lhn
+          JOIN lop_hoc_hoc_vien lhv ON lhn.lop_hoc_id = lhv.lop_hoc_id
+          WHERE lhv.hoc_vien_id = r.ho_so_id
+            AND lhn.ngay_hoc >= r.tu_ngay
+            AND lhn.ngay_hoc <= r.den_ngay
+            AND lhn.trang_thai = 'da_hoc'
+        ), 0) as so_buoi_da_hoc
       FROM dang_ky_khoa_hoc r
       LEFT JOIN ho_so h ON r.ho_so_id = h.id
       LEFT JOIN goi_hoc_phi g ON r.goi_hoc_phi_id = g.id
@@ -2606,7 +2624,9 @@ router.get('/registrations', async (req, res) => {
         'hoc_kem' as loai_goi,
         'da_thanh_toan' as trang_thai_thanh_toan,
         k.gia_thuc_te as so_tien_phai_nop,
-        k.ngay_tao as ngay_dang_ky
+        k.ngay_tao as ngay_dang_ky,
+        k.so_buoi_dang_ky,
+        k.so_buoi_da_hoc
       FROM dang_ky_hoc_kem k
       LEFT JOIN ho_so h ON k.hoc_vien_id = h.id
       LEFT JOIN goi_hoc_kem gk ON k.goi_hoc_kem_id = gk.id
@@ -3460,6 +3480,20 @@ router.post('/booking-requests', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin đặt lịch' });
   }
   try {
+    // Kiểm tra xem học viên có bất kỳ gói học nào đang hoạt động hay không
+    const checkActivePkg = `
+      SELECT id FROM dang_ky_khoa_hoc WHERE ho_so_id = $1 AND trang_thai = 'dang_hoat_dong'
+      UNION
+      SELECT id FROM dang_ky_hoc_kem WHERE hoc_vien_id = $1 AND trang_thai = 'dang_hoat_dong'
+    `;
+    const activePkgRes = await pool.query(checkActivePkg, [ho_so_id]);
+    if (activePkgRes.rows.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Bạn không có gói học nào đang hoạt động hoặc gói học đã bị hủy/hết hạn. Vui lòng đăng ký gói học mới để tiếp tục đặt lịch!' 
+      });
+    }
+
     const result = await pool.query(
       `INSERT INTO yeu_cau_dat_lich (hoc_vien_id, giao_vien_id, ngay_mong_muon, gio_bat_dau, gio_ket_thuc, ghi_chu, trang_thai)
        VALUES ($1, $2, $3, $4, $5, $6, 'cho_duyet') RETURNING *`,
@@ -4221,6 +4255,13 @@ router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async
       throw new Error('Không tìm thấy đăng ký khóa học');
     }
 
+    // Tự động xóa học viên khỏi các lớp học nhóm để dọn sạch lịch học nhóm trên thời khóa biểu học viên
+    const hoSoId = result.rows[0].ho_so_id;
+    await client.query(
+      `DELETE FROM lop_hoc_hoc_vien WHERE hoc_vien_id = $1`,
+      [hoSoId]
+    );
+
     await client.query('COMMIT');
     await createNotification(
       'huy_khoa_hoc',
@@ -4271,6 +4312,12 @@ router.put('/registrations/tutoring/:id/cancel', verifyAccess(['admin', 'le_tan'
     if (result.rows.length === 0) {
       throw new Error('Không tìm thấy đăng ký học kèm');
     }
+
+    // Tự động chuyển tất cả các ca học kèm chưa dạy của gói này thành 'da_huy'
+    await client.query(
+      `UPDATE lich_hoc SET trang_thai = 'da_huy' WHERE dang_ky_hoc_kem_id = $1 AND trang_thai = 'cho_hoc'`,
+      [id]
+    );
 
     await client.query('COMMIT');
     await createNotification(

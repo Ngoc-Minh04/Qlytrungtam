@@ -250,10 +250,24 @@ async function loadCancellationsTab(container) {
       const name = btn.getAttribute('data-name') || '';
       document.getElementById('cancel-student-name').textContent = name;
       
-    // Tìm registration tương ứng để lấy số tiền đã thu
+      // Tìm registration tương ứng để tính số tiền hoàn trả gợi ý tự động
       const reg = activeRegs.find(r => r.id == selectedRegId && r.loai_goi === selectedRegType);
-      const daThu = reg ? reg.so_tien_da_thu || 0 : 0;
-      document.getElementById('cancel-refund-amount').value = formatCurrencyInput(String(daThu));
+      let suggestRefund = 0;
+      if (reg) {
+        const daThu = reg.so_tien_da_thu || 0;
+        const giaThucTe = reg.gia_thuc_te || 0;
+        const tongBuoi = reg.so_buoi_dang_ky || 0;
+        const daHoc = reg.so_buoi_da_hoc || 0;
+
+        if (tongBuoi > 0) {
+          const donGiaBuoi = giaThucTe / tongBuoi;
+          const tienDaHoc = daHoc * donGiaBuoi;
+          suggestRefund = Math.max(0, Math.round(daThu - tienDaHoc));
+        } else {
+          suggestRefund = daThu;
+        }
+      }
+      document.getElementById('cancel-refund-amount').value = formatCurrencyInput(String(suggestRefund));
       document.getElementById('cancel-reason').value = '';
       cancelModal.classList.remove('hidden');
     });

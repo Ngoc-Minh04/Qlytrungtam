@@ -1,3 +1,20 @@
+### [22/06/2026 11:51] — Tự động dọn dẹp lịch học và chặn đặt lịch khi hủy gói học
+- **Loại**: Sửa lỗi logic & Đồng bộ dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Chặn đặt lịch ở Portal**: Cập nhật API `POST /api/booking-requests` để kiểm tra điều kiện. Nếu học viên không có bất kỳ gói học nào (đại trà hoặc kèm) ở trạng thái `dang_hoat_dong`, hệ thống sẽ chặn và trả về thông báo lỗi yêu cầu đăng ký gói mới.
+  - **Tự động hủy lịch học kèm tương lai**: Khi hủy gói học kèm (`PUT /api/registrations/tutoring/:id/cancel`), tự động cập nhật tất cả ca học chưa dạy (`trang_thai = 'cho_hoc'`) của gói đó thành `'da_huy'`.
+  - **Tự động rút học viên khỏi lớp nhóm**: Khi hủy gói đại trà (`PUT /api/registrations/:id/cancel`), tự động xóa liên kết của học viên đó khỏi bảng `lop_hoc_hoc_vien`. Việc này tự động dọn sạch các ca học nhóm của lớp đó khỏi thời khóa biểu cá nhân của học viên.
+- **Kết quả**: Thành công
+
+### [22/06/2026 11:42] — Tính toán tự động số tiền hoàn trả gợi ý khi hủy khóa học
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentRequests.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật query `GET /api/registrations` lấy thêm dữ liệu `so_buoi_dang_ky` (Tổng số ca học nhóm được xếp lịch trong thời gian gói) và `so_buoi_da_hoc` (Số ca học nhóm của lớp có trạng thái là `da_hoc`) của học viên lớp đại trà bằng subquery thông minh.
+  - **Frontend**: Triển khai công thức tự động tính tiền hoàn gợi ý: `Tiền hoàn = Tiền đã thu - (Số ca đã học * (Giá thực tế / Tổng số ca xếp lịch))` áp dụng đồng bộ cho cả gói học kèm và đại trà. Hệ thống hiển thị sẵn số tiền gợi ý này lên form nhưng vẫn cho phép Lễ tân chỉnh sửa nếu muốn.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 11:28] — Chuẩn hóa định dạng tiền tệ (dấu chấm) cho các ô nhập số tiền trong hệ thống
 - **Loại**: Cải tiến trải nghiệm người dùng
 - **File**: `frontend/src/pages/StudentRequests.js`, `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
