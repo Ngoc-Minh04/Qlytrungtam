@@ -1,3 +1,21 @@
+### [22/06/2026 13:18] — Ẩn các lớp học nhóm trống không hoạt động khỏi tab Lớp học & Xếp lịch
+- **Loại**: Cải tiến giao diện & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**: Cập nhật hàm `loadScheduleList()`. Bổ sung điều kiện lọc bỏ các lớp học nhóm có sĩ số bằng 0 (không còn học viên sau khi hủy gói) VÀ không còn bất kỳ ca dạy chờ học (`cho_hoc`) nào trong tương lai. Việc này giúp ẩn hoàn toàn các dòng lớp nhóm rỗng đã "Hoàn thành" sau khi Lễ tân bấm hủy gói học của học viên ở tab Yêu cầu.
+- **Kết quả**: Thành công
+
+### [22/06/2026 13:12] — Tự động hủy ca học nhóm tương lai nếu lớp học không còn học viên
+- **Loại**: Cải tiến logic & Đồng bộ dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Nâng cấp API hủy đăng ký khóa học đại trà `PUT /api/registrations/:id/cancel`. Khi học viên bị rút khỏi các lớp học nhóm, hệ thống kiểm tra lại sĩ số của từng lớp đó. Nếu sĩ số của lớp về bằng 0 (lớp trống), hệ thống tự động chuyển toàn bộ các ca học nhóm tương lai của lớp đó (`trang_thai = 'cho_hoc'`) thành `'da_huy'`. Việc này dọn sạch các lịch cũ của lớp trống khỏi hệ thống xếp lịch và thời khóa biểu của Giáo viên.
+- **Kết quả**: Thành công
+
+### [22/06/2026 12:03] — Lọc bỏ lịch học của các gói đã bị hủy khỏi thời khóa biểu chung
+- **Loại**: Sửa lỗi logic & Đồng bộ dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Cập nhật API lấy danh sách thời khóa biểu `GET /api/schedules`. Bổ sung điều kiện lọc `(dk.trang_thai IS NULL OR dk.trang_thai != 'huy')` cho các ca học kèm. Việc này giúp ẩn hoàn toàn các ca học cũ (bao gồm cả lịch sử ca học trong quá khứ) của các gói học kèm đã bị hủy khỏi giao diện quản lý thời khóa biểu của Lễ tân.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 11:51] — Tự động dọn dẹp lịch học và chặn đặt lịch khi hủy gói học
 - **Loại**: Sửa lỗi logic & Đồng bộ dữ liệu
 - **File**: `backend/src/routes/api.js`

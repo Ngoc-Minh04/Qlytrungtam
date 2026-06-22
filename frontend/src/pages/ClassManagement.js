@@ -901,6 +901,15 @@ export async function renderClassManagement(container) {
       classesList.forEach(item => {
         const classSessions = groupSchedulesByClass[item.id] || [];
         
+        const totalClassSessions = classSessions.length;
+        const finishedClassSessions = classSessions.filter(s => s.trang_thai === 'da_hoc').length;
+        const pendingClassSessions = classSessions.filter(s => s.trang_thai === 'cho_hoc').length;
+
+        // Nếu sĩ số = 0 VÀ không có ca học chờ dạy (hoặc không có ca học nào), ta bỏ qua không hiển thị lớp học này nữa
+        if ((item.si_so === 0 || !item.si_so) && pendingClassSessions === 0) {
+          return;
+        }
+
         // Tính khoảng ngày bắt đầu - kết thúc
         let minNgayStr = '';
         let maxNgayStr = '';
@@ -932,9 +941,6 @@ export async function renderClassManagement(container) {
           ? sortedUniqueDays.map(d => dayLabels[d]).join(', ') 
           : (item.ngay_hoc ? getDayOfWeekLabel(item.ngay_hoc) : '—');
 
-        const totalClassSessions = classSessions.length;
-        const finishedClassSessions = classSessions.filter(s => s.trang_thai === 'da_hoc').length;
-        const pendingClassSessions = classSessions.filter(s => s.trang_thai === 'cho_hoc').length;
 
         allSessions.push({
           id: item.id,

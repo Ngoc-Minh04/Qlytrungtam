@@ -2476,7 +2476,7 @@ router.put('/attendance/:id/confirm', async (req, res) => {
 router.get('/schedules', async (req, res) => {
   const { hoc_vien_id, giao_vien_id } = req.query;
   try {
-    let condsTutor = ["lh.trang_thai != 'da_huy'"];
+    let condsTutor = ["lh.trang_thai != 'da_huy'", "(dk.trang_thai IS NULL OR dk.trang_thai != 'huy')"];
     let condsGroup = ["lhn.trang_thai != 'da_huy'"];
     let params = [];
 
@@ -4255,12 +4255,35 @@ router.put('/registrations/:id/cancel', verifyAccess(['admin', 'le_tan']), async
       throw new Error('Không tìm thấy đăng ký khóa học');
     }
 
-    // Tự động xóa học viên khỏi các lớp học nhóm để dọn sạch lịch học nhóm trên thời khóa biểu học viên
     const hoSoId = result.rows[0].ho_so_id;
+
+    // Lấy danh sách các lớp học nhóm mà học viên đang tham gia trước khi xóa
+    const classesRes = await client.query(
+      `SELECT lop_hoc_id FROM lop_hoc_hoc_vien WHERE hoc_vien_id = $1`,
+      [hoSoId]
+    );
+    const classIds = classesRes.rows.map(row => row.lop_hoc_id);
+
+    // Tự động xóa học viên khỏi các lớp học nhóm để dọn sạch lịch học nhóm trên thời khóa biểu học viên
     await client.query(
       `DELETE FROM lop_hoc_hoc_vien WHERE hoc_vien_id = $1`,
       [hoSoId]
     );
+
+    // Kiểm tra từng lớp học nhóm xem còn học viên nào khác hoạt động không. Nếu sĩ số = 0, tự động hủy các ca học nhóm tương lai
+    for (const classId of classIds) {
+      const studentCountRes = await client.query(
+        `SELECT COUNT(*)::int FROM lop_hoc_hoc_vien WHERE lop_hoc_id = $1`,
+        [classId]
+      );
+      const studentCount = studentCountRes.rows[0].count;
+      if (studentCount === 0) {
+        await client.query(
+          `UPDATE lich_hoc_nhom SET trang_thai = 'da_huy' WHERE lop_hoc_id = $1 AND trang_thai = 'cho_hoc'`,
+          [classId]
+        );
+      }
+    }
 
     await client.query('COMMIT');
     await createNotification(
