@@ -1,5 +1,5 @@
 // StudentRequests.js - Xử lý Yêu cầu (Hủy khóa học + Đặt lịch)
-import { API_BASE, showToast, setupSwipePagination } from './_shared.js';
+import { API_BASE, showToast, setupSwipePagination, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 
 let _activeTab = 'cancellations';
 
@@ -202,7 +202,7 @@ async function loadCancellationsTab(container) {
             </div>
             <div class="space-y-1">
               <label class="block font-semibold text-slate-600">Số tiền hoàn trả (VNĐ)</label>
-              <input type="number" id="cancel-refund-amount" value="0" min="0"
+              <input type="text" id="cancel-refund-amount" placeholder="0"
                 class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
             </div>
             <div class="space-y-1">
@@ -250,12 +250,17 @@ async function loadCancellationsTab(container) {
       const name = btn.getAttribute('data-name') || '';
       document.getElementById('cancel-student-name').textContent = name;
       
-      // Tìm registration tương ứng để lấy số tiền đã thu
+    // Tìm registration tương ứng để lấy số tiền đã thu
       const reg = activeRegs.find(r => r.id == selectedRegId && r.loai_goi === selectedRegType);
       const daThu = reg ? reg.so_tien_da_thu || 0 : 0;
-      document.getElementById('cancel-refund-amount').value = daThu;
+      document.getElementById('cancel-refund-amount').value = formatCurrencyInput(String(daThu));
       document.getElementById('cancel-reason').value = '';
       cancelModal.classList.remove('hidden');
+    });
+
+    // Thêm listener format cho ô nhập số tiền hoàn trả
+    tabContent.querySelector('#cancel-refund-amount')?.addEventListener('input', (e) => {
+      e.target.value = formatCurrencyInput(e.target.value);
     });
 
     tabContent.querySelector('#close-cancel-modal').addEventListener('click', () => cancelModal.classList.add('hidden'));
@@ -269,7 +274,7 @@ async function loadCancellationsTab(container) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span> Đang xử lý...`;
 
-      const refundAmount = parseFloat(document.getElementById('cancel-refund-amount').value);
+      const refundAmount = parseCurrencyInput(document.getElementById('cancel-refund-amount').value);
       const reason = document.getElementById('cancel-reason').value.trim();
 
       // Validate

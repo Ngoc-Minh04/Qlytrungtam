@@ -1,5 +1,5 @@
 // CoursePackages.js - Gói học phí / Khóa học đại trà (CRUD + Card So Sánh Ngang)
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 
 export async function renderCoursePackages(container) {
   container.innerHTML = `
@@ -105,7 +105,7 @@ export async function renderCoursePackages(container) {
               </div>
               <div>
                 <label class="block font-semibold text-slate-600 mb-1.5">Giá tiền (VNĐ) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="pkg-price" min="0" placeholder="0" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <input type="text" id="pkg-price" placeholder="0" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
@@ -134,9 +134,11 @@ export async function renderCoursePackages(container) {
       renderCoursePackages(container);
     });
 
-    const closeModal = () => modal.classList.add('hidden');
-    document.getElementById('btn-close-modal')?.addEventListener('click', closeModal);
-    document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
+    // Thêm listener format cho ô nhập giá tiền
+    const priceInputEl = document.getElementById('pkg-price');
+    priceInputEl?.addEventListener('input', (e) => {
+      e.target.value = formatCurrencyInput(e.target.value);
+    });
 
     // Gắn sự kiện sửa/xóa trên Card qua wrapper động để tránh lặp listener
     container.querySelector('#course-packages-wrapper')?.addEventListener('click', async (e) => {
@@ -152,7 +154,7 @@ export async function renderCoursePackages(container) {
           document.getElementById('pkg-name').value = pkg.ten_goi;
           document.getElementById('pkg-desc').value = pkg.mo_ta || '';
           document.getElementById('pkg-months').value = pkg.so_thang;
-          document.getElementById('pkg-price').value = pkg.gia;
+          document.getElementById('pkg-price').value = formatCurrencyInput(String(pkg.gia));
           modal.classList.remove('hidden');
         }
       }
@@ -211,7 +213,7 @@ export async function renderCoursePackages(container) {
         ten_goi: document.getElementById('pkg-name').value.trim(),
         mo_ta: document.getElementById('pkg-desc').value.trim(),
         so_thang: parseInt(document.getElementById('pkg-months').value),
-        gia: parseFloat(document.getElementById('pkg-price').value)
+        gia: parseCurrencyInput(document.getElementById('pkg-price').value)
       };
 
       try {

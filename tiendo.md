@@ -1,3 +1,14 @@
+### [22/06/2026 11:28] — Chuẩn hóa định dạng tiền tệ (dấu chấm) cho các ô nhập số tiền trong hệ thống
+- **Loại**: Cải tiến trải nghiệm người dùng
+- **File**: `frontend/src/pages/StudentRequests.js`, `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**:
+  - Chuyển đổi các trường nhập số tiền từ `type="number"` sang `type="text"`.
+  - Tích hợp hàm `formatCurrencyInput` và `parseCurrencyInput` để tự động định dạng dấu chấm phân cách hàng nghìn khi người dùng gõ hoặc khi tải dữ liệu cũ lên form, áp dụng cho:
+    1. Ô nhập **Số tiền hoàn trả** khi hủy khóa học (`StudentRequests.js`).
+    2. Ô nhập **Giá tiền** khi thêm/sửa Gói học đại trà (`CoursePackages.js`).
+    3. Ô nhập **Giá tiền** khi thêm/sửa Gói học kèm 1-1 / 1-2 (`TutoringPackages.js`).
+- **Kết quả**: Thành công
+
 ### [22/06/2026 11:20] — Hiển thị và xử lý hủy gói học kèm 1-1 tại tab Yêu cầu
 - **Loại**: Cải tiến tính năng & Sửa lỗi logic
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentRequests.js`
