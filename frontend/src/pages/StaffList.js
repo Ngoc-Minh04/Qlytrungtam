@@ -95,8 +95,6 @@ export async function renderStaffList(container, role) {
           <select id="filter-staff-role" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
             <option value="">Tất cả vai trò</option>
             <option value="Quản lý">Quản lý</option>
-            <option value="Lễ tân">Lễ tân</option>
-            <option value="Kế toán">Kế toán</option>
             <option value="Nhân viên">Nhân viên</option>
           </select>
           <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
@@ -182,16 +180,14 @@ export async function renderStaffList(container, role) {
               <div>
                 <label class="block font-semibold text-slate-600 mb-1">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-staff-role" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Lễ tân">Lễ tân</option>
-                  <option value="Kế toán">Kế toán</option>
                   <option value="Nhân viên">Nhân viên</option>
                   <option value="Quản lý">Quản lý</option>
                 </select>
               </div>
-              <div>
+              <div class="hidden">
                 <label class="block font-semibold text-slate-600 mb-1">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-staff-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Trung tam chính">Trung tâm chính</option>
+                  <option value="Trung tam chính" selected>Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
                 </select>
               </div>
@@ -574,8 +570,6 @@ function showStaffDetailModal(nv, container, role) {
               </label>
               <select id="s-edit-role"
                 class="w-full border border-[#e2e2e4] bg-[#fafafa] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition cursor-pointer">
-                <option value="Lễ tân" ${nv.chuc_vu === 'Lễ tân' ? 'selected' : ''}>Lễ tân</option>
-                <option value="Kế toán" ${nv.chuc_vu === 'Kế toán' ? 'selected' : ''}>Kế toán</option>
                 <option value="Nhân viên" ${nv.chuc_vu === 'Nhân viên' ? 'selected' : ''}>Nhân viên</option>
                 <option value="Quản lý" ${nv.chuc_vu === 'Quản lý' ? 'selected' : ''}>Quản lý</option>
               </select>
@@ -600,14 +594,14 @@ function showStaffDetailModal(nv, container, role) {
             </div>
 
             <!-- Chi nhánh -->
-            <div class="space-y-1 sm:col-span-2">
+            <div class="space-y-1 sm:col-span-2 hidden">
               <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
                 <span class="material-symbols-outlined text-[14px]">location_on</span> Chi nhánh công tác
               </label>
               <select id="s-edit-branch"
                 class="w-full border border-[#e2e2e4] bg-[#fafafa] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition cursor-pointer">
-                <option value="Trung tam chính" ${nv.chi_nhanh === 'Trung tam chính' ? 'selected' : ''}>Trung tâm chính</option>
-                <option value="Downtown Campus" ${nv.chi_nhanh === 'Downtown Campus' ? 'selected' : ''}>Downtown Campus</option>
+                <option value="Trung tam chính" selected>Trung tâm chính</option>
+                <option value="Downtown Campus">Downtown Campus</option>
               </select>
             </div>
 

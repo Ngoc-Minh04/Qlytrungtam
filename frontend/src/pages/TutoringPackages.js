@@ -140,6 +140,14 @@ export async function renderTutoringPackages(container) {
       modal.classList.remove('hidden');
     });
 
+    document.getElementById('btn-close-tutor-modal')?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-cancel-tutor-modal')?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
     document.getElementById('btn-refresh-tutoring-packages')?.addEventListener('click', () => {
       renderTutoringPackages(container);
     });

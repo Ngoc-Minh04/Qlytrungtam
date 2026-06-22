@@ -1,9 +1,10 @@
 // AccountManagement.js — Quản lý tài khoản học viên & giáo viên (Admin)
 import { API_BASE, showToast } from './_shared.js';
 
-const ROLE_LABEL = { admin: 'Admin', le_tan: 'Lễ tân', giao_vien: 'Giáo viên', hoc_vien: 'Học viên' };
+const ROLE_LABEL = { admin: 'Admin / Quản lý', nhan_vien: 'Nhân viên', le_tan: 'Nhân viên', giao_vien: 'Giáo viên', hoc_vien: 'Học viên' };
 const ROLE_CLS = {
   admin: 'bg-purple-100 text-purple-700 border border-purple-200',
+  nhan_vien: 'bg-blue-100 text-blue-700 border border-blue-200',
   le_tan: 'bg-blue-100 text-blue-700 border border-blue-200',
   giao_vien: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   hoc_vien: 'bg-orange-100 text-orange-700 border border-orange-200',
@@ -26,7 +27,7 @@ export async function renderAccountManagement(container) {
     <div class="space-y-5">
       <!-- Header row -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h3 class="font-bold text-apple-ink text-sm">Quản lý tài khoản</h3>
+        <h3 class="font-bold text-apple-ink text-sm"></h3>
         <div class="flex items-center gap-2">
           <button id="btn-refresh-accounts" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
             <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
@@ -46,7 +47,7 @@ export async function renderAccountManagement(container) {
 
       <!-- Filter tabs -->
       <div class="flex gap-2 flex-wrap" id="acct-filter">
-        ${['Tất cả', 'hoc_vien', 'giao_vien', 'le_tan', 'admin'].map((r, i) => `
+        ${['Tất cả', 'hoc_vien', 'giao_vien', 'nhan_vien', 'admin'].map((r, i) => `
           <button data-role="${r}"
             class="acct-filter-btn ${i === 0 ? 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30' : 'bg-white text-slate-500 border border-[#e2e2e4]'} text-[10px] font-semibold px-3 py-1.5 rounded-full transition hover:border-[#0066cc]/50">
             ${i === 0 ? 'Tất cả' : ROLE_LABEL[r]}
@@ -86,10 +87,8 @@ export async function renderAccountManagement(container) {
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Vai trò <span class="text-red-500">*</span></label>
             <select id="c-role" required class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
               <option value="">— Chọn vai trò —</option>
-              <option value="hoc_vien">Học viên</option>
-              <option value="giao_vien">Giáo viên</option>
-              <option value="le_tan">Lễ tân</option>
-              <option value="admin">Admin</option>
+              <option value="nhan_vien">Nhân viên</option>
+              <option value="admin">Admin / Quản lý</option>
             </select>
           </div>
           <div id="c-profile-wrap" class="hidden">
@@ -306,11 +305,12 @@ export async function renderAccountManagement(container) {
     const role = e.target.value;
     const wrap = document.getElementById('c-profile-wrap');
     const sel = document.getElementById('c-profile');
-    if (role === 'hoc_vien' || role === 'giao_vien') {
+    if (role === 'hoc_vien' || role === 'giao_vien' || role === 'nhan_vien' || role === 'admin') {
       wrap.classList.remove('hidden');
       sel.innerHTML = `<option value="">— Đang tải... —</option>`;
       try {
-        const r = await fetch(`${API_BASE}/accounts/available-profiles?loai=${role}`, { headers: { 'x-user-role': 'admin' } });
+        const loaiParam = (role === 'admin' || role === 'nhan_vien') ? 'nhan_vien' : role;
+        const r = await fetch(`${API_BASE}/accounts/available-profiles?loai=${loaiParam}`, { headers: { 'x-user-role': 'admin' } });
         const d = await r.json();
         const profiles = d.data || [];
         sel.innerHTML = `<option value="">— Không liên kết —</option>` +

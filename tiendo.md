@@ -1,3 +1,22 @@
+### [22/06/2026 16:49] — Quy chuẩn vai trò nhân viên/admin và ẩn trường chi nhánh
+- **Loại**: Cải tiến giao diện & Đồng bộ cơ sở dữ liệu
+- **File**: `frontend/src/pages/StaffList.js`, `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - **Ẩn trường Chi nhánh**: Ẩn dropdown chọn chi nhánh khỏi các form thêm và sửa đổi hồ sơ nhân sự (do hệ thống local chưa vận hành đa chi nhánh), thiết lập mặc định giá trị ngầm gửi lên là `"Trung tâm chính"`.
+  - **Quy chuẩn vai trò**: 
+    - Lọc bỏ hoàn toàn các vai trò rườm rà "Lễ tân" (`le_tan`) và "Kế toán" (`ke_toan`) khỏi dropdown tạo/chỉnh sửa hồ sơ và tài khoản nhân sự. Chỉ giữ lại đúng 2 lựa chọn: **Nhân viên** (`nhan_vien`) và **Quản lý / Admin** (`admin`).
+    - Gộp hiển thị badge vai trò `le_tan` trên danh sách tài khoản chung sang nhãn hiển thị `"Nhân viên"`.
+    - Chạy script cập nhật database chuyển đổi đồng bộ tất cả hồ sơ, tài khoản Lễ tân/Kế toán cũ về vai trò Nhân viên (`nhan_vien`/`le_tan`).
+- **Kết quả**: Thành công
+
+### [22/06/2026 16:26] — Khắc phục lỗi không đóng được Modal khi thêm/sửa gói học
+- **Loại**: Sửa bug giao diện & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**:
+  - Gắn sự kiện lắng nghe Click (`addEventListener`) cho các nút Đóng (`btn-close-modal`, `btn-close-tutor-modal`) và nút Hủy (`btn-cancel-modal`, `btn-cancel-tutor-modal`).
+  - Khi click vào các nút này, modal sẽ tự động thêm class `hidden` để ẩn đi một cách chính xác khi nhân sự muốn thoát hoặc hủy thao tác.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 16:12] — Thiết lập cố định kiểu biểu đồ theo bộ lọc trong báo cáo doanh thu
 - **Loại**: Cải tiến giao diện & UI/UX
 - **File**: `frontend/src/pages/RevenueReport.js`

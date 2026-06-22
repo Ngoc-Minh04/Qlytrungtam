@@ -130,6 +130,14 @@ export async function renderCoursePackages(container) {
       modal.classList.remove('hidden');
     });
 
+    document.getElementById('btn-close-modal')?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-cancel-modal')?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
     document.getElementById('btn-refresh-course-packages')?.addEventListener('click', () => {
       renderCoursePackages(container);
     });
