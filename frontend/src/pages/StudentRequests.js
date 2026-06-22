@@ -84,11 +84,17 @@ async function loadCancellationsTab(container) {
         const denNgay = r.den_ngay ? new Date(r.den_ngay).toLocaleDateString('vi-VN') : '—';
         const soTien = r.gia_thuc_te ? parseInt(r.gia_thuc_te).toLocaleString('vi-VN') + ' đ' : '—';
         const thucThu = r.so_tien_da_thu ? parseInt(r.so_tien_da_thu).toLocaleString('vi-VN') + ' đ' : '—';
+        const typeBadge = r.loai_goi === 'hoc_kem' 
+          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200/50 uppercase ml-1">Kèm 1-1</span>` 
+          : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-apple-blue border border-blue-200/50 uppercase ml-1">Đại trà</span>`;
         return `
           <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group">
             <td class="px-5 py-3.5">
-              <div class="font-bold text-apple-ink">${r.ho_ten || '—'}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">ID: ${r.ho_so_id} · Mã: ${r.ten_goi || '—'}</div>
+              <div class="font-bold text-apple-ink flex items-center gap-1">
+                ${r.ho_ten || '—'}
+                ${typeBadge}
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">ID: ${r.ho_so_id} · Gói: ${r.ten_goi || '—'}</div>
             </td>
             <td class="px-5 py-3.5 text-slate-600">${tuNgay} → ${denNgay}</td>
             <td class="px-5 py-3.5">
@@ -109,7 +115,7 @@ async function loadCancellationsTab(container) {
             </td>
             <td class="px-5 py-3.5 text-right">
               <button class="btn-cancel-reg px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full text-[10.5px] font-semibold transition active:scale-95"
-                data-id="${r.id}" data-name="${r.ho_ten || ''}">
+                data-id="${r.id}" data-type="${r.loai_goi}" data-name="${r.ho_ten || ''}">
                 Hủy KH
               </button>
             </td>
@@ -233,16 +239,19 @@ async function loadCancellationsTab(container) {
     });
 
     let selectedRegId = null;
+    let selectedRegType = 'dai_tra';
     const cancelModal = tabContent.querySelector('#cancel-reg-modal');
 
     tableBody.addEventListener('click', (e) => {
       const btn = e.target.closest('.btn-cancel-reg');
       if (!btn) return;
       selectedRegId = btn.getAttribute('data-id');
-            document.getElementById('cancel-student-name').textContent = name;
+      selectedRegType = btn.getAttribute('data-type') || 'dai_tra';
+      const name = btn.getAttribute('data-name') || '';
+      document.getElementById('cancel-student-name').textContent = name;
       
       // Tìm registration tương ứng để lấy số tiền đã thu
-      const reg = activeRegs.find(r => r.id == selectedRegId);
+      const reg = activeRegs.find(r => r.id == selectedRegId && r.loai_goi === selectedRegType);
       const daThu = reg ? reg.so_tien_da_thu || 0 : 0;
       document.getElementById('cancel-refund-amount').value = daThu;
       document.getElementById('cancel-reason').value = '';
@@ -283,8 +292,13 @@ async function loadCancellationsTab(container) {
         so_tien_hoan: refundAmount,
         ly_do_huy: reason
       };
+
+      const cancelUrl = selectedRegType === 'hoc_kem'
+        ? `${API_BASE}/registrations/tutoring/${selectedRegId}/cancel`
+        : `${API_BASE}/registrations/${selectedRegId}/cancel`;
+
       try {
-        const res = await fetch(`${API_BASE}/registrations/${selectedRegId}/cancel`, {
+        const res = await fetch(cancelUrl, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
           body: JSON.stringify(payload)

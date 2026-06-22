@@ -1,3 +1,11 @@
+### [22/06/2026 11:20] — Hiển thị và xử lý hủy gói học kèm 1-1 tại tab Yêu cầu
+- **Loại**: Cải tiến tính năng & Sửa lỗi logic
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentRequests.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `GET /api/registrations` dùng `UNION ALL` để gộp danh sách đăng ký khóa học đại trà (`dang_ky_khoa_hoc`) và đăng ký học kèm (`dang_ky_hoc_kem`), bổ sung cột `loai_goi` để phân biệt.
+  - **Frontend**: Hiển thị badge phân loại trực quan (`Đại trà` / `Kèm 1-1`). Cập nhật logic hủy để gọi đúng endpoint (`/api/registrations/tutoring/:id/cancel` cho học kèm và `/api/registrations/:id/cancel` cho đại trà).
+- **Kết quả**: Thành công
+
 ### [22/06/2026 10:10] — Khắc phục lỗi popup lịch (date picker) bị cắt do overflow-hidden
 - **Loại**: Sửa lỗi giao diện & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/AddStudentForm.js`

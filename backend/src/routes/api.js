@@ -2563,18 +2563,55 @@ router.get('/checkins', async (req, res) => {
   }
 });
 
-// GET /api/registrations: Lấy danh sách tất cả các đăng ký khóa học để thống kê (phục vụ Overview.js)
+// GET /api/registrations: Lấy danh sách tất cả các đăng ký khóa học đại trà và học kèm để thống kê & xử lý hủy
 router.get('/registrations', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT r.*, h.ho_ten, g.ten_goi,
-             'da_thanh_toan' as trang_thai_thanh_toan,
-             r.gia_thuc_te as so_tien_phai_nop,
-             r.ngay_tao as ngay_dang_ky
+      SELECT 
+        r.id,
+        r.ho_so_id,
+        r.goi_hoc_phi_id as goi_id,
+        r.tu_ngay,
+        r.den_ngay,
+        r.gia_thuc_te,
+        r.so_tien_da_thu,
+        r.phuong_thuc_tt,
+        r.trang_thai,
+        r.ngay_tao,
+        h.ho_ten,
+        g.ten_goi,
+        'dai_tra' as loai_goi,
+        'da_thanh_toan' as trang_thai_thanh_toan,
+        r.gia_thuc_te as so_tien_phai_nop,
+        r.ngay_tao as ngay_dang_ky
       FROM dang_ky_khoa_hoc r
       LEFT JOIN ho_so h ON r.ho_so_id = h.id
       LEFT JOIN goi_hoc_phi g ON r.goi_hoc_phi_id = g.id
-      ORDER BY r.ngay_tao DESC
+      
+      UNION ALL
+      
+      SELECT 
+        k.id,
+        k.hoc_vien_id as ho_so_id,
+        k.goi_hoc_kem_id as goi_id,
+        k.tu_ngay,
+        k.den_ngay,
+        k.gia_thuc_te,
+        k.so_tien_da_thu,
+        k.phuong_thuc_tt,
+        k.trang_thai,
+        k.ngay_tao,
+        h.ho_ten,
+        gk.ten_goi,
+        'hoc_kem' as loai_goi,
+        'da_thanh_toan' as trang_thai_thanh_toan,
+        k.gia_thuc_te as so_tien_phai_nop,
+        k.ngay_tao as ngay_dang_ky
+      FROM dang_ky_hoc_kem k
+      LEFT JOIN ho_so h ON k.hoc_vien_id = h.id
+      LEFT JOIN goi_hoc_kem gk ON k.goi_hoc_kem_id = gk.id
+      
+      ORDER BY ngay_dang_ky DESC
     `);
     res.json({ success: true, data: result.rows });
   } catch (err) {
