@@ -7,9 +7,9 @@ export async function renderAddStudentForm(container) {
       <div>
         <h2 class="font-bold text-apple-ink text-lg apple-headline">Tiếp nhận học viên mới</h2>
       </div>
-      <div class="bg-white rounded-2xl border border-apple-divider overflow-hidden flex flex-col lg:flex-row max-w-4xl mx-auto shadow-sm">
+      <div class="bg-white rounded-2xl border border-apple-divider overflow-visible flex flex-col lg:flex-row max-w-4xl mx-auto shadow-sm">
         <!-- Left Column: Avatar Upload -->
-        <div class="w-full lg:w-1/3 p-4 bg-apple-parchment flex flex-col items-center justify-start border-b lg:border-b-0 lg:border-r border-apple-divider/40">
+        <div class="w-full lg:w-1/3 p-4 bg-apple-parchment flex flex-col items-center justify-start border-b lg:border-b-0 lg:border-r border-apple-divider/40 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl">
           <div class="w-28 h-28 rounded-2xl bg-white flex flex-col items-center justify-center mb-3 shadow-sm border border-apple-divider/60 group relative overflow-hidden cursor-pointer hover:bg-apple-parchment transition">
             <span class="material-symbols-outlined text-3xl text-apple-blue opacity-85 mb-1">add_a_photo</span>
             <span class="text-[10px] font-semibold text-apple-ink">Tải ảnh đại diện</span>

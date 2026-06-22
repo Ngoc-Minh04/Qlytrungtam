@@ -1,8 +1,14 @@
+### [22/06/2026 10:10] — Khắc phục lỗi popup lịch (date picker) bị cắt do overflow-hidden
+- **Loại**: Sửa lỗi giao diện & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/AddStudentForm.js`
+- **Mô tả**: Thay đổi class `overflow-hidden` thành `overflow-visible` trên các container card cha của Form. Đồng thời bo góc thủ công cột trái màu kem `bg-apple-parchment` để giao diện giữ nguyên vẻ bo tròn Apple-style, giải quyết triệt để lỗi popup lịch bị cắt khi vượt quá chiều cao card.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 09:05] — Cải tiến giao diện Đăng ký / Thu phí (CourseRegistrations.js)
 - **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/CourseRegistrations.js`
 - **Mô tả**:
-  - Chuyển đổi hai trường nhập liệu thủ công "Mã học viên (ID hồ sơ)" và "Mã gói học phí (ID)" thành Dropdown `<select>` tải động dữ liệu từ máy chủ.
+  - Chuyển đổi hai trường nhập liệu thủ công "Mã học viên (ID hồ sơ)" và "Mã gói học phí (ID)" thành Dropdown `<select>` tải động dữ liệu từ máy chủ. Định dạng hiển thị học viên được chuẩn hóa thân thiện: `[Tên Học Viên] - [Mã HS]`.
   - Tự động điền giá tiền gói học tương ứng vào ô "Giá trị khóa học" và "Thực thu" khi người dùng chọn gói học phí.
   - Tự động cộng số tháng hiệu lực của gói học đó vào Ngày bắt đầu để tính toán và tự động điền Ngày kết thúc.
 - **Kết quả**: Thành công
