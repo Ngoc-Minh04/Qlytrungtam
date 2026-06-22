@@ -93,7 +93,7 @@ export async function renderCourseRegistrations(container) {
                   </div>
                   <div id="wrapper-sessions-count" class="hidden">
                     <label class="block font-semibold text-slate-600 mb-0.5">Số buổi học <span class="text-rose-500 font-bold">*</span></label>
-                    <input type="number" id="reg-sessions" min="1" placeholder="Ví dụ: 12" class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                    <input type="number" id="reg-sessions" min="1" placeholder="Ví dụ: 12" readonly class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-slate-100 cursor-not-allowed">
                   </div>
                 </div>
               </div>
@@ -322,7 +322,21 @@ export async function renderCourseRegistrations(container) {
         const result = await res.json();
         if (result.success) {
           showToast('Ghi nhận đóng học phí thành công!');
-          renderCourseRegistrations(container);
+          if (isTutoring) {
+            sessionStorage.setItem('auto_schedule_data', JSON.stringify({
+              type: 'hoc_kem',
+              hoc_vien_id: payload.hoc_vien_id,
+              goi_hoc_kem_id: payload.goi_hoc_kem_id,
+              giao_vien_id: payload.giao_vien_id
+            }));
+            if (typeof window._navigatePage === 'function') {
+              window._navigatePage('class-management');
+            } else {
+              window.location.hash = '/class-management';
+            }
+          } else {
+            renderCourseRegistrations(container);
+          }
         } else {
           showToast(result.error || 'Lỗi không xác định', 'error');
         }

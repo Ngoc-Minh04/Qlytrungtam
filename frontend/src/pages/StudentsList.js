@@ -920,7 +920,7 @@ export function showStudentDetailModal(sv) {
                         <div class="grid grid-cols-2 gap-1.5">
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">SỐ BUỔI ĐK</label>
-                            <input type="number" class="edit-so-buoi w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px]" value="${item.so_buoi_dang_ky}">
+                            <input type="number" readonly class="edit-so-buoi w-full border border-[#e2e2e4] rounded-lg p-1 text-[11px] bg-slate-100 cursor-not-allowed" value="${item.so_buoi_dang_ky}">
                           </div>
                           <div>
                             <label class="block text-[9px] font-bold text-slate-400 mb-0.5">SỐ BUỔI ĐÃ HỌC</label>
@@ -1007,7 +1007,7 @@ export function showStudentDetailModal(sv) {
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Số buổi đăng ký</label>
-                      <input type="number" id="reg-so-buoi" min="1" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="number" id="reg-so-buoi" min="1" readonly class="w-full border border-[#e2e2e4] bg-slate-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue cursor-not-allowed">
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-3">

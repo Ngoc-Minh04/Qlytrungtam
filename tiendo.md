@@ -1,3 +1,15 @@
+### [22/06/2026 14:48] — Khóa trường Số buổi học gói kèm 1-1 thành chỉ đọc (readonly)
+- **Loại**: Cải tiến bảo mật & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/StudentsList.js`
+- **Mô tả**: Chuyển đổi các ô nhập số buổi học của gói học kèm 1-1 sang chế độ chỉ đọc (`readonly`), thêm màu nền xám và đổi con trỏ chuột thành `cursor-not-allowed` để tránh việc người dùng chỉnh sửa sai số buổi so với gói học kèm thực tế đã chọn. Áp dụng đồng bộ tại tab Đăng ký / Thu phí, form chỉnh sửa gói học kèm đang hoạt động và form đăng ký gói học kèm mới trong modal chi tiết học viên.
+- **Kết quả**: Thành công
+
+### [22/06/2026 14:26] — Tự động chuyển tab Lớp học & Xếp lịch và điền sẵn thông tin khi đăng ký gói 1 kèm 1 thành công
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**: Sau khi ghi nhận đóng học phí thành công cho gói học kèm 1-1, hệ thống sẽ tự động lưu thông tin gói học kèm (bao gồm học viên, gói học, giáo viên phụ trách) vào `sessionStorage` và kích hoạt tự động chuyển hướng giao diện sang tab Lớp học & Xếp lịch. Trang Lớp học & Xếp lịch sẽ tự động nhận diện và điền sẵn dữ liệu này giúp Lễ tân chỉ việc đặt lịch.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 14:01] — Tự động điền Giáo viên được chỉ định sẵn khi xếp lịch học kèm
 - **Loại**: Cải tiến trải nghiệm người dùng
 - **File**: `frontend/src/pages/ClassManagement.js`

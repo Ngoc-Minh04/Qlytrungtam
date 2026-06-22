@@ -410,6 +410,54 @@ export async function renderClassManagement(container) {
       const tutorPkgData = await tutorPkgRes.json();
       const tutoringPkgs = tutorPkgData.data || [];
       tutoringSelect.innerHTML = '<option value="">-- Chọn gói học kèm --</option>' + tutoringPkgs.map(p => `<option value="${p.id}">${p.ten_goi}</option>`).join('');
+
+      // --- Tự động điền thông tin sau khi đăng ký thành công gói kèm 1-1 ---
+      const autoDataStr = sessionStorage.getItem('auto_schedule_data');
+      if (autoDataStr) {
+        try {
+          const autoData = JSON.parse(autoDataStr);
+          sessionStorage.removeItem('auto_schedule_data');
+
+          if (autoData.type === 'hoc_kem') {
+            classTypeSelect.value = 'ca_nhan';
+            coursePkgGroup.classList.add('hidden');
+            tutorGroup.classList.remove('hidden');
+            studentPickerPanel.classList.remove('hidden');
+            selectAllBtn?.classList.add('hidden');
+
+            tutoringSelect.value = autoData.goi_hoc_kem_id;
+            if (autoData.giao_vien_id) {
+              teacherSelect.value = autoData.giao_vien_id;
+            }
+
+            // Lọc học sinh theo gói
+            filteredStudents = allStudents.filter(s => {
+              const pkgIds = s.active_tutor_pkg_ids || [];
+              return pkgIds.includes(autoData.goi_hoc_kem_id);
+            });
+
+            // Chọn sẵn học viên
+            selectedStudentIds = [autoData.hoc_vien_id];
+            
+            // Lấy thông tin đăng ký học kèm chi tiết để gán vào hidden input
+            const res = await fetch(`${API_BASE}/students/${autoData.hoc_vien_id}/registrations`);
+            const data = await res.json();
+            const activeReg = data.data?.hoc_kem?.find(r => r.goi_hoc_kem_id === autoData.goi_hoc_kem_id && r.trang_thai === 'dang_hoat_dong');
+            if (activeReg) {
+              tutorIdInput.value = activeReg.id;
+              tutorIdInput.setAttribute('data-total-sessions', activeReg.so_buoi_dang_ky || 10);
+              tutorIdInput.setAttribute('data-used-sessions', activeReg.so_buoi_da_hoc || 0);
+            }
+
+            renderStudentChecklist();
+            renderSelectedBadges();
+            
+            showToast('Đã tự động điền sẵn thông tin học kèm vừa đăng ký!', 'success');
+          }
+        } catch (err) {
+          console.error('Lỗi khi tự động điền thông tin xếp lịch:', err);
+        }
+      }
     } catch (e) {
       showToast('Không thể tải dữ liệu biểu mẫu xếp lịch', 'error');
     }
