@@ -1,3 +1,9 @@
+### [22/06/2026 14:01] — Tự động điền Giáo viên được chỉ định sẵn khi xếp lịch học kèm
+- **Loại**: Cải tiến trải nghiệm người dùng
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**: Cập nhật hàm `renderStudentChecklist()`. Khi Lễ tân xếp lịch học kèm và chọn học viên, hệ thống sẽ kiểm tra xem gói học kèm đang hoạt động của học viên đó có chỉ định trước Giáo viên phụ trách dạy kèm hay không. Nếu có, dropdown **Chọn Giáo viên giảng dạy** trong form xếp lịch sẽ tự động được chọn sang giáo viên đó, giúp giảm bớt thao tác chọn thủ công cho Lễ tân.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 13:41] — Tích hợp Gói học kèm 1-1 vào form Đăng ký / Thu phí
 - **Loại**: Cải tiến giao diện & Tính năng
 - **File**: `frontend/src/pages/CourseRegistrations.js`

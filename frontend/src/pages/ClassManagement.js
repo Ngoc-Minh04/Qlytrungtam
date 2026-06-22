@@ -474,6 +474,12 @@ export async function renderClassManagement(container) {
                 tutorIdInput.value = activeReg.id;
                 tutorIdInput.setAttribute('data-total-sessions', activeReg.so_buoi_dang_ky || 10);
                 tutorIdInput.setAttribute('data-used-sessions', activeReg.so_buoi_da_hoc || 0);
+                
+                // Tự động gán giáo viên được chỉ định sẵn của hợp đồng vào dropdown chọn Giáo viên xếp lịch
+                const teacherSelect = document.getElementById('class-teacher');
+                if (teacherSelect && activeReg.giao_vien_id) {
+                  teacherSelect.value = activeReg.giao_vien_id;
+                }
               } else {
                 showToast('Học viên không có gói học kèm này đang hoạt động!', 'error');
                 selectedStudentIds = [];
