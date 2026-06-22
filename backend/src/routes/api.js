@@ -1102,6 +1102,12 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       const yesterdayStr = yesterday.toISOString().split('T')[0];
       finalStartDate = yesterdayStr;
       finalEndDate = yesterdayStr;
+    } else if (filter === 'week') {
+      const currentDay = localToday.getDay(); // 0: CN, 1: T2,...
+      const distance = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(localToday.getTime() + distance * 24 * 60 * 60 * 1000);
+      finalStartDate = monday.toISOString().split('T')[0];
+      finalEndDate = todayStr;
     } else if (filter === 'month') {
       const year = localToday.getFullYear();
       const month = String(localToday.getMonth() + 1).padStart(2, '0');
@@ -1166,13 +1172,13 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
     let paymentsRes;
     if (finalStartDate && finalEndDate) {
       paymentsQuery = `
-        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
+        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
         FROM dang_ky_khoa_hoc d
         JOIN ho_so h ON d.ho_so_id = h.id
         JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
         WHERE d.trang_thai NOT IN ('huy', 'tam_dung') AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
         UNION ALL
-        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao
+        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
         FROM dang_ky_hoc_kem dk
         JOIN ho_so h ON dk.hoc_vien_id = h.id
         JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
@@ -1183,13 +1189,13 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       paymentsRes = await pool.query(paymentsQuery, [finalStartDate, finalEndDate]);
     } else {
       paymentsQuery = `
-        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao
+        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
         FROM dang_ky_khoa_hoc d
         JOIN ho_so h ON d.ho_so_id = h.id
         JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
         WHERE d.trang_thai NOT IN ('huy', 'tam_dung')
         UNION ALL
-        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao
+        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
         FROM dang_ky_hoc_kem dk
         JOIN ho_so h ON dk.hoc_vien_id = h.id
         JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id

@@ -1,3 +1,31 @@
+### [22/06/2026 16:12] — Thiết lập cố định kiểu biểu đồ theo bộ lọc trong báo cáo doanh thu
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Cấu hình kiểu biểu đồ**: Thiết lập cố định biểu đồ cột (**Bar Chart** bo tròn góc `borderRadius: 8`, độ rộng `barThickness: 50`) cho các bộ lọc thời gian ngắn: **Hôm nay, Hôm qua, Tuần này** để so sánh trực quan các ngày.
+  - **Biểu đồ đường cong gradient (Area Line)**: Được áp dụng cố định cho các bộ lọc thời gian dài: **Tháng này và Chọn tháng 1-12** để mang lại giao diện tăng trưởng mượt mà, thoáng đãng Apple-style.
+  - **Đồng bộ biến**: Đồng bộ biến `currentFilter` khi tương tác để biểu đồ luôn chuyển đổi chính xác.
+- **Kết quả**: Thành công
+
+### [22/06/2026 15:54] — Tinh giản tối đa bộ lọc doanh thu và tích hợp dropdown chọn tháng 1-12
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Dropdown chọn tháng**: Thay thế nút "Tháng này" cố định bằng một hộp chọn thả xuống (Dropdown Select) chứa **Tháng này** mặc định và **Tháng 1 đến Tháng 12** của năm hiện tại. Khi chọn một tháng bất kỳ, hệ thống tự động quy đổi thành khoảng ngày đầu/cuối của tháng đó và tải dữ liệu tương ứng.
+  - **Tinh giản giao diện**: Loại bỏ hoàn toàn tính năng bộ chọn khoảng ngày tùy chỉnh `Từ ngày - Đến ngày` và nút "Tùy chọn ngày" rườm rà. Giao diện bộ lọc doanh thu hiện tại cực kỳ tối giản, chỉ giữ lại các nút lọc nhanh tối cần thiết: **Hôm nay**, **Hôm qua**, **Tuần này**, và **Chọn tháng (1-12)**.
+- **Kết quả**: Thành công
+
+### [22/06/2026 15:21] — Chuẩn hóa tiếng Việt phương thức thanh toán và bổ sung thông tin lịch sử giao dịch
+- **Loại**: Cải tiến tính năng & UI/UX
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật query lấy danh sách giao dịch trả về thêm trường `loai_goi` để phân biệt gói đại trà và gói học kèm.
+  - **Frontend**: 
+    - Bổ sung cột **Phân loại** với badge màu sinh động (`Đại trà` / `Kèm 1-1`) để giúp quản trị viên nhận biết nhanh loại gói học.
+    - Chuẩn hóa cột **Phương thức** hiển thị rõ ràng tiếng Việt có dấu (`Tiền mặt` / `Chuyển khoản`) thay vì dạng text thô của DB.
+    - Cập nhật định dạng cột **Ngày giao dịch** hiển thị đầy đủ chi tiết cả **Giờ:Phút** và **Ngày/Tháng/Năm** (Ví dụ: `15:30 22/06/2026`).
+- **Kết quả**: Thành công
+
 ### [22/06/2026 15:15] — Thêm hiệu ứng hover nổi và đổ bóng cho card báo cáo doanh thu
 - **Loại**: Cải tiến giao diện & UI/UX
 - **File**: `frontend/src/pages/RevenueReport.js`
