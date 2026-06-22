@@ -733,11 +733,29 @@ async function _tabBooking(c) {
     const teachers  = (await teacherRes.json()).data || [];
     const bookings  = (await bookingRes.json()).data || [];
 
+    // Kiểm tra xem học viên có gói học kèm hoạt động hay không
+    const checkActiveTutorRes = await fetch(`${API_BASE}/student-portal/overview`, { headers: getAuthHeaders() });
+    const overviewData = await checkActiveTutorRes.json();
+    const activeTutors = overviewData.data?.goi_hoc_kem || [];
+    const hasActiveTutor = activeTutors.length > 0;
+
     c.innerHTML = `
       <div class="space-y-4">
         <h2 class="text-sm font-black text-slate-800">Đặt lịch học</h2>
 
-        ${_card(`
+        ${!hasActiveTutor ? _card(`
+          <div class="px-5 py-8 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mx-auto text-orange-500">
+              <span class="material-symbols-outlined text-2xl">info</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-800">Chức năng tự đặt lịch học</h3>
+            <p class="text-[10px] text-slate-500 max-w-sm mx-auto leading-relaxed">
+              Tính năng tự đặt lịch học chỉ áp dụng cho học viên đăng ký <strong>Gói học kèm 1-1 hoặc 1-2</strong> đang hoạt động.
+              <br><br>
+              Nếu bạn là học viên lớp học nhóm cố định, vui lòng học theo khung giờ cố định của lớp được trung tâm sắp xếp hoặc liên hệ Lễ tân để biết thêm chi tiết.
+            </p>
+          </div>
+        `) : _card(`
           <div class="px-5 py-4">
             <p class="text-[10px] text-slate-400 mb-4">Chọn giáo viên và thời gian mong muốn. Lịch sẽ được xác nhận bởi trung tâm.</p>
             <form id="booking-form" class="space-y-3">

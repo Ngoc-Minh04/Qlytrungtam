@@ -1,4 +1,4 @@
-// CourseRegistrations.js - Đăng ký khóa học / Thu phí
+// CourseRegistrations.js - Đăng ký khóa học / Thu phí (Đại trà & Học kèm)
 import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput, setupCustomDatePicker } from './_shared.js';
 
 export async function renderCourseRegistrations(container) {
@@ -11,16 +11,22 @@ export async function renderCourseRegistrations(container) {
   `;
 
   try {
-    const [studentsRes, coursePkgsRes] = await Promise.all([
+    const [studentsRes, coursePkgsRes, tutoringPkgsRes, teachersRes] = await Promise.all([
       fetch(`${API_BASE}/students`),
-      fetch(`${API_BASE}/course-packages`)
+      fetch(`${API_BASE}/course-packages`),
+      fetch(`${API_BASE}/tutoring-packages`),
+      fetch(`${API_BASE}/teachers`)
     ]);
 
     const studentsData = await studentsRes.json();
     const coursePkgsData = await coursePkgsRes.json();
+    const tutoringPkgsData = await tutoringPkgsRes.json();
+    const teachersData = await teachersRes.json();
 
     const students = studentsData.data || [];
     const coursePkgs = coursePkgsData.data || [];
+    const tutoringPkgs = tutoringPkgsData.data || [];
+    const teachers = teachersData.data || [];
 
     container.innerHTML = `
       <div class="space-y-3">
@@ -45,7 +51,7 @@ export async function renderCourseRegistrations(container) {
               <div>
                 <h3 class="font-bold text-apple-ink text-xs mb-2 border-b border-apple-parchment pb-1 flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-apple-blue text-[14px]">person</span>
-                  Thông tin Học viên
+                  Thông tin Học viên & Loại hình
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
@@ -56,15 +62,38 @@ export async function renderCourseRegistrations(container) {
                     </select>
                   </div>
                   <div>
-                    <label class="block font-semibold text-slate-600 mb-0.5">Gói học phí <span class="text-rose-500 font-bold">*</span></label>
-                    <select id="reg-package-id" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
-                      <option value="">-- Chọn Gói học phí --</option>
-                      ${coursePkgs.map(p => `
-                        <option value="${p.id}" data-price="${p.gia}" data-months="${p.so_thang}">
-                          ${p.ten_goi} (${p.so_thang} th - ${p.gia.toLocaleString('vi-VN')} VNĐ)
-                        </option>
-                      `).join('')}
+                    <label class="block font-semibold text-slate-600 mb-0.5">Loại hình gói học <span class="text-rose-500 font-bold">*</span></label>
+                    <select id="reg-type-select" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                      <option value="dai_tra">Gói đại trà (Học nhóm)</option>
+                      <option value="hoc_kem">Gói học kèm 1-1 </option>
                     </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chọn Gói Học -->
+              <div>
+                <h3 class="font-bold text-apple-ink text-xs mb-2 border-b border-apple-parchment pb-1 flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-apple-blue text-[14px]">school</span>
+                  Gói học & Giáo viên
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div class="md:col-span-2">
+                    <label class="block font-semibold text-slate-600 mb-0.5">Chọn Gói học <span class="text-rose-500 font-bold">*</span></label>
+                    <select id="reg-package-id" required class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                      <!-- Sẽ tự động cập nhật qua JS -->
+                    </select>
+                  </div>
+                  <div id="wrapper-gv-assign" class="hidden md:col-span-2">
+                    <label class="block font-semibold text-slate-600 mb-0.5">Giáo viên phụ trách dạy kèm (Tùy chọn)</label>
+                    <select id="reg-teacher-id" class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
+                      <option value="">-- Chưa chỉ định (Sắp xếp sau) --</option>
+                      ${teachers.map(t => `<option value="${t.id}">${t.ho_ten} ${t.chuyen_mon ? ' · ' + t.chuyen_mon : ''}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div id="wrapper-sessions-count" class="hidden">
+                    <label class="block font-semibold text-slate-600 mb-0.5">Số buổi học <span class="text-rose-500 font-bold">*</span></label>
+                    <input type="number" id="reg-sessions" min="1" placeholder="Ví dụ: 12" class="w-full border border-apple-divider rounded-lg px-3 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl">
                   </div>
                 </div>
               </div>
@@ -127,13 +156,18 @@ export async function renderCourseRegistrations(container) {
     // Tải Lịch Custom
     const regStartInput = document.getElementById('reg-start');
     const regEndInput = document.getElementById('reg-end');
+    const typeSelect = document.getElementById('reg-type-select');
     const packageSelect = document.getElementById('reg-package-id');
     const priceInput = document.getElementById('reg-price');
     const paidInput = document.getElementById('reg-paid');
 
+    const wrapperGv = document.getElementById('wrapper-gv-assign');
+    const wrapperSessions = document.getElementById('wrapper-sessions-count');
+    const sessionsInput = document.getElementById('reg-sessions');
+
     regStartInput.value = todayStr;
 
-    setupCustomDatePicker(regStartInput, document.getElementById('reg-start-container'), { 
+    setupCustomDatePicker(regStartInput, document.getElementById('reg-start-container'), {
       minDate: todayStr,
       onSelect: () => {
         updateEndDate();
@@ -141,17 +175,67 @@ export async function renderCourseRegistrations(container) {
     });
     setupCustomDatePicker(regEndInput, document.getElementById('reg-end-container'));
 
+    // Hàm cập nhật danh sách gói học dựa trên loại hình được chọn
+    function renderPackagesList() {
+      const type = typeSelect.value;
+      if (type === 'dai_tra') {
+        wrapperGv.classList.add('hidden');
+        wrapperSessions.classList.add('hidden');
+        sessionsInput.removeAttribute('required');
+
+        packageSelect.innerHTML = `
+          <option value="">-- Chọn Gói học phí đại trà --</option>
+          ${coursePkgs.map(p => `
+            <option value="${p.id}" data-price="${p.gia}" data-months="${p.so_thang}">
+              ${p.ten_goi} (${p.so_thang} th - ${p.gia.toLocaleString('vi-VN')} VNĐ)
+            </option>
+          `).join('')}
+        `;
+      } else {
+        wrapperGv.classList.remove('hidden');
+        wrapperSessions.classList.remove('hidden');
+        sessionsInput.setAttribute('required', 'true');
+
+        packageSelect.innerHTML = `
+          <option value="">-- Chọn Gói học kèm 1-1</option>
+          ${tutoringPkgs.map(p => `
+            <option value="${p.id}" data-price="${p.gia}" data-sessions="${p.so_buoi}">
+              ${p.ten_goi} (${p.so_buoi} buổi - ${p.gia.toLocaleString('vi-VN')} VNĐ)
+            </option>
+          `).join('')}
+        `;
+      }
+      priceInput.value = '';
+      paidInput.value = '';
+      sessionsInput.value = '';
+      regEndInput.value = '';
+    }
+
+    renderPackagesList();
+    typeSelect.addEventListener('change', renderPackagesList);
+
     // Hàm tự động tính toán ngày kết thúc dựa vào ngày bắt đầu và gói học
     function updateEndDate() {
       const selectedOpt = packageSelect.options[packageSelect.selectedIndex];
       if (selectedOpt && selectedOpt.value) {
-        const months = parseInt(selectedOpt.getAttribute('data-months')) || 0;
         const startVal = regStartInput.value;
-        if (startVal && months > 0) {
+        if (!startVal) return;
+
+        const type = typeSelect.value;
+        if (type === 'dai_tra') {
+          const months = parseInt(selectedOpt.getAttribute('data-months')) || 0;
+          if (months > 0) {
+            const startDate = new Date(startVal);
+            startDate.setMonth(startDate.getMonth() + months);
+            const y = startDate.getFullYear();
+            const m = String(startDate.getMonth() + 1).padStart(2, '0');
+            const d = String(startDate.getDate()).padStart(2, '0');
+            regEndInput.value = `${y}-${m}-${d}`;
+          }
+        } else {
+          // Gói kèm: mặc định thời hạn là 1 năm từ ngày bắt đầu
           const startDate = new Date(startVal);
-          startDate.setMonth(startDate.getMonth() + months);
-          
-          // Định dạng YYYY-MM-DD
+          startDate.setFullYear(startDate.getFullYear() + 1);
           const y = startDate.getFullYear();
           const m = String(startDate.getMonth() + 1).padStart(2, '0');
           const d = String(startDate.getDate()).padStart(2, '0');
@@ -175,10 +259,18 @@ export async function renderCourseRegistrations(container) {
         const price = selectedOpt.getAttribute('data-price') || '0';
         priceInput.value = formatCurrencyInput(price);
         paidInput.value = formatCurrencyInput(price);
+
+        const type = typeSelect.value;
+        if (type === 'hoc_kem') {
+          const sessions = selectedOpt.getAttribute('data-sessions') || '';
+          sessionsInput.value = sessions;
+        }
+
         updateEndDate();
       } else {
         priceInput.value = '';
         paidInput.value = '';
+        sessionsInput.value = '';
       }
     });
 
@@ -188,9 +280,12 @@ export async function renderCourseRegistrations(container) {
 
     document.getElementById('reg-course-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const payload = {
+      const type = typeSelect.value;
+      const isTutoring = type === 'hoc_kem';
+
+      let url = `${API_BASE}/registrations`;
+      let payload = {
         ho_so_id: parseInt(document.getElementById('reg-student-id').value),
-        goi_hoc_phi_id: parseInt(packageSelect.value),
         tu_ngay: regStartInput.value,
         den_ngay: regEndInput.value,
         gia_thuc_te: parseCurrencyInput(priceInput.value),
@@ -198,8 +293,25 @@ export async function renderCourseRegistrations(container) {
         phuong_thuc_tt: document.getElementById('reg-pay-method').value
       };
 
+      if (isTutoring) {
+        url = `${API_BASE}/registrations/tutoring`;
+        payload = {
+          hoc_vien_id: payload.ho_so_id,
+          giao_vien_id: document.getElementById('reg-teacher-id').value ? parseInt(document.getElementById('reg-teacher-id').value) : null,
+          goi_hoc_kem_id: parseInt(packageSelect.value),
+          so_buoi_dang_ky: parseInt(sessionsInput.value),
+          tu_ngay: payload.tu_ngay,
+          den_ngay: payload.den_ngay,
+          gia_thuc_te: payload.gia_thuc_te,
+          so_tien_da_thu: payload.so_tien_da_thu,
+          phuong_thuc_tt: payload.phuong_thuc_tt
+        };
+      } else {
+        payload.goi_hoc_phi_id = parseInt(packageSelect.value);
+      }
+
       try {
-        const res = await fetch(`${API_BASE}/registrations`, {
+        const res = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

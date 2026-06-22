@@ -1,3 +1,17 @@
+### [22/06/2026 13:41] — Tích hợp Gói học kèm 1-1 vào form Đăng ký / Thu phí
+- **Loại**: Cải tiến giao diện & Tính năng
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**: Nâng cấp form Đăng ký / Thu phí. Bổ sung trường chọn **Loại hình gói học** cho phép Lễ tân linh động chọn giữa Gói đại trà (Học nhóm) hoặc Gói học kèm 1-1. Khi chọn gói học kèm, form tự động chuyển đổi: hiển thị trường chọn Giáo viên phụ trách dạy kèm, ô nhập số buổi học đăng ký, và tải danh sách gói kèm từ API `/tutoring-packages`. Submit form sẽ gọi đúng API đăng ký học kèm `/api/registrations/tutoring`.
+- **Kết quả**: Thành công
+
+### [22/06/2026 13:34] — Phân quyền tính năng tự đặt lịch chỉ cho Gói học kèm hoạt động
+- **Loại**: Cải tiến logic & Phân quyền tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentPortal.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `POST /api/booking-requests`, chuyển đổi kiểm tra gói học. Chỉ cho phép các tài khoản học viên có Gói học kèm (`dang_ky_hoc_kem`) hoạt động được phép gửi yêu cầu đặt lịch học, trả về lỗi chi tiết nếu học viên chỉ có gói học đại trà/học nhóm cố định.
+  - **Frontend**: Cập nhật tab Đặt lịch của Portal Học viên. Tự động kiểm tra danh sách gói học kèm hoạt động của học viên thông qua API tổng quan. Nếu học viên không có gói học kèm hoạt động, ẩn form đặt lịch và hiển thị màn hình thông tin giải thích trực quan hướng dẫn học viên tuân theo lịch cố định của trung tâm.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 13:18] — Ẩn các lớp học nhóm trống không hoạt động khỏi tab Lớp học & Xếp lịch
 - **Loại**: Cải tiến giao diện & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/ClassManagement.js`

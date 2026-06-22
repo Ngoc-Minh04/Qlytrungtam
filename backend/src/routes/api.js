@@ -3480,17 +3480,15 @@ router.post('/booking-requests', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin đặt lịch' });
   }
   try {
-    // Kiểm tra xem học viên có bất kỳ gói học nào đang hoạt động hay không
-    const checkActivePkg = `
-      SELECT id FROM dang_ky_khoa_hoc WHERE ho_so_id = $1 AND trang_thai = 'dang_hoat_dong'
-      UNION
+    // Kiểm tra xem học viên có gói học kèm (1-1 / 1-2) nào đang hoạt động hay không
+    const checkActiveTutor = `
       SELECT id FROM dang_ky_hoc_kem WHERE hoc_vien_id = $1 AND trang_thai = 'dang_hoat_dong'
     `;
-    const activePkgRes = await pool.query(checkActivePkg, [ho_so_id]);
-    if (activePkgRes.rows.length === 0) {
+    const activeTutorRes = await pool.query(checkActiveTutor, [ho_so_id]);
+    if (activeTutorRes.rows.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Bạn không có gói học nào đang hoạt động hoặc gói học đã bị hủy/hết hạn. Vui lòng đăng ký gói học mới để tiếp tục đặt lịch!' 
+        error: 'Chức năng tự đặt lịch chỉ áp dụng cho học viên đăng ký gói học kèm 1-1 hoặc 1-2 đang hoạt động. Vui lòng liên hệ Lễ tân để được xếp vào lớp học nhóm cố định!' 
       });
     }
 
