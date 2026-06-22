@@ -1,3 +1,12 @@
+### [22/06/2026 09:05] — Cải tiến giao diện Đăng ký / Thu phí (CourseRegistrations.js)
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**:
+  - Chuyển đổi hai trường nhập liệu thủ công "Mã học viên (ID hồ sơ)" và "Mã gói học phí (ID)" thành Dropdown `<select>` tải động dữ liệu từ máy chủ.
+  - Tự động điền giá tiền gói học tương ứng vào ô "Giá trị khóa học" và "Thực thu" khi người dùng chọn gói học phí.
+  - Tự động cộng số tháng hiệu lực của gói học đó vào Ngày bắt đầu để tính toán và tự động điền Ngày kết thúc.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 08:20] — Duy trì trạng thái accordion và căn chỉnh các nút góc phải cùng hàng
 - **Loại**: Chỉnh sửa giao diện & Trải nghiệm người dùng
 - **File**: `frontend/src/pages/ClassManagement.js`, `frontend/src/pages/AccountManagement.js`, `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`, `frontend/src/pages/SalaryManagement.js`, `frontend/src/pages/LessonDiary.js`
