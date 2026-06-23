@@ -113,13 +113,36 @@ export async function renderAddStudentForm(container) {
     </div>
   `;
 
-  // Tải Lịch Custom
+  const dobInput = document.getElementById('add-dob');
+  if (dobInput) {
+    dobInput.setAttribute('max', new Date().toISOString().split('T')[0]);
+  }
   setupCustomDatePicker(document.getElementById('add-dob'), document.getElementById('add-dob-container'));
 
   document.getElementById('add-student-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const avatarFile = document.getElementById('add-avatar-file')?.files[0];
     const autoCreate = document.getElementById('add-autoAccount').checked;
+    const phoneValue = document.getElementById('add-phone').value.trim();
+    const dobValue = document.getElementById('add-dob').value;
+
+    if (dobValue) {
+      const birthday = new Date(dobValue);
+      const today = new Date();
+      birthday.setHours(0,0,0,0);
+      today.setHours(0,0,0,0);
+      if (birthday > today) {
+        showToast('Ngày sinh không được vượt quá ngày hiện tại', 'error');
+        return;
+      }
+    }
+
+    if (autoCreate) {
+      if (phoneValue.length !== 10) {
+        showToast('Tên đăng nhập (Số điện thoại) tự động tạo phải đủ 10 số', 'error');
+        return;
+      }
+    }
 
     const submitData = async (avatarBase64 = null) => {
       const payload = {

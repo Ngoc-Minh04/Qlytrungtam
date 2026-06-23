@@ -201,7 +201,7 @@ export async function renderStaffList(container, role) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
                     <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập </label>
-                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs">
+                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
                   </div>
                   <div>
                     <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>

@@ -2070,6 +2070,13 @@ router.post('/staff/create', verifyAccess(['admin']), async (req, res) => {
 
   if (auto_create_account) {
     const finalUsername = (username || so_dien_thoai || '').trim();
+    if (finalUsername.length !== 10) {
+      return res.status(400).json({ success: false, error: 'Tên đăng nhập (Số điện thoại) tự động tạo phải đủ 10 số' });
+    }
+    const finalPassword = password || '123456';
+    if (finalPassword.length < 6) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu đăng ký phải có ít nhất 6 ký tự' });
+    }
     try {
       const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
       if (dupCheck.rows.length > 0) {
@@ -2188,8 +2195,25 @@ router.post('/students/create', verifyAccess(['admin', 'le_tan']), async (req, r
   else if (genderLower === 'nữ' || genderLower === 'nu') genderDb = 'nu';
   else genderDb = 'khac';
 
+  if (ngay_sinh) {
+    const birthday = new Date(ngay_sinh);
+    const today = new Date();
+    birthday.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    if (birthday > today) {
+      return res.status(400).json({ success: false, error: 'Ngày sinh không được vượt quá ngày hiện tại' });
+    }
+  }
+
   if (auto_create_account) {
     const finalUsername = (username || so_dien_thoai || '').trim();
+    if (finalUsername.length !== 10) {
+      return res.status(400).json({ success: false, error: 'Tên đăng nhập (Số điện thoại) tự động tạo phải đủ 10 số' });
+    }
+    const finalPassword = password || '123456';
+    if (finalPassword.length < 6) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu đăng ký phải có ít nhất 6 ký tự' });
+    }
     try {
       const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
       if (dupCheck.rows.length > 0) {
@@ -2269,6 +2293,13 @@ router.post('/teachers/create', verifyAccess(['admin', 'le_tan']), async (req, r
 
   if (auto_create_account) {
     const finalUsername = (username || so_dien_thoai || '').trim();
+    if (finalUsername.length !== 10) {
+      return res.status(400).json({ success: false, error: 'Tên đăng nhập (Số điện thoại) tự động tạo phải đủ 10 số' });
+    }
+    const finalPassword = password || '123456';
+    if (finalPassword.length < 6) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu đăng ký phải có ít nhất 6 ký tự' });
+    }
     try {
       const dupCheck = await pool.query('SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1', [finalUsername]);
       if (dupCheck.rows.length > 0) {

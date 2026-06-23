@@ -215,7 +215,7 @@ export async function renderStudentsList(container, role) {
                 <div>
                   <label class="block font-semibold text-slate-600 mb-1">Ngày sinh</label>
                   <div id="modal-add-dob-container" class="relative">
-                    <input type="date" id="modal-add-dob">
+                    <input type="date" id="modal-add-dob" max="${new Date().toISOString().split('T')[0]}">
                   </div>
                 </div>
                 <div>
@@ -256,10 +256,10 @@ export async function renderStudentsList(container, role) {
                   <option value="Cao cấp C2">C2 Proficiency</option>
                 </select>
               </div>
-              <div>
+              <div class="hidden">
                 <label class="block font-semibold text-slate-600 mb-1">Chi nhánh tiếp nhận <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-add-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Trung tam chính">Trung tâm chính</option>
+                  <option value="Trung tam chính" selected>Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
                 </select>
               </div>
@@ -273,7 +273,7 @@ export async function renderStudentsList(container, role) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
                     <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
-                    <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs">
+                    <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
                   </div>
                   <div>
                     <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
@@ -555,6 +555,33 @@ export async function renderStudentsList(container, role) {
         return;
       }
 
+      // Validate ngày sinh không vượt quá ngày hiện tại
+      const dobVal = document.getElementById('modal-add-dob').value;
+      if (dobVal) {
+        const birthday = new Date(dobVal);
+        const today = new Date();
+        birthday.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        if (birthday > today) {
+          showToast('Ngày sinh không được vượt quá ngày hiện tại', 'error');
+          return;
+        }
+      }
+
+      const autoCreateAccount = document.getElementById('modal-add-autoAccount').checked;
+      if (autoCreateAccount) {
+        const usernameVal = (document.getElementById('modal-add-username').value || phoneVal).trim();
+        const passwordVal = document.getElementById('modal-add-password').value.trim();
+        if (usernameVal.length !== 10) {
+          showToast('Tên đăng nhập (Số điện thoại) tự động tạo phải đủ 10 số', 'error');
+          return;
+        }
+        if (passwordVal.length < 6) {
+          showToast('Mật khẩu tự động tạo phải có ít nhất 6 ký tự', 'error');
+          return;
+        }
+      }
+
       // Validate Email (nếu có điền)
       const emailVal = document.getElementById('modal-add-email').value.trim();
       if (emailVal && !isValidEmail(emailVal)) {
@@ -564,7 +591,6 @@ export async function renderStudentsList(container, role) {
       }
 
       const avatarFile = document.getElementById('modal-add-avatar').files[0];
-      const autoCreateAccount = document.getElementById('modal-add-autoAccount').checked;
 
       const submitForm = async (avatarBase64 = null) => {
         const payload = {
@@ -740,7 +766,7 @@ export function showStudentDetailModal(sv) {
                     <div class="w-full">
                       <span class="block text-[9px] text-slate-400 font-semibold uppercase px-1">Ngày sinh</span>
                       <div id="inplace-dob-container" class="relative">
-                        <input type="date" id="inplace-dob" value="${dobFormatted}">
+                        <input type="date" id="inplace-dob" value="${dobFormatted}" max="${new Date().toISOString().split('T')[0]}">
                       </div>
                     </div>
                   </div>
@@ -1279,6 +1305,19 @@ export function showStudentDetailModal(sv) {
           showToast('Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0', 'error');
           return;
         }
+
+        const dobVal = modal.querySelector('#inplace-dob').value;
+        if (dobVal) {
+          const birthday = new Date(dobVal);
+          const today = new Date();
+          birthday.setHours(0,0,0,0);
+          today.setHours(0,0,0,0);
+          if (birthday > today) {
+            showToast('Ngày sinh không được vượt quá ngày hiện tại', 'error');
+            return;
+          }
+        }
+
         const emailVal = modal.querySelector('#inplace-email').value.trim();
         if (emailVal && !isValidEmail(emailVal)) {
           showToast('Email không hợp lệ. Phải có định dạng abc@domain.com', 'error');

@@ -1,3 +1,28 @@
+### [23/06/2026 10:03] — Ẩn trường Chi nhánh học viên và Khóa tên đăng nhập Giáo viên/Nhân viên
+- **Loại**: Cải tiến UI/UX & Nghiệp vụ
+- **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
+- **Mô tả**:
+  - **Học viên**: Ẩn trường "Chi nhánh tiếp nhận" khỏi Modal Tiếp nhận học viên mới và đặt mặc định là "Trung tâm chính" do hệ thống chưa phát triển đa chi nhánh.
+  - **Giáo viên & Nhân viên**: Khóa trường nhập Tên đăng nhập thành chỉ đọc (`readonly`) và đổi style xám (`bg-slate-100 cursor-not-allowed`) để tự động sao chép Số điện thoại sang Tên đăng nhập tương tự như học viên.
+- **Kết quả**: Thành công
+
+### [23/06/2026 09:57] — Khóa trường Tên đăng nhập tự tạo thành chỉ đọc (Read-only)
+- **Loại**: Cải tiến nghiệp vụ & UI/UX
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  - Đặt thuộc tính `readonly` và thay đổi style (màu nền xám `bg-slate-100`, con trỏ `cursor-not-allowed`) cho trường nhập Tên đăng nhập trong Modal Tiếp nhận học viên mới.
+  - Trường này sẽ tự động lấy và cập nhật theo Số điện thoại của hồ sơ nhập phía trên, không cho phép Admin tự ý chỉnh sửa tay khác số điện thoại để đảm bảo tính đồng nhất 100% giữa tài khoản đăng nhập và số điện thoại liên hệ của học viên.
+- **Kết quả**: Thành công
+
+### [23/06/2026 09:47] — Chặn lưu ngày sinh tương lai và SĐT/mật khẩu sai quy định hiển thị thông báo lỗi đẹp mắt
+- **Loại**: Sửa bug & UI/UX
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/StudentsList.js`, `frontend/src/pages/AddStudentForm.js`
+- **Mô tả**:
+  - Chặn chọn ngày sinh trong tương lai (lớn hơn ngày hiện tại) bằng cách gán thuộc tính `max` cho ô input date ở Frontend.
+  - Bổ sung logic JavaScript kiểm tra ngày sinh tại Frontend và Backend, hiển thị thông báo lỗi **Toast màu đỏ đẹp mắt** nếu người dùng nhập ngày sinh tương lai.
+  - Duy trì kiểm tra tên đăng nhập (SĐT) tự động tạo đủ 10 số, mật khẩu đủ 6 ký tự trở lên; hiển thị Toast lỗi chi tiết, rõ ràng và ngăn chặn việc âm thầm lưu thành công dữ liệu sai quy chuẩn.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 09:23] — Đồng bộ validate mật khẩu tối thiểu 6 ký tự và thêm Xác nhận mật khẩu
 - **Loại**: Cải tiến tính năng & Bảo mật
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/AccountManagement.js`
