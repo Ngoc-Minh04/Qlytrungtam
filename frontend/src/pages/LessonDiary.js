@@ -430,7 +430,9 @@ async function loadDiaryData(container, userRole, students, studentId) {
                           ${item.ten_giao_vien ? item.ten_giao_vien.charAt(0) : 'G'}
                         </div>
                         <div>
-                          <span class="font-bold text-slate-800 text-xs block">GV: ${item.ten_giao_vien || 'Giáo viên trung tâm'}</span>
+                          <span class="font-bold text-slate-800 text-xs block">
+                            ${item.chuc_vu_nguoi_gui === 'Nhân viên' || item.chuc_vu_nguoi_gui === 'Lễ tân' ? 'NV' : (item.chuc_vu_nguoi_gui === 'Quản lý' || item.chuc_vu_nguoi_gui === 'Admin' || item.chuc_vu_nguoi_gui === 'Quản trị viên' ? 'QL' : 'GV')}: ${item.ten_giao_vien || 'Giáo viên trung tâm'}
+                          </span>
                           <span class="text-[9px] text-slate-400 block">${createdTime} - ${createdDate}</span>
                         </div>
                       </div>
@@ -633,7 +635,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
             hoc_vien_id: targetHocVienId,
             giao_vien_id: gvId,
             nguoi_gui_id: gvId,
-            vai_tro_gui: 'giao_vien',
+            vai_tro_gui: userRole,
             loai_nhat_ky: 'giao_vien_dan_do',
             nhan_xet_buoi_hoc,
             bai_tap_ve_nha,

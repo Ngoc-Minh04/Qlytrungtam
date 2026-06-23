@@ -52,11 +52,11 @@ const verifyAccess = (requiredRoles) => {
 // ============================================================
 async function autoCreateAccount(client, hoSoId, username, roleId, password = '123456') {
   const insertAccQuery = `
-    INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, trang_thai)
-    VALUES ($1, $2, $3, 'hoat_dong')
+    INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, ho_so_id, trang_thai)
+    VALUES ($1, $2, $3, $4, 'hoat_dong')
     RETURNING id
   `;
-  const accRes = await client.query(insertAccQuery, [username, password, roleId]);
+  const accRes = await client.query(insertAccQuery, [username, password, roleId, hoSoId]);
   const accId = accRes.rows[0].id;
 
   // Cập nhật tai_khoan_id ngược lại bảng ho_so
@@ -2959,8 +2959,9 @@ router.post('/auth/login', async (req, res) => {
     await pool.query('UPDATE tai_khoan SET lan_dang_nhap_cuoi = NOW() WHERE id = $1', [user.id]);
 
     // Tự động liên kết hồ sơ nếu tài khoản chưa được liên kết (ho_so_id IS NULL)
-    if (!user.ho_so_id && (user.vai_tro === 'giao_vien' || user.vai_tro === 'hoc_vien')) {
+    if (!user.ho_so_id && (user.vai_tro === 'giao_vien' || user.vai_tro === 'hoc_vien' || user.vai_tro === 'nhan_vien' || user.vai_tro === 'le_tan')) {
       const searchPattern = user.ten_dang_nhap.toUpperCase();
+      const loaiHoSo = (user.vai_tro === 'nhan_vien' || user.vai_tro === 'le_tan') ? 'nhan_vien' : user.vai_tro;
       const findProfile = await pool.query(
         `SELECT id, ho_ten, email, so_dien_thoai, chi_nhanh, loai_ho_so, ma_ho_so 
          FROM ho_so 
@@ -2974,7 +2975,7 @@ router.post('/auth/login', async (req, res) => {
          AND loai_ho_so = $4 
          AND is_deleted = 0 
          LIMIT 1`,
-        [searchPattern, `%${searchPattern}%`, user.ten_dang_nhap, user.vai_tro]
+        [searchPattern, `%${searchPattern}%`, user.ten_dang_nhap, loaiHoSo]
       );
       if (findProfile.rows.length > 0) {
         const matchedProfile = findProfile.rows[0];
@@ -3821,7 +3822,7 @@ router.get('/reports/student/:studentId', async (req, res) => {
       )
     `);
     const result = await pool.query(`
-      SELECT s.*, hs_gv.ho_ten as ten_giao_vien
+      SELECT s.*, hs_gv.ho_ten as ten_giao_vien, hs_gv.chuc_vu as chuc_vu_nguoi_gui
       FROM so_lien_lac s
       LEFT JOIN ho_so hs_gv ON s.giao_vien_id = hs_gv.id
       WHERE s.hoc_vien_id = $1
@@ -3854,7 +3855,7 @@ router.post('/reports', async (req, res) => {
 
   let verifiedGvId = giao_vien_id;
   try {
-    const gvCheck = await pool.query("SELECT id FROM ho_so WHERE id = $1", [giao_vien_id]);
+    const gvCheck = await pool.query("SELECT id FROM ho_so WHERE id = $1 AND loai_ho_so != 'hoc_vien'", [giao_vien_id]);
     if (gvCheck.rows.length === 0) {
       // Tìm hồ sơ đầu tiên trong hệ thống (ưu tiên giáo viên, sau đó đến nhân viên khác) để gán làm người gửi
       const fallbackGv = await pool.query(

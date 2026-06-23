@@ -1,3 +1,54 @@
+### [23/06/2026 08:14] — Sửa lỗi gán sai tên người gửi trong Sổ liên lạc khi thiếu hoSoId
+- **Loại**: Sửa lỗi logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - Khắc phục lỗi khi tài khoản chưa lưu lại `hoSoId` trong phiên làm việc của trình duyệt thì client tự động gửi ID tài khoản (ví dụ `45`) lên làm `giao_vien_id`.
+  - Backend đã kiểm tra thấy trùng khớp ID này với hồ sơ học sinh (hồ sơ ID `45` của học sinh tên "a") nên đã lưu nhận xét dưới danh nghĩa học sinh "a" (hiển thị là "GV: a").
+  - Đã thêm điều kiện `AND loai_ho_so != 'hoc_vien'` vào câu query kiểm tra `gvCheck` để chặn việc nhận diện sai hồ sơ học sinh làm hồ sơ giáo viên/nhân viên gửi nhận xét.
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:10] — Nâng cấp ràng buộc kiểm tra vai trò người gửi nhận xét trong Sổ liên lạc
+- **Loại**: Cập nhật database / Khắc phục lỗi hệ thống
+- **File**: Cơ sở dữ liệu (bảng `so_lien_lac`)
+- **Mô tả**:
+  - Phát hiện lỗi 500 khi tài khoản Nhân viên (`nhan_vien`) viết nhận xét do vi phạm ràng buộc kiểm tra `so_lien_lac_vai_tro_gui_check` (ràng buộc cũ trong Postgres chỉ cho phép `'hoc_vien'` và `'giao_vien'`).
+  - Đã thực thi lệnh SQL DROP ràng buộc cũ và tạo lại ràng buộc mới, mở rộng danh sách vai trò hợp lệ được ghi nhận khi gửi nhận xét: `('hoc_vien', 'giao_vien', 'nhan_vien', 'le_tan', 'admin')`.
+- **Kết quả**: Thành công
+
+### [22/06/2026 17:25] — Khắc phục lỗi thiếu liên kết hồ sơ khi tạo tài khoản tự động (autoCreateAccount)
+- **Loại**: Sửa lỗi logic Backend & Cơ sở dữ liệu
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Sửa helper autoCreateAccount**: Thêm trường `ho_so_id` vào câu lệnh `INSERT INTO tai_khoan` khi tạo tài khoản tự động cho Nhân viên, Giáo viên, và Học viên mới. Khắc phục triệt để việc các tài khoản tạo tự động mới có `ho_so_id = NULL`.
+  - **Cập nhật database**: Liên kết thủ công tài khoản test mới tạo `0369877654` với hồ sơ nhân sự ID `99` (nhân viên tên `aa`).
+  - **Mở rộng tự động liên kết khi đăng nhập**: Cập nhật API `/auth/login` để tự động tra cứu và tự động vá/liên kết hồ sơ cho các tài khoản vai trò Nhân viên (`nhan_vien` hoặc `le_tan`) nếu trước đó bị thiếu liên kết `ho_so_id`.
+- **Kết quả**: Thành công
+
+### [22/06/2026 17:15] — Liên kết hồ sơ nhân sự cho tài khoản test và khắc phục lỗi người gửi nhận xét
+- **Loại**: Cập nhật database & Đồng bộ dữ liệu
+- **File**: Cơ sở dữ liệu (bảng `tai_khoan`)
+- **Mô tả**:
+  - Cập nhật liên kết hồ sơ nhân sự `ho_so_id = 96` (Hồ sơ nhân viên tên `nv00223`) cho tài khoản đăng nhập `0369871111` (vai_tro_id = 2 - Nhân viên).
+  - Khắc phục triệt để lỗi khi viết nhận xét bằng tài khoản Nhân viên này thì timeline Sổ liên lạc bị gán sang giáo viên "a" (do trước đây thiếu liên kết `ho_so_id` dẫn đến backend chạy fallback tự chọn ngẫu nhiên một giáo viên). Giờ đây, khi đăng nhập lại và viết nhận xét mới, hệ thống sẽ gửi đúng `ho_so_id` và hiển thị chính xác nhãn `"NV: nv00223"`.
+- **Kết quả**: Thành công
+
+### [22/06/2026 17:04] — Khắc phục nhãn hiển thị cứng người gửi "GV:" tại Sổ liên lạc
+- **Loại**: Sửa bug giao diện & Cải tiến tính năng
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật câu SQL SELECT của API `/api/reports/student/:studentId` để thực hiện JOIN lấy thêm trường `chuc_vu` từ hồ sơ người gửi (`ho_so`).
+  - **Frontend**: Thay thế nhãn hiển thị cứng `"GV:"` thành hiển thị động dựa trên chức vụ thực tế của người gửi trong hồ sơ nhân sự:
+    * Nếu chức vụ là "Nhân viên" hoặc "Lễ tân" -> Hiển thị `"NV: [Tên]"`.
+    * Nếu chức vụ là "Quản lý", "Admin" hoặc "Quản trị viên" -> Hiển thị `"QL: [Tên]"`.
+    * Các trường hợp còn lại (Giáo viên) -> Giữ nguyên `"GV: [Tên]"`.
+- **Kết quả**: Thành công
+
+### [22/06/2026 16:58] — Đồng bộ hóa quyền truy cập menu cho vai trò Nhân viên
+- **Loại**: Cải tiến phân quyền & Giao diện người dùng
+- **File**: `frontend/src/pages/Dashboard.js`
+- **Mô tả**: Bổ sung vai trò `"nhan_vien"` vào danh sách vai trò được phép (`roles`) của toàn bộ các mục menu vận hành trung tâm bao gồm: Tổng quan, Thời khóa biểu, Lượt Vào - Ra, Quản lý Gói học, Lớp học & Xếp lịch, Học viên & Tiếp nhận, Nhân sự & Chấm công, Chất lượng đào tạo, Yêu cầu, Hệ thống & Nội quy. Đảm bảo tài khoản Nhân viên có đầy đủ quyền thao tác vận hành mà vẫn bảo mật thông tin tài chính doanh thu và danh sách tài khoản của Admin.
+- **Kết quả**: Thành công
+
 ### [22/06/2026 16:49] — Quy chuẩn vai trò nhân viên/admin và ẩn trường chi nhánh
 - **Loại**: Cải tiến giao diện & Đồng bộ cơ sở dữ liệu
 - **File**: `frontend/src/pages/StaffList.js`, `frontend/src/pages/AccountManagement.js`

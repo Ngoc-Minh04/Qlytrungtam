@@ -110,20 +110,20 @@ function findGroupOfPage(page) {
 
 function getMenuConfig(role) {
   const allItems = [
-    { page: 'dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'] },
+    { page: 'dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'nhan_vien', 'le_tan', 'giao_vien', 'hoc_vien'] },
     { page: 'my-qr', icon: 'qr_code', label: 'Mã QR của tôi', roles: ['hoc_vien', 'giao_vien'] },
-    { page: 'schedules', icon: 'calendar_month', label: 'Thời khóa biểu', roles: ['admin', 'le_tan', 'giao_vien'] },
+    { page: 'schedules', icon: 'calendar_month', label: 'Thời khóa biểu', roles: ['admin', 'nhan_vien', 'le_tan', 'giao_vien'] },
     { page: 'attendance-staff', icon: 'fingerprint', label: 'Chấm công của tôi', roles: ['giao_vien'] },
-    { page: 'checkin-logs', icon: 'qr_code_scanner', label: 'Lượt Vào - Ra', roles: ['admin', 'le_tan'] },
-    { page: 'course-packages-group', icon: 'school', label: 'Quản lý Gói học', roles: ['admin', 'le_tan'] },
-    { page: 'class-management', icon: 'event_note', label: 'Lớp học & Xếp lịch', roles: ['admin', 'le_tan'] },
-    { page: 'students-group', icon: 'group', label: 'Học viên & Tiếp nhận', roles: ['admin', 'le_tan'] },
-    { page: 'teachers-group', icon: 'badge', label: 'Nhân sự & Chấm công', roles: ['admin', 'le_tan'] },
-    { page: 'quality-group', icon: 'menu_book', label: 'Chất lượng đào tạo', roles: ['admin', 'giao_vien'] },
-    { page: 'finance-group', icon: 'payments', label: 'Yêu cầu', roles: ['admin', 'le_tan'] },
+    { page: 'checkin-logs', icon: 'qr_code_scanner', label: 'Lượt Vào - Ra', roles: ['admin', 'nhan_vien', 'le_tan'] },
+    { page: 'course-packages-group', icon: 'school', label: 'Quản lý Gói học', roles: ['admin', 'nhan_vien', 'le_tan'] },
+    { page: 'class-management', icon: 'event_note', label: 'Lớp học & Xếp lịch', roles: ['admin', 'nhan_vien', 'le_tan'] },
+    { page: 'students-group', icon: 'group', label: 'Học viên & Tiếp nhận', roles: ['admin', 'nhan_vien', 'le_tan'] },
+    { page: 'teachers-group', icon: 'badge', label: 'Nhân sự & Chấm công', roles: ['admin', 'nhan_vien', 'le_tan'] },
+    { page: 'quality-group', icon: 'menu_book', label: 'Chất lượng đào tạo', roles: ['admin', 'nhan_vien', 'le_tan', 'giao_vien'] },
+    { page: 'finance-group', icon: 'payments', label: 'Yêu cầu', roles: ['admin', 'nhan_vien', 'le_tan'] },
     { page: 'revenue-report', icon: 'bar_chart', label: 'Báo cáo Doanh thu', roles: ['admin'] },
     { page: 'accounts-group', icon: 'manage_accounts', label: 'Quản lý Tài khoản', roles: ['admin'] },
-    { page: 'system-group', icon: 'admin_panel_settings', label: 'Hệ thống & Nội quy', roles: ['admin', 'le_tan', 'giao_vien', 'hoc_vien'] },
+    { page: 'system-group', icon: 'admin_panel_settings', label: 'Hệ thống & Nội quy', roles: ['admin', 'nhan_vien', 'le_tan', 'giao_vien', 'hoc_vien'] },
   ];
   return allItems.filter(item => !item.roles || item.roles.includes(role));
 }
