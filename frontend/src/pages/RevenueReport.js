@@ -18,7 +18,7 @@ export async function renderRevenueReport(container) {
         <!-- Bộ lọc thời gian nhanh -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none text-xs w-fit">
-            <button id="filter-btn-today" class="filter-btn px-4 py-1.5 rounded-lg transition font-medium text-slate-500 hover:text-apple-ink" data-filter="today">Hôm nay</button>
+            <button id="filter-btn-today" class="filter-btn px-4 py-1.5 rounded-lg transition font-bold text-apple-ink bg-white shadow-sm border border-apple-divider/20" data-filter="today">Hôm nay</button>
             <button id="filter-btn-yesterday" class="filter-btn px-4 py-1.5 rounded-lg transition font-medium text-slate-500 hover:text-apple-ink" data-filter="yesterday">Hôm qua</button>
             <button id="filter-btn-week" class="filter-btn px-4 py-1.5 rounded-lg transition font-medium text-slate-500 hover:text-apple-ink" data-filter="week">Tuần này</button>
             
@@ -105,8 +105,8 @@ export async function renderRevenueReport(container) {
     </div>
   `;
 
-  // Thiết lập biến filter mặc định là month
-  let currentFilter = 'month';
+  // Thiết lập biến filter mặc định là today
+  let currentFilter = 'today';
 
   async function loadRevenueData(filterOrQuery) {
     try {
@@ -211,14 +211,29 @@ export async function renderRevenueReport(container) {
           ? `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">Kèm 1-1</span>`
           : `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-apple-blue border border-blue-200">Đại trà</span>`;
 
+        const isCancelled = g.trang_thai === 'huy';
+        const netAmt = parseFloat(g.so_tien_da_thu || 0) - parseFloat(g.so_tien_hoan || 0);
+        
+        const nameDisplay = isCancelled
+          ? `<span class="font-bold text-slate-500">${g.ho_ten}</span> <span class="ml-1.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-red-50 text-red-500 border border-red-200 inline-block align-middle">Đã hủy (Hoàn: ${parseFloat(g.so_tien_hoan || 0).toLocaleString('vi-VN')}đ)</span>`
+          : `<span class="font-bold text-apple-ink">${g.ho_ten}</span>`;
+
+        const amountDisplay = isCancelled
+          ? `<span class="font-bold text-red-500">${netAmt > 0 ? '+' : ''}${netAmt.toLocaleString('vi-VN')} đ</span>`
+          : `<span class="font-bold text-emerald-600">+${parseFloat(g.so_tien_da_thu).toLocaleString('vi-VN')} đ</span>`;
+
+        const rowClass = isCancelled 
+          ? 'bg-slate-50/75 opacity-65 hover:opacity-100 hover:bg-slate-100/90 border-b border-apple-divider/40 transition-all text-xs duration-200' 
+          : 'hover:bg-apple-parchment border-b border-apple-divider/40 transition text-xs';
+
         return `
-          <tr class="hover:bg-apple-parchment border-b border-apple-divider/40 transition text-xs">
-            <td class="py-3 px-4 font-bold text-apple-ink">${g.ho_ten}</td>
+          <tr class="${rowClass}">
+            <td class="py-3 px-4">${nameDisplay}</td>
             <td class="py-3 px-4 text-slate-600">${g.ten_khoa_hoc}</td>
             <td class="py-3 px-4">${typeBadge}</td>
             <td class="py-3 px-4 font-medium text-slate-600">${formatMethod(g.phuong_thuc_tt)}</td>
             <td class="py-3 px-4 text-slate-400">${formatDateTime(g.ngay_tao)}</td>
-            <td class="py-3 px-4 text-right font-bold text-emerald-600">+${parseFloat(g.so_tien_da_thu).toLocaleString('vi-VN')} đ</td>
+            <td class="py-3 px-4 text-right">${amountDisplay}</td>
           </tr>
         `;
       }).join('') + (giao_dich.length === 0 ? '<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs">Không có dữ liệu giao dịch.</td></tr>' : '');
@@ -313,7 +328,7 @@ export async function renderRevenueReport(container) {
 
   // Khởi chạy dữ liệu mặc định
   setTimeout(() => {
-    loadRevenueData('month');
+    loadRevenueData('today');
 
     // Biểu đồ tròn hình thức thanh toán cố định 80% CK / 20% tiền mặt
     const pieCtx = document.getElementById('paymentPieChart').getContext('2d');

@@ -1,9 +1,45 @@
+### [23/06/2026 10:57] — Thiết lập mặc định hiển thị doanh thu Hôm nay cho Báo cáo Doanh thu
+- **Loại**: Cải tiến luồng trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - Chuyển đổi bộ lọc mặc định khi tải trang Báo cáo Doanh thu từ `'Tháng này'` sang `'Hôm nay'` để giúp Admin nắm bắt ngay hoạt động giao dịch phát sinh trong ngày hiện tại.
+  - Tự động kích hoạt kiểu hiển thị active (nút sáng trắng và có viền nổi) cho nút **Hôm nay** ngay khi mở trang.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:42] — Nâng cấp hệ thống hiển thị và khấu trừ tiền hoàn đối với các gói học đã hủy
+- **Loại**: Cải tiến tính năng & Trải nghiệm giao diện (UI/UX)
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/Overview.js`, `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `/api/reports/revenue` tính toán doanh thu bằng `so_tien_da_thu - so_tien_hoan`. Đưa các giao dịch đã hủy vào danh sách lịch sử và trả về `trang_thai`, `so_tien_hoan`. Bổ sung trường `so_tien_hoan` trong API `/api/registrations`.
+  - **Frontend Tổng quan**: Đồng bộ tính doanh thu dựa trên thực thu trừ tiền hoàn (bao gồm cả các gói đã hủy để khớp 100% với backend).
+  - **Frontend Báo cáo (UI/UX mới)**: 
+    * Thiết lập làm mờ toàn bộ dòng giao dịch đã hủy (`opacity-65` và nền xám nhạt `#f8fafc`) giúp giao diện thông thoáng, dễ quét thông tin, tự động hover nổi rõ nét khi di chuột qua.
+    * Tinh giản hiển thị: Cột Thực thu chỉ hiển thị duy nhất 1 con số thực thu sau khi hoàn (ví dụ: `+1.000.000 đ` màu đỏ cam), tránh rối mắt. Toàn bộ thông tin hoàn trả được đưa gọn gàng vào nhãn trạng thái bên cạnh tên học viên: `Đã hủy (Hoàn: Xđ)`.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:35] — Đồng bộ số liệu doanh thu thực thu giữa Tổng quan và Báo cáo Doanh thu
+- **Loại**: Sửa lỗi logic hiển thị
+- **File**: `frontend/src/pages/Overview.js`
+- **Mô tả**:
+  - Tái cấu trúc logic tính toán doanh thu trên màn hình Tổng quan để sử dụng dữ liệu thực thu (`so_tien_da_thu`) thay vì giá trị gốc (`gia_thuc_te`).
+  - Lọc loại bỏ hoàn toàn các gói đăng ký đã bị hủy (`huy`) hoặc tạm dừng (`tam_dung`) để thống nhất 100% với số liệu hiển thị thực tế bên tab Báo cáo Doanh thu (6.000.000đ).
+- **Kết quả**: Thành công
+
 ### [23/06/2026 10:23] — Tích hợp hộp thoại xác nhận khi Khóa/Mở khóa tài khoản
 - **Loại**: Cải tiến bảo mật & Trải nghiệm người dùng (UI/UX)
 - **File**: `frontend/src/pages/AccountManagement.js`
 - **Mô tả**:
   - Bổ sung hộp thoại cảnh báo xác nhận `confirm` trước khi tiến hành Khóa hoặc Mở khóa tài khoản người dùng.
   - Ngăn chặn hoàn toàn việc Admin vô tình lỡ tay click nhầm làm khóa tài khoản của học viên hay nhân sự ngoài ý muốn.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:27] — Khắc phục lỗi sai lệch số liệu biểu đồ doanh thu hàng ngày
+- **Loại**: Sửa bug logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - Loại bỏ việc đọc biểu đồ từ bảng tĩnh `doanh_thu` (chỉ chứa 4 dòng dữ liệu kiểm thử cũ).
+  - Tái cấu trúc API `/api/reports/revenue` để tính toán doanh thu tích lũy hàng ngày thời gian thực (real-time) trực tiếp từ dải ngày thực tế (`generate_series`) kết hợp với dữ liệu đăng ký thực tế từ 2 bảng `dang_ky_khoa_hoc` VÀ `dang_ky_hoc_kem`.
+  - Khắc phục hoàn toàn lỗi số liệu trên biểu đồ không tăng hoặc không khớp với các card chỉ số tổng ở phía trên.
 - **Kết quả**: Thành công
 
 ### [23/06/2026 10:22] — Khôi phục tính năng Click trực tiếp vào Trạng thái tài khoản

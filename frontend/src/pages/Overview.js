@@ -54,24 +54,24 @@ async function renderAdminOverview(container, role) {
     ? [...checkinsToday].sort((a, b) => a.gio_quet.localeCompare(b.gio_quet))[0]
     : null;
 
-  const paidRegs = regs.filter(r => r.trang_thai_thanh_toan === 'da_thanh_toan');
-  const unpaidRegs = regs.filter(r => r.trang_thai_thanh_toan !== 'da_thanh_toan' && r.trang_thai !== 'huy');
+  const activeAndCancelledRegs = regs.filter(r => r.trang_thai !== 'tam_dung');
+  const activeRegs = regs.filter(r => r.trang_thai !== 'huy' && r.trang_thai !== 'tam_dung');
 
-  const totalRevenue = paidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
-  const unpaidRevenue = unpaidRegs.reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
+  const totalRevenue = activeAndCancelledRegs.reduce((s, r) => s + (parseFloat(r.so_tien_da_thu || 0) - parseFloat(r.so_tien_hoan || 0)), 0);
+  const unpaidRevenue = activeRegs.reduce((s, r) => s + Math.max(0, parseFloat(r.gia_thuc_te || 0) - parseFloat(r.so_tien_da_thu || 0)), 0);
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthRevenue = paidRegs
+  const monthRevenue = activeAndCancelledRegs
     .filter(r => r.ngay_dang_ky && r.ngay_dang_ky.startsWith(thisMonth))
-    .reduce((s, r) => s + parseFloat(r.so_tien_phai_nop || 0), 0);
+    .reduce((s, r) => s + (parseFloat(r.so_tien_da_thu || 0) - parseFloat(r.so_tien_hoan || 0)), 0);
 
   const pendingBookings = bookings.filter(b => b.trang_thai === 'cho_duyet');
   const cancelRequests = regs.filter(r => r.trang_thai === 'huy');
 
   // Gói bán chạy
   const pkgMap = {};
-  paidRegs.forEach(r => { const k = r.ten_goi || 'Khác'; pkgMap[k] = (pkgMap[k] || 0) + 1; });
+  activeRegs.forEach(r => { const k = r.ten_goi || 'Khác'; pkgMap[k] = (pkgMap[k] || 0) + 1; });
   const bestSellers = Object.entries(pkgMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   // Rating trung bình

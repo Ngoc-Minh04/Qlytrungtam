@@ -1116,40 +1116,69 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
     }
   }
 
-  let dateCondition = '';
-  let regDateCondition = '';
-  const params = [];
-  if (finalStartDate && finalEndDate) {
-    dateCondition = ' AND d.ngay >= $1 AND d.ngay <= $2';
-    regDateCondition = ' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2';
-    params.push(finalStartDate, finalEndDate);
+  // Đảm bảo luôn có khoảng ngày mặc định là 30 ngày qua nếu không được chỉ định
+  if (!finalStartDate || !finalEndDate) {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localToday = new Date(today.getTime() - tzOffset);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000 - tzOffset);
+    finalStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+    finalEndDate = localToday.toISOString().split('T')[0];
   }
 
+  const regDateCondition = ' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2';
+  const params = [finalStartDate, finalEndDate];
+
   try {
-    // 1. Tổng tiền các gói đại trà
-    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition}`;
+    // 1. Tổng tiền các gói đại trà (trừ tiền hoàn của các gói đã hủy)
+    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai != 'tam_dung' ${regDateCondition}`;
     const khRes = await pool.query(khQuery, params);
 
-    // 2. Tổng tiền các gói kèm 1-1
-    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition}`;
+    // 2. Tổng tiền các gói kèm 1-1 (trừ tiền hoàn của các gói đã hủy)
+    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai != 'tam_dung' ${regDateCondition}`;
     const hkRes = await pool.query(hkQuery, params);
 
-    // 3. Biểu đồ doanh thu tích lũy hàng ngày trong kỳ filter
+    // 3. Biểu đồ doanh thu tích lũy hàng ngày trong kỳ filter tính toán real-time
     const statsQuery = `
-      SELECT d.ngay::text as ngay, d.tong_tien, d.tong_don, d.tien_khoa_hoc, d.tien_hoc_kem
-      FROM doanh_thu d
-      WHERE 1=1 ${dateCondition}
-      ORDER BY d.ngay ASC
+      WITH date_series AS (
+        SELECT generate_series($1::date, $2::date, '1 day'::interval)::date as ngay
+      ),
+      kh_daily AS (
+        SELECT ngay_tao::date as ngay, 
+               COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as tien_khoa_hoc,
+               COUNT(id) as don_khoa_hoc
+        FROM dang_ky_khoa_hoc
+        WHERE trang_thai != 'tam_dung'
+        GROUP BY ngay_tao::date
+      ),
+      hk_daily AS (
+        SELECT ngay_tao::date as ngay, 
+               COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as tien_hoc_kem,
+               COUNT(id) as don_hoc_kem
+        FROM dang_ky_hoc_kem
+        WHERE trang_thai != 'tam_dung'
+        GROUP BY ngay_tao::date
+      )
+      SELECT 
+        ds.ngay::text as ngay,
+        (COALESCE(kh.tien_khoa_hoc, 0) + COALESCE(hk.tien_hoc_kem, 0))::numeric as tong_tien,
+        (COALESCE(kh.don_khoa_hoc, 0) + COALESCE(hk.don_hoc_kem, 0))::int as tong_don,
+        COALESCE(kh.tien_khoa_hoc, 0)::numeric as tien_khoa_hoc,
+        COALESCE(hk.tien_hoc_kem, 0)::numeric as tien_hoc_kem
+      FROM date_series ds
+      LEFT JOIN kh_daily kh ON ds.ngay = kh.ngay
+      LEFT JOIN hk_daily hk ON ds.ngay = hk.ngay
+      ORDER BY ds.ngay ASC
     `;
     const statsRes = await pool.query(statsQuery, params);
 
     // 4. Thống kê gói học bán chạy nhất (Đại trà & Học kèm)
     const bestSellerQuery = `
       WITH all_regs AS (
-        SELECT d.goi_hoc_phi_id as goi_id, 'khoa_hoc' as loai_goi, d.so_tien_da_thu, d.ngay_tao, d.trang_thai
+        SELECT d.goi_hoc_phi_id as goi_id, 'khoa_hoc' as loai_goi, (d.so_tien_da_thu - COALESCE(d.so_tien_hoan, 0)) as so_tien_da_thu, d.ngay_tao, d.trang_thai
         FROM dang_ky_khoa_hoc d
         UNION ALL
-        SELECT dk.goi_hoc_kem_id as goi_id, 'hoc_kem' as loai_goi, dk.so_tien_da_thu, dk.ngay_tao, dk.trang_thai
+        SELECT dk.goi_hoc_kem_id as goi_id, 'hoc_kem' as loai_goi, (dk.so_tien_da_thu - COALESCE(dk.so_tien_hoan, 0)) as so_tien_da_thu, dk.ngay_tao, dk.trang_thai
         FROM dang_ky_hoc_kem dk
       ),
       all_names AS (
@@ -1160,51 +1189,30 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       SELECT n.ten_goi, COUNT(r.goi_id) as so_luong, SUM(r.so_tien_da_thu) as tong_doanh_thu
       FROM all_regs r
       JOIN all_names n ON r.goi_id = n.id AND r.loai_goi = n.loai_goi
-      WHERE r.trang_thai NOT IN ('huy', 'tam_dung') ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
+      WHERE r.trang_thai != 'tam_dung' ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
       GROUP BY n.ten_goi
       ORDER BY so_luong DESC
       LIMIT 3
     `;
     const bestSellerRes = await pool.query(bestSellerQuery, params);
 
-    // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter
-    let paymentsQuery = '';
-    let paymentsRes;
-    if (finalStartDate && finalEndDate) {
-      paymentsQuery = `
-        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
-        FROM dang_ky_khoa_hoc d
-        JOIN ho_so h ON d.ho_so_id = h.id
-        JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-        WHERE d.trang_thai NOT IN ('huy', 'tam_dung') AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
-        UNION ALL
-        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
-        FROM dang_ky_hoc_kem dk
-        JOIN ho_so h ON dk.hoc_vien_id = h.id
-        JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-        WHERE dk.trang_thai NOT IN ('huy', 'tam_dung') AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
-        ORDER BY ngay_tao DESC
-        LIMIT 30
-      `;
-      paymentsRes = await pool.query(paymentsQuery, [finalStartDate, finalEndDate]);
-    } else {
-      paymentsQuery = `
-        SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
-        FROM dang_ky_khoa_hoc d
-        JOIN ho_so h ON d.ho_so_id = h.id
-        JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-        WHERE d.trang_thai NOT IN ('huy', 'tam_dung')
-        UNION ALL
-        SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
-        FROM dang_ky_hoc_kem dk
-        JOIN ho_so h ON dk.hoc_vien_id = h.id
-        JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-        WHERE dk.trang_thai NOT IN ('huy', 'tam_dung')
-        ORDER BY ngay_tao DESC
-        LIMIT 30
-      `;
-      paymentsRes = await pool.query(paymentsQuery);
-    }
+    // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter (lấy cả các gói đã hủy)
+    const paymentsQuery = `
+      SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.so_tien_hoan, d.trang_thai, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
+      FROM dang_ky_khoa_hoc d
+      JOIN ho_so h ON d.ho_so_id = h.id
+      JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
+      WHERE d.trang_thai != 'tam_dung' AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
+      UNION ALL
+      SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.so_tien_hoan, dk.trang_thai, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
+      FROM dang_ky_hoc_kem dk
+      JOIN ho_so h ON dk.hoc_vien_id = h.id
+      JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
+      WHERE dk.trang_thai != 'tam_dung' AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
+      ORDER BY ngay_tao DESC
+      LIMIT 30
+    `;
+    const paymentsRes = await pool.query(paymentsQuery, params);
 
     res.json({
       success: true,
@@ -2716,6 +2724,7 @@ router.get('/registrations', async (req, res) => {
         r.den_ngay,
         r.gia_thuc_te,
         r.so_tien_da_thu,
+        r.so_tien_hoan,
         r.phuong_thuc_tt,
         r.trang_thai,
         r.ngay_tao,
@@ -2757,6 +2766,7 @@ router.get('/registrations', async (req, res) => {
         k.den_ngay,
         k.gia_thuc_te,
         k.so_tien_da_thu,
+        k.so_tien_hoan,
         k.phuong_thuc_tt,
         k.trang_thai,
         k.ngay_tao,
