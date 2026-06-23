@@ -1759,12 +1759,12 @@ router.get('/teachers', async (req, res) => {
 router.get('/accounts', verifyAccess(['admin']), async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT tk.id, tk.ten_dang_nhap,
+      SELECT tk.id, tk.ten_dang_nhap, tk.ho_so_id,
              CASE WHEN tk.trang_thai = 'hoat_dong' THEN 1 ELSE 0 END as is_active,
              tk.trang_thai,
              tk.lan_dang_nhap_cuoi, tk.ngay_tao,
              vt.ma_vai_tro as vai_tro,
-             hs.ho_ten, hs.ma_ho_so, hs.email, hs.loai_ho_so
+             hs.ho_ten, hs.ma_ho_so, hs.email, hs.loai_ho_so, hs.so_dien_thoai
       FROM tai_khoan tk
       JOIN vai_tro vt ON tk.vai_tro_id = vt.id
       LEFT JOIN ho_so hs ON tk.ho_so_id = hs.id
@@ -1792,7 +1792,9 @@ router.post('/accounts', verifyAccess(['admin']), async (req, res) => {
     if (dup.rows.length > 0) {
       return res.status(400).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
     }
-    const vrRes = await pool.query('SELECT id FROM vai_tro WHERE ma_vai_tro = $1', [vai_tro]);
+    let dbRole = vai_tro;
+    if (vai_tro === 'nhan_vien') dbRole = 'le_tan';
+    const vrRes = await pool.query('SELECT id FROM vai_tro WHERE ma_vai_tro = $1', [dbRole]);
     if (vrRes.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'Vai trò không hợp lệ' });
     }
@@ -1805,6 +1807,70 @@ router.post('/accounts', verifyAccess(['admin']), async (req, res) => {
     await createNotification('tao_tai_khoan','Tạo tài khoản mới',
       `Tài khoản "${ten_dang_nhap}" (${vai_tro}) đã được tạo thành công.`,
       result.rows[0].id, 'tai_khoan', 'nhan_vien');
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PUT /api/accounts/:id: Cập nhật thông tin tài khoản (Tên đăng nhập, vai trò, liên kết hồ sơ, mật khẩu mới)
+router.put('/accounts/:id', verifyAccess(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const { ten_dang_nhap, vai_tro, ho_so_id, mat_khau_moi } = req.body;
+  if (!ten_dang_nhap || !vai_tro) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
+  }
+  try {
+    const dup = await pool.query(
+      'SELECT id FROM tai_khoan WHERE ten_dang_nhap = $1 AND id != $2 AND (is_deleted = 0 OR is_deleted IS NULL)',
+      [ten_dang_nhap, id]
+    );
+    if (dup.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
+    }
+
+    let dbRole = vai_tro;
+    if (vai_tro === 'nhan_vien') dbRole = 'le_tan';
+    const vrRes = await pool.query('SELECT id FROM vai_tro WHERE ma_vai_tro = $1', [dbRole]);
+    if (vrRes.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'Vai trò không hợp lệ' });
+    }
+    const vai_tro_id = vrRes.rows[0].id;
+
+    let result;
+    if (mat_khau_moi && mat_khau_moi.trim() !== '') {
+      if (mat_khau_moi.length < 6) {
+        return res.status(400).json({ success: false, error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+      }
+      const bcrypt = require('bcryptjs');
+      const mat_khau_hash = bcrypt.hashSync(mat_khau_moi, 12);
+      result = await pool.query(
+        `UPDATE tai_khoan 
+         SET ten_dang_nhap = $1, vai_tro_id = $2, ho_so_id = $3, mat_khau_hash = $4, ngay_cap_nhat = NOW() 
+         WHERE id = $5 AND (is_deleted = 0 OR is_deleted IS NULL) 
+         RETURNING *`,
+        [ten_dang_nhap, vai_tro_id, ho_so_id || null, mat_khau_hash, id]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE tai_khoan 
+         SET ten_dang_nhap = $1, vai_tro_id = $2, ho_so_id = $3, ngay_cap_nhat = NOW() 
+         WHERE id = $4 AND (is_deleted = 0 OR is_deleted IS NULL) 
+         RETURNING *`,
+        [ten_dang_nhap, vai_tro_id, ho_so_id || null, id]
+      );
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản' });
+    }
+
+    // Gỡ liên kết cũ trong bảng ho_so nếu có
+    await pool.query('UPDATE ho_so SET tai_khoan_id = NULL WHERE tai_khoan_id = $1', [id]);
+    if (ho_so_id) {
+      await pool.query('UPDATE ho_so SET tai_khoan_id = $1 WHERE id = $2', [id, ho_so_id]);
+    }
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

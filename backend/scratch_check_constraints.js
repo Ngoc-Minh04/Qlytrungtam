@@ -12,9 +12,9 @@ async function main() {
     const res = await pool.query(`
       SELECT pg_get_constraintdef(oid) AS constraint_def
       FROM pg_constraint
-      WHERE conname = 'so_lien_lac_vai_tro_gui_check'
+      WHERE conname = 'tai_khoan_trang_thai_check'
     `);
-    console.log("RÀNG BUỘC KIỂM TRA VAI TRÒ GỬI:");
+    console.log("RÀNG BUỘC TRẠNG THÁI TÀI KHOẢN:");
     console.log(res.rows);
   } catch (err) {
     console.error(err);

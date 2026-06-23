@@ -1,3 +1,79 @@
+### [23/06/2026 09:23] — Đồng bộ validate mật khẩu tối thiểu 6 ký tự và thêm Xác nhận mật khẩu
+- **Loại**: Cải tiến tính năng & Bảo mật
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Thêm ô nhập `"Nhập lại mật khẩu mới"` và thuộc tính `minlength="6"` vào Form Sửa tài khoản.
+  - Bổ sung logic JavaScript kiểm tra độ dài $\ge 6$ ký tự và trùng khớp mật khẩu ở cả 2 modal: Tạo tài khoản và Sửa tài khoản tại Frontend.
+  - Cập nhật API sửa tài khoản (`PUT /api/accounts/:id`) trên Backend để chặn và trả về lỗi `400` nếu mật khẩu mới dưới 6 ký tự.
+- **Kết quả**: Thành công
+
+### [23/06/2026 09:09] — Gộp tính năng Đặt lại mật khẩu vào chung Form Sửa tài khoản
+- **Loại**: Cải tiến tính năng & UI/UX
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Gộp trường nhập mật khẩu mới trực tiếp vào Form Sửa tài khoản (để trống nếu không đổi).
+  - Loại bỏ hoàn toàn nút "Đặt lại mật khẩu" riêng biệt trên bảng và Modal đặt lại mật khẩu cũ để làm tinh gọn giao diện.
+  - Cập nhật API PUT sửa tài khoản ở backend nhận thêm `mat_khau_moi` và mã hóa bcrypt để lưu lại khi người dùng có nhu cầu đổi mật khẩu.
+- **Kết quả**: Thành công
+
+### [23/06/2026 09:03] — Ẩn hoàn toàn trường Hồ sơ liên kết khỏi Form Sửa tài khoản
+- **Loại**: Cải tiến giao diện & Tinh giản UI/UX
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Loại bỏ hoàn toàn dòng hiển thị "Hồ sơ liên kết" khỏi giao diện của Modal Sửa tài khoản (`#modal-edit`).
+  - Chỉ duy trì giá trị liên kết này bằng thẻ ẩn `input type="hidden"` để truyền ngầm lên server khi lưu, giúp Form Sửa cực kỳ tối giản và tập trung vào 2 trường cần chỉnh sửa thực tế: Tên đăng nhập và Vai trò.
+- **Kết quả**: Thành công
+
+### [23/06/2026 09:01] — Cố định Hồ sơ liên kết chỉ đọc (read-only) khi sửa tài khoản
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Chuyển đổi phần chọn hồ sơ liên kết trong Modal Sửa (`#modal-edit`) từ dạng Dropdown chọn lựa sang **chữ tĩnh hiển thị chỉ đọc (read-only)**.
+  - Khóa chặt không cho phép đổi hồ sơ liên kết của tài khoản hiện tại khi sửa (duy trì quan hệ 1 tài khoản - 1 hồ sơ vĩnh viễn), tránh việc Admin bấm nhầm làm sai lệch hoặc mất liên kết cũ của tài khoản.
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:57] — Bắt buộc chọn Hồ sơ liên kết khi tạo/sửa tài khoản
+- **Loại**: Cải tiến tính năng & Bảo toàn dữ liệu
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Gắn thuộc tính `required` cho dropdown chọn hồ sơ liên kết ở cả Form Tạo (`c-profile`) và Form Sửa (`e-profile`).
+  - Loại bỏ hoàn toàn tùy chọn "Không liên kết" và thay thế bằng placeholder "— Chọn hồ sơ liên kết —". Tránh việc người dùng vô tình gỡ bỏ liên kết của tài khoản.
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:44] — Sửa lỗi thiếu ho_so_id và so_dien_thoai trong API lấy danh sách tài khoản
+- **Loại**: Sửa lỗi logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**:
+  - Bổ sung các cột `tk.ho_so_id` và `hs.so_dien_thoai` vào câu lệnh SELECT của API `GET /api/accounts`.
+  - Khắc phục lỗi giao diện không nhận được liên kết hồ sơ của tài khoản (dẫn tới hiện thông báo chưa liên kết và không load được hồ sơ đang liên kết khi mở modal Sửa).
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:38] — Hỗ trợ click vào dòng tài khoản để xem chi tiết
+- **Loại**: Cải tiến trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Tích hợp class `cursor-pointer` và sự kiện click trực tiếp lên thẻ dòng `<tr>` của danh sách tài khoản.
+  - Khi click vào bất kỳ cột nào trên dòng (ngoại trừ cụm nút thao tác Khóa/Sửa/Xóa/Reset mật khẩu), hệ thống tự động mở Modal xem chi tiết tài khoản.
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:35] — Tích hợp tính năng Xem chi tiết tài khoản
+- **Loại**: Cải tiến tính năng & Trải nghiệm người dùng
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Bổ sung nút **Xem chi tiết** (icon hình con mắt màu xám) vào trước mỗi dòng tài khoản.
+  - Tích hợp Modal **Chi tiết tài khoản** (`modal-view`) hiển thị trực quan thông tin tài khoản đăng nhập (ID, Tên đăng nhập, Vai trò, Trạng thái, Ngày tạo, Đăng nhập cuối) và toàn bộ thông tin cá nhân của hồ sơ liên kết (ID hồ sơ, Mã hồ sơ, Họ và tên, Phân loại hồ sơ) dưới dạng lưới 2 cột gọn gàng.
+- **Kết quả**: Thành công
+
+### [23/06/2026 08:31] — Phát triển tính năng Sửa/Xem tài khoản, sửa lỗi Khóa/Xóa 500 và lỗi lọc nhân viên
+- **Loại**: Cải tiến tính năng & Sửa lỗi hệ thống
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AccountManagement.js`, Cơ sở dữ liệu (bảng `tai_khoan`)
+- **Mô tả**:
+  - **Sửa lỗi Khóa/Xóa 500**: Thay đổi cấu hình check constraint `tai_khoan_trang_thai_check` trong Postgres để cho phép lưu trạng thái `'bi_khoa'` (trước đó chỉ cho phép `'khoa'`), khắc phục triệt để lỗi 500 khi Khóa/Xóa tài khoản.
+  - **Phát triển API Cập nhật tài khoản**: Viết mới route `PUT /api/accounts/:id` ở backend hỗ trợ sửa đổi tên đăng nhập, vai trò và hồ sơ liên kết.
+  - **Tích hợp giao diện Sửa/Xem tài khoản**: Thêm nút sửa (bút chì), modal sửa tài khoản `#modal-edit` cùng toàn bộ logic load danh sách hồ sơ tương thích và gửi cập nhật.
+  - **Sửa lỗi lọc và tạo Nhân viên**: Đồng bộ việc ánh xạ vai trò `'nhan_vien'` ở giao diện thành `'le_tan'` ở database khi gửi tạo mới, và lọc gộp cả `'le_tan'`/`'ke_toan'` khi lọc vai trò Nhân viên ở frontend.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 08:14] — Sửa lỗi gán sai tên người gửi trong Sổ liên lạc khi thiếu hoSoId
 - **Loại**: Sửa lỗi logic Backend
 - **File**: `backend/src/routes/api.js`

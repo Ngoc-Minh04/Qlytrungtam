@@ -9,13 +9,22 @@ const pool = new Pool({
 
 async function main() {
   try {
-    const updateRes = await pool.query(
-      "UPDATE tai_khoan SET ho_so_id = 99 WHERE ten_dang_nhap = '0369877654' RETURNING *"
-    );
-    console.log("Cập nhật thành công tài khoản 0369877654:");
-    console.log(updateRes.rows);
+    const accountRes = await pool.query("SELECT * FROM tai_khoan WHERE ten_dang_nhap = '0369877456'");
+    console.log("TÀI KHOẢN:");
+    console.log(accountRes.rows);
+
+    if (accountRes.rows.length > 0) {
+      const acc = accountRes.rows[0];
+      const hosoRes = await pool.query("SELECT * FROM ho_so WHERE id = $1", [acc.ho_so_id]);
+      console.log("HỒ SƠ LIÊN KẾT THEO HO_SO_ID:");
+      console.log(hosoRes.rows);
+
+      const hosoPhoneRes = await pool.query("SELECT * FROM ho_so WHERE so_dien_thoai = '0369877456'");
+      console.log("HỒ SƠ CÓ SỐ ĐIỆN THOẠI TRÙNG KHỚP:");
+      console.log(hosoPhoneRes.rows);
+    }
   } catch (err) {
-    console.error('Lỗi khi cập nhật:', err.message);
+    console.error(err);
   } finally {
     await pool.end();
   }
