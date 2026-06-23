@@ -488,64 +488,98 @@ export async function renderAttendanceStaff(container) {
         </div>
 
         <!-- Bảng danh sách log check-in -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50">
+        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Lịch sử check-in nhân sự</h3>
             <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">Thời gian thực</span>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
+          <div class="overflow-x-auto max-h-[450px] overflow-y-auto w-full">
+            <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
               <thead>
                 <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
-                  <th class="py-3 px-5 font-semibold">Nhân viên / Giáo viên</th>
-                  <th class="py-3 px-5 font-semibold">Ngày quét</th>
-                  <th class="py-3 px-5 font-semibold">Giờ quét</th>
-                  <th class="py-3 px-5 font-semibold">Phương thức</th>
-                  <th class="py-3 px-5 font-semibold text-right">Trạng thái</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Nhân viên / Giáo viên</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Ngày quét</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Giờ quét</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Phương thức</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold text-right">Trạng thái</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-[#f3f3f5]">
-                ${processedLogs.map(log => `
-                  <tr class="hover:bg-slate-50/55 transition-colors">
-                    <td class="py-3 px-5">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-7 h-7 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
-                          ${log.ho_ten.charAt(0)}
-                        </div>
-                        <div>
-                          <span class="font-bold text-slate-800 block text-xs">${log.ho_ten}</span>
-                          <span class="text-[10px] text-slate-400 block">${log.ma_ho_so || 'NV_GV'}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-3 px-5 text-slate-500 font-medium">${log.dateStr}</td>
-                    <td class="py-3 px-5 text-slate-700 font-semibold">${log.timeStr}</td>
-                    <td class="py-3 px-5">
-                      <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                        ${log.phuong_thuc === 'qr_code' ? 'QR Code Động' : 'Thẻ Vân Tay'}
-                      </span>
-                    </td>
-                    <td class="py-3 px-5 text-right">
-                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${log.statusColor}">
-                        ${log.statusLabel}
-                      </span>
-                    </td>
-                  </tr>
-                `).join('')}
-                ${processedLogs.length === 0 ? `
-                  <tr>
-                    <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
-                      <span class="material-symbols-outlined text-[32px] text-slate-300 block mb-1">sentiment_dissatisfied</span>
-                      Chưa có dữ liệu chấm công giáo viên nào được ghi nhận.
-                    </td>
-                  </tr>
-                ` : ''}
+              <tbody id="attendance-history-body" class="divide-y divide-[#f3f3f5]">
+                <!-- Injected by JS -->
               </tbody>
             </table>
           </div>
+          <div id="attendance-history-sentinel" class="h-4 w-full shrink-0"></div>
         </div>
       `;
+
+      let displayCount = 15;
+      let isHistoryLoading = false;
+      const historyBody = document.getElementById('attendance-history-body');
+
+      function renderHistoryRows() {
+        const chunk = processedLogs.slice(0, displayCount);
+        historyBody.innerHTML = chunk.map(log => `
+          <tr class="hover:bg-slate-50/55 transition-colors">
+            <td class="py-3 px-5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
+                  ${log.ho_ten.charAt(0)}
+                </div>
+                <div>
+                  <span class="font-bold text-slate-800 block text-xs">${log.ho_ten}</span>
+                  <span class="text-[10px] text-slate-400 block">${log.ma_ho_so || 'NV_GV'}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-5 text-slate-500 font-medium">${log.dateStr}</td>
+            <td class="py-3 px-5 text-slate-700 font-semibold">${log.timeStr}</td>
+            <td class="py-3 px-5">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                ${log.phuong_thuc === 'qr_code' ? 'QR Code Động' : 'Thẻ Vân Tay'}
+              </span>
+            </td>
+            <td class="py-3 px-5 text-right">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${log.statusColor}">
+                ${log.statusLabel}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+
+        if (processedLogs.length === 0) {
+          historyBody.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+                <span class="material-symbols-outlined text-[32px] text-slate-300 block mb-1">sentiment_dissatisfied</span>
+                Chưa có dữ liệu chấm công giáo viên nào được ghi nhận.
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      renderHistoryRows();
+
+      if (window.attendanceHistoryObserver) {
+        window.attendanceHistoryObserver.disconnect();
+      }
+      const histSentinel = document.getElementById('attendance-history-sentinel');
+      if (histSentinel) {
+        window.attendanceHistoryObserver = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && displayCount < processedLogs.length && !isHistoryLoading) {
+            isHistoryLoading = true;
+            setTimeout(() => {
+              displayCount = Math.min(displayCount + 15, processedLogs.length);
+              renderHistoryRows();
+              isHistoryLoading = false;
+            }, 150);
+          }
+        }, { rootMargin: '10px' });
+        window.attendanceHistoryObserver.observe(histSentinel);
+      }
+
     } catch (err) {
       targetEl.innerHTML = `<div class="p-4 bg-red-50 text-red-700 text-xs rounded-xl">Lỗi tải lịch sử chấm công: ${err.message}</div>`;
     }
@@ -580,41 +614,6 @@ export async function renderAttendanceStaff(container) {
         .map(y => `<option value="${y}" ${y === filterYear ? 'selected' : ''}>Năm ${y}</option>`)
         .join('');
 
-      let tbodyRows = '';
-      summaries.forEach(person => {
-        // Tạo tập hợp (set) các ngày đi làm dạng string yyyy-mm-dd
-        const workDates = new Set(person.work_days.map(d => {
-          // Chuỗi từ db có dạng yyyy-mm-dd
-          return parseInt(d.split('-')[2]); // Lấy phần ngày
-        }));
-
-        let daysHtml = '';
-        let totalPresent = 0;
-        daysArray.forEach(d => {
-          const isPresent = workDates.has(d);
-          if (isPresent) totalPresent++;
-
-          daysHtml += `
-            <td class="p-1.5 text-center border border-apple-divider/40 text-[10px] font-bold">
-              ${isPresent ? '<span class="text-emerald-500 font-extrabold text-[12px]">✓</span>' : '<span class="text-slate-200">-</span>'}
-            </td>
-          `;
-        });
-
-        tbodyRows += `
-          <tr class="hover:bg-slate-50 transition-colors">
-            <td class="p-3 border border-apple-divider/45 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
-              <div class="font-bold text-slate-800">${person.ho_ten}</div>
-              <div class="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">${person.ma_ho_so} — ${person.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân viên'}</div>
-            </td>
-            ${daysHtml}
-            <td class="p-3 border border-apple-divider/45 text-center font-extrabold text-apple-blue bg-blue-50/30 whitespace-nowrap text-xs">
-              ${totalPresent} / ${totalDays}
-            </td>
-          </tr>
-        `;
-      });
-
       targetEl.innerHTML = `
         <!-- Bộ lọc tháng / năm -->
         <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3 justify-between">
@@ -641,31 +640,91 @@ export async function renderAttendanceStaff(container) {
 
         <!-- Bảng Grid tổng hợp công -->
         <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div class="overflow-x-auto w-full relative">
+          <div class="overflow-x-auto w-full relative max-h-[450px] overflow-y-auto">
             <table class="w-full border-collapse">
               <thead>
                 <tr class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider border-b border-[#e2e2e4]">
-                  <th class="p-3 border border-apple-divider/45 sticky left-0 bg-slate-50 z-20 min-w-[150px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                  <th class="p-3 border border-apple-divider/45 sticky top-0 left-0 bg-slate-50 z-30 min-w-[150px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                     Nhân sự
                   </th>
-                  ${daysArray.map(d => `<th class="p-1.5 border border-apple-divider/45 text-center min-w-[28px]">${d}</th>`).join('')}
-                  <th class="p-3 border border-apple-divider/45 text-center bg-blue-50/45 min-w-[70px]">Công/Tháng</th>
+                  ${daysArray.map(d => `<th class="p-1.5 border border-apple-divider/45 text-center min-w-[28px] sticky top-0 bg-slate-50 z-20">${d}</th>`).join('')}
+                  <th class="p-3 border border-apple-divider/45 text-center bg-blue-50/45 min-w-[70px] sticky top-0 z-20">Công/Tháng</th>
                 </tr>
               </thead>
-              <tbody>
-                ${tbodyRows}
-                ${summaries.length === 0 ? `
-                  <tr>
-                    <td colspan="${totalDays + 2}" class="p-8 text-center text-slate-400 text-xs italic">
-                      Không tìm thấy nhân sự phù hợp để hiển thị bảng công.
-                    </td>
-                  </tr>
-                ` : ''}
+              <tbody id="attendance-sheet-body">
+                <!-- Injected by JS -->
               </tbody>
             </table>
           </div>
+          <div id="attendance-sheet-sentinel" class="h-4 w-full shrink-0"></div>
         </div>
       `;
+
+      let displayCount = 10;
+      let isSheetLoading = false;
+      const sheetBody = document.getElementById('attendance-sheet-body');
+
+      function renderSheetRows() {
+        const chunk = summaries.slice(0, displayCount);
+        sheetBody.innerHTML = chunk.map(person => {
+          const workDates = new Set(person.work_days.map(d => parseInt(d.split('-')[2])));
+          let daysHtml = '';
+          let totalPresent = 0;
+
+          daysArray.forEach(d => {
+            const isPresent = workDates.has(d);
+            if (isPresent) totalPresent++;
+            daysHtml += `
+              <td class="p-1.5 text-center border border-apple-divider/40 text-[10px] font-bold">
+                ${isPresent ? '<span class="text-emerald-500 font-extrabold text-[12px]">✓</span>' : '<span class="text-slate-200">-</span>'}
+              </td>
+            `;
+          });
+
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="p-3 border border-apple-divider/45 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                <div class="font-bold text-slate-800">${person.ho_ten}</div>
+                <div class="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">${person.ma_ho_so} — ${person.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân viên'}</div>
+              </td>
+              ${daysHtml}
+              <td class="p-3 border border-apple-divider/45 text-center font-extrabold text-apple-blue bg-blue-50/30 whitespace-nowrap text-xs">
+                ${totalPresent} / ${totalDays}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (summaries.length === 0) {
+          sheetBody.innerHTML = `
+            <tr>
+              <td colspan="${totalDays + 2}" class="p-8 text-center text-slate-400 text-xs italic">
+                Không tìm thấy nhân sự phù hợp để hiển thị bảng công.
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      renderSheetRows();
+
+      if (window.attendanceSheetObserver) {
+        window.attendanceSheetObserver.disconnect();
+      }
+      const sheetSentinel = document.getElementById('attendance-sheet-sentinel');
+      if (sheetSentinel) {
+        window.attendanceSheetObserver = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && displayCount < summaries.length && !isSheetLoading) {
+            isSheetLoading = true;
+            setTimeout(() => {
+              displayCount = Math.min(displayCount + 10, summaries.length);
+              renderSheetRows();
+              isSheetLoading = false;
+            }, 150);
+          }
+        }, { rootMargin: '10px' });
+        window.attendanceSheetObserver.observe(sheetSentinel);
+      }
 
       // Gắn sự kiện thay đổi bộ lọc
       document.getElementById('select-filter-month')?.addEventListener('change', (e) => {

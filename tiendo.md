@@ -1,3 +1,29 @@
+### [23/06/2026 13:23] — Sửa lỗi hiển thị Việt hóa trong bảng Nhật ký hệ thống (Audit Logs)
+- **Loại**: Sửa lỗi hiển thị & Trải nghiệm người dùng (UI/UX)
+- **File**: `frontend/src/pages/AuditLogs.js`
+- **Mô tả**:
+  - Khắc phục lỗi in hoa/in thường làm sai lệch so khớp ánh xạ bằng cách đưa các khóa về chữ thường (toLowerCase) và loại bỏ khoảng trắng (trim).
+  - Tự động Việt hóa tài khoản `"system"` và `"SYSTEM"` thành `"Hệ thống"`.
+  - Việt hóa hoàn toàn các hành động cơ sở dữ liệu (ví dụ: `CREATE` / `create` -> `"Tạo mới"`, `LOGIN` / `login` -> `"Đăng nhập"`, v.v.).
+- **Kết quả**: Thành công
+
+### [23/06/2026 13:17] — Việt hóa hiển thị thông tin trong Nhật ký hệ thống (Audit Logs)
+- **Loại**: Cải tiến trải nghiệm giao diện (UI/UX)
+- **File**: `frontend/src/pages/AuditLogs.js`
+- **Mô tả**:
+  - Ánh xạ tài khoản `system` thành nhãn "Hệ thống".
+  - Chuyển đổi các vai trò hệ thống sang Tiếng Việt tương ứng (ví dụ: `admin` -> "Quản trị viên", `le_tan` -> "Lễ tân", `giao_vien` -> "Giáo viên", `hoc_vien` -> "Học viên", `system` -> "Hệ thống").
+  - Việt hóa các hành động cơ sở dữ liệu và hoạt động của người dùng (ví dụ: `login` -> "Đăng nhập", `create` -> "Tạo mới", `update` -> "Cập nhật", `delete` -> "Xóa", v.v.).
+- **Kết quả**: Thành công
+
+### [23/06/2026 11:18] — Hoàn tất tích hợp cuộn vô hạn (Infinite Scroll) và ghim tiêu đề cho Nhật ký hệ thống và Nội quy trung tâm
+- **Loại**: Cải tiến trải nghiệm giao diện (UI/UX)
+- **File**: `frontend/src/pages/AuditLogs.js`, `frontend/src/pages/CenterRules.js`
+- **Mô tả**:
+  - **AuditLogs.js**: Loại bỏ cơ chế phân trang vuốt cũ (`setupSwipePagination`), chuyển sang sử dụng `IntersectionObserver` với sentinel `#audit-logs-sentinel`. Giới hạn chiều cao khung cuộn tối đa `max-h-[450px]` và ghim tiêu đề bảng bằng `sticky top-0 bg-apple-parchment z-20`.
+  - **CenterRules.js**: Thiết lập giới hạn chiều cao `max-h-[550px]` cho danh sách nội quy, ghim tiêu đề danh mục `<h3>` ở trên cùng bằng `sticky top-0 bg-white z-10`. Triển khai IntersectionObserver nạp từng phần 10 nội quy khi cuộn xuống. Đăng ký lại các sự kiện CRUD (Edit/Delete) cho các phần tử được render động.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 10:57] — Thiết lập mặc định hiển thị doanh thu Hôm nay cho Báo cáo Doanh thu
 - **Loại**: Cải tiến luồng trải nghiệm người dùng (UX)
 - **File**: `frontend/src/pages/RevenueReport.js`

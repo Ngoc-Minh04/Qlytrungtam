@@ -26,6 +26,47 @@ export async function renderCenterRules(container) {
         'nhan_vien': 'Nhân viên'
       };
 
+      let displayCount = 10;
+      let isRulesLoading = false;
+
+      function renderRulesChunk() {
+        const chunk = rules.slice(0, displayCount);
+        const rulesListContainer = document.getElementById('rules-list-container');
+        if (!rulesListContainer) return;
+
+        rulesListContainer.innerHTML = chunk.map((rule, idx) => `
+          <div class="pt-5 ${idx === 0 ? 'pt-0' : ''} flex flex-col md:flex-row justify-between items-start gap-4">
+            <div class="space-y-2 flex-grow pr-4">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-bold text-[#1d1d1f] text-[13.5px]">${idx + 1}. ${rule.tieu_de}</h4>
+                ${rule.is_active === 0 ? '<span class="bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded text-[9px] font-semibold">Tạm ẩn</span>' : ''}
+              </div>
+              <p class="text-slate-600 leading-relaxed text-[12px] whitespace-pre-wrap">${rule.noi_dung}</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-block text-[10px] bg-slate-100 text-slate-600 rounded-md px-2.5 py-1 capitalize font-semibold">Đối tượng: ${targetLabels[rule.ap_dung_cho] || rule.ap_dung_cho}</span>
+                <span class="text-[10px] text-slate-400">Thứ tự: ${rule.thu_tu}</span>
+              </div>
+            </div>
+            ${isAdminOrStaff ? `
+              <div class="flex items-center gap-2 shrink-0 md:self-center">
+                <button class="btn-edit-rule p-2 text-slate-500 hover:text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#e2e2e4] hover:border-[#0066cc]/30 rounded-full transition-all active:scale-95" data-id="${rule.id}" title="Chỉnh sửa">
+                  <span class="material-symbols-outlined text-[16px]">edit</span>
+                </button>
+                <button class="btn-delete-rule p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 border border-[#e2e2e4] hover:border-red-200 rounded-full transition-all active:scale-95" data-id="${rule.id}" title="Xóa nội quy">
+                  <span class="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+
+        if (rules.length === 0) {
+          rulesListContainer.innerHTML = '<p class="text-slate-500 py-12 text-center text-[13px]">Chưa có nội quy nào được cấu hình trên hệ thống.</p>';
+        }
+
+        attachRuleEvents();
+      }
+
       container.innerHTML = `
         <div class="space-y-6 max-w-4xl mx-auto">
           <!-- Header Area -->
@@ -50,36 +91,12 @@ export async function renderCenterRules(container) {
           </div>
 
           <!-- Content List -->
-          <div class="bg-white rounded-2xl p-6 border border-[#e2e2e4] shadow-sm space-y-4">
-            <h3 class="font-bold text-[#1d1d1f] text-sm border-b border-[#f3f3f5] pb-3 uppercase tracking-wider">Danh mục nội quy hiện hành</h3>
-            <div class="space-y-6 divide-y divide-[#f3f3f5] pt-2 text-xs">
-              ${rules.map((rule, idx) => `
-                <div class="pt-5 ${idx === 0 ? 'pt-0' : ''} flex flex-col md:flex-row justify-between items-start gap-4">
-                  <div class="space-y-2 flex-grow pr-4">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <h4 class="font-bold text-[#1d1d1f] text-[13.5px]">${idx + 1}. ${rule.tieu_de}</h4>
-                      ${rule.is_active === 0 ? '<span class="bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded text-[9px] font-semibold">Tạm ẩn</span>' : ''}
-                    </div>
-                    <p class="text-slate-600 leading-relaxed text-[12px] whitespace-pre-wrap">${rule.noi_dung}</p>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="inline-block text-[10px] bg-slate-100 text-slate-600 rounded-md px-2.5 py-1 capitalize font-semibold">Đối tượng: ${targetLabels[rule.ap_dung_cho] || rule.ap_dung_cho}</span>
-                      <span class="text-[10px] text-slate-400">Thứ tự: ${rule.thu_tu}</span>
-                    </div>
-                  </div>
-                  ${isAdminOrStaff ? `
-                    <div class="flex items-center gap-2 shrink-0 md:self-center">
-                      <button class="btn-edit-rule p-2 text-slate-500 hover:text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#e2e2e4] hover:border-[#0066cc]/30 rounded-full transition-all active:scale-95" data-id="${rule.id}" title="Chỉnh sửa">
-                        <span class="material-symbols-outlined text-[16px]">edit</span>
-                      </button>
-                      <button class="btn-delete-rule p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 border border-[#e2e2e4] hover:border-red-200 rounded-full transition-all active:scale-95" data-id="${rule.id}" title="Xóa nội quy">
-                        <span class="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
-                    </div>
-                  ` : ''}
-                </div>
-              `).join('')}
-              ${rules.length === 0 ? '<p class="text-slate-500 py-12 text-center text-[13px]">Chưa có nội quy nào được cấu hình trên hệ thống.</p>' : ''}
+          <div class="bg-white rounded-2xl p-6 border border-[#e2e2e4] shadow-sm flex flex-col max-h-[550px] overflow-hidden">
+            <h3 class="sticky top-0 bg-white z-10 border-b border-[#f3f3f5] pb-3 uppercase tracking-wider shrink-0 font-bold text-[#1d1d1f] text-sm">Danh mục nội quy hiện hành</h3>
+            <div id="rules-list-container" class="space-y-6 divide-y divide-[#f3f3f5] pt-2 text-xs overflow-y-auto pr-2 flex-grow">
+              <!-- Rendered by JS chunk -->
             </div>
+            <div id="center-rules-sentinel" class="h-4 w-full shrink-0"></div>
           </div>
         </div>
 
@@ -135,78 +152,105 @@ export async function renderCenterRules(container) {
         loadRules();
       });
 
-      if (isAdminOrStaff) {
-        const modal = document.getElementById('rule-modal');
-        const form = document.getElementById('rule-form');
-        const modalTitle = document.getElementById('modal-rule-title');
-        const inputId = document.getElementById('modal-rule-id');
-        const inputTieuDe = document.getElementById('modal-rule-tieu-de');
-        const inputApDung = document.getElementById('modal-rule-ap-dung');
-        const inputThuTu = document.getElementById('modal-rule-thu-tu');
-        const inputNoiDung = document.getElementById('modal-rule-noi-dung');
-        const wrapperCheckbox = document.getElementById('wrapper-active-checkbox');
-        const checkboxActive = document.getElementById('modal-rule-active');
+      const modal = document.getElementById('rule-modal');
+      const form = document.getElementById('rule-form');
+      const modalTitle = document.getElementById('modal-rule-title');
+      const inputId = document.getElementById('modal-rule-id');
+      const inputTieuDe = document.getElementById('modal-rule-tieu-de');
+      const inputApDung = document.getElementById('modal-rule-ap-dung');
+      const inputThuTu = document.getElementById('modal-rule-thu-tu');
+      const inputNoiDung = document.getElementById('modal-rule-noi-dung');
+      const wrapperCheckbox = document.getElementById('wrapper-active-checkbox');
+      const checkboxActive = document.getElementById('modal-rule-active');
 
-        // Hàm mở modal thêm
-        document.getElementById('btn-add-rule')?.addEventListener('click', () => {
-          form.reset();
-          inputId.value = '';
-          modalTitle.textContent = 'Thêm nội quy mới';
-          wrapperCheckbox.classList.add('hidden');
-          modal.classList.remove('hidden');
-        });
+      function attachRuleEvents() {
+        if (isAdminOrStaff) {
+          // Hàm mở modal thêm
+          document.getElementById('btn-add-rule').onclick = () => {
+            form.reset();
+            inputId.value = '';
+            modalTitle.textContent = 'Thêm nội quy mới';
+            wrapperCheckbox.classList.add('hidden');
+            modal.classList.remove('hidden');
+          };
 
-        // Đóng modal
-        const closeModal = () => modal.classList.add('hidden');
-        document.getElementById('close-rule-modal')?.addEventListener('click', closeModal);
-        document.getElementById('btn-cancel-rule-modal')?.addEventListener('click', closeModal);
+          // Đóng modal
+          const closeModal = () => modal.classList.add('hidden');
+          const closeBtn = document.getElementById('close-rule-modal');
+          if (closeBtn) closeBtn.onclick = closeModal;
+          const cancelBtn = document.getElementById('btn-cancel-rule-modal');
+          if (cancelBtn) cancelBtn.onclick = closeModal;
 
-        // Edit
-        container.querySelectorAll('.btn-edit-rule').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const id = btn.getAttribute('data-id');
-            const ruleObj = rules.find(r => r.id === parseInt(id));
-            if (ruleObj) {
-              inputId.value = ruleObj.id;
-              inputTieuDe.value = ruleObj.tieu_de;
-              inputApDung.value = ruleObj.ap_dung_cho;
-              inputThuTu.value = ruleObj.thu_tu;
-              inputNoiDung.value = ruleObj.noi_dung;
-              checkboxActive.checked = ruleObj.is_active === 1;
-              
-              modalTitle.textContent = 'Chỉnh sửa nội quy';
-              wrapperCheckbox.classList.remove('hidden');
-              modal.classList.remove('hidden');
-            }
-          });
-        });
-
-        // Delete
-        container.querySelectorAll('.btn-delete-rule').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const id = btn.getAttribute('data-id');
-            if (confirm('Bạn có chắc chắn muốn xóa nội quy này không? Thao tác này không thể hoàn tác!')) {
-              try {
-                const deleteRes = await fetch(`${API_BASE}/rules/${id}`, {
-                  method: 'DELETE',
-                  headers: { 'x-user-role': userRole }
-                });
-                const deleteResult = await deleteRes.json();
-                if (deleteResult.success) {
-                  showToast('Đã xóa nội quy thành công!');
-                  loadRules();
-                } else {
-                  showToast(deleteResult.error || 'Có lỗi xảy ra', 'error');
-                }
-              } catch (err) {
-                showToast('Không thể kết nối tới server', 'error');
+          // Edit
+          container.querySelectorAll('.btn-edit-rule').forEach(btn => {
+            btn.onclick = () => {
+              const id = btn.getAttribute('data-id');
+              const ruleObj = rules.find(r => r.id === parseInt(id));
+              if (ruleObj) {
+                inputId.value = ruleObj.id;
+                inputTieuDe.value = ruleObj.tieu_de;
+                inputApDung.value = ruleObj.ap_dung_cho;
+                inputThuTu.value = ruleObj.thu_tu;
+                inputNoiDung.value = ruleObj.noi_dung;
+                checkboxActive.checked = ruleObj.is_active === 1;
+                
+                modalTitle.textContent = 'Chỉnh sửa nội quy';
+                wrapperCheckbox.classList.remove('hidden');
+                modal.classList.remove('hidden');
               }
-            }
+            };
           });
-        });
 
+          // Delete
+          container.querySelectorAll('.btn-delete-rule').forEach(btn => {
+            btn.onclick = async () => {
+              const id = btn.getAttribute('data-id');
+              if (confirm('Bạn có chắc chắn muốn xóa nội quy này không? Thao tác này không thể hoàn tác!')) {
+                try {
+                  const deleteRes = await fetch(`${API_BASE}/rules/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-role': userRole }
+                  });
+                  const deleteResult = await deleteRes.json();
+                  if (deleteResult.success) {
+                    showToast('Đã xóa nội quy thành công!');
+                    loadRules();
+                  } else {
+                    showToast(deleteResult.error || 'Có lỗi xảy ra', 'error');
+                  }
+                } catch (err) {
+                  showToast('Không thể kết nối tới server', 'error');
+                }
+              }
+            };
+          });
+        }
+      }
+
+      renderRulesChunk();
+
+      // Intersection Observer cho Center Rules
+      if (window.centerRulesObserver) {
+        window.centerRulesObserver.disconnect();
+      }
+      const rulesSentinel = document.getElementById('center-rules-sentinel');
+      if (rulesSentinel && rules.length > 0) {
+        window.centerRulesObserver = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && displayCount < rules.length && !isRulesLoading) {
+            isRulesLoading = true;
+            setTimeout(() => {
+              displayCount = Math.min(displayCount + 10, rules.length);
+              renderRulesChunk();
+              isRulesLoading = false;
+            }, 150);
+          }
+        }, { rootMargin: '10px' });
+        window.centerRulesObserver.observe(rulesSentinel);
+      }
+
+      if (isAdminOrStaff && form) {
         // Submit form
-        form.addEventListener('submit', async (e) => {
+        form.onsubmit = async (e) => {
           e.preventDefault();
           const id = inputId.value;
           const payload = {
@@ -232,7 +276,7 @@ export async function renderCenterRules(container) {
             const saveResult = await saveRes.json();
             if (saveResult.success) {
               showToast(id ? 'Đã cập nhật nội quy!' : 'Đã thêm nội quy mới!');
-              closeModal();
+              modal.classList.add('hidden');
               loadRules();
             } else {
               showToast(saveResult.error || 'Có lỗi xảy ra', 'error');
@@ -240,7 +284,7 @@ export async function renderCenterRules(container) {
           } catch (err) {
             showToast('Không thể lưu nội quy', 'error');
           }
-        });
+        };
       }
     } catch (err) {
       container.innerHTML = `

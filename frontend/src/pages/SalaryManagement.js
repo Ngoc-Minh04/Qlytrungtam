@@ -44,25 +44,25 @@ export async function renderSalaryManagement(container) {
         </div>
 
         <!-- Bảng chi tiết lương nhân sự -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50">
+        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Bảng thanh toán lương chi tiết</h3>
             <span class="text-[10px] bg-blue-50 text-apple-blue px-2.5 py-0.5 rounded-full font-bold">Thanh toán tự động</span>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
+          <div class="overflow-x-auto max-h-[450px] overflow-y-auto w-full">
+            <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
               <thead>
-        <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
-                  <th class="py-3 px-5 font-semibold">Nhân sự</th>
-                  <th class="py-3 px-5 font-semibold">Công quét (ngày)</th>
-                  <th class="py-3 px-5 font-semibold">Ca dạy (Nhóm/Kèm)</th>
-                  <th class="py-3 px-5 font-semibold">Mức lương gốc</th>
-                  <th class="py-3 px-5 font-semibold">Phụ cấp & Thưởng</th>
-                  <th class="py-3 px-5 font-semibold">Khấu trừ / Tạm ứng</th>
-                  <th class="py-3 px-5 font-semibold">Thực lĩnh</th>
-                  <th class="py-3 px-5 font-semibold">Trạng thái</th>
-                  <th class="py-3 px-5 font-semibold text-right">Hành động</th>
+                <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Nhân sự</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Công quét (ngày)</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Ca dạy (Nhóm/Kèm)</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Mức lương gốc</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Phụ cấp & Thưởng</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Khấu trừ / Tạm ứng</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Thực lĩnh</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Trạng thái</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody id="salary-table-body" class="divide-y divide-[#f3f3f5]">
@@ -70,6 +70,7 @@ export async function renderSalaryManagement(container) {
               </tbody>
             </table>
           </div>
+          <div id="salary-table-sentinel" class="h-4 w-full shrink-0"></div>
         </div>
 
         <!-- Modal xem chi tiết (Cải tiến 3) -->
@@ -230,340 +231,360 @@ export async function renderSalaryManagement(container) {
 
       updateKPICards();
 
-      // Render danh sách lương chi tiết
-      tableBody.innerHTML = records.map((r, index) => {
-        const isPaid = r.trang_thai === 'da_thanh_toan';
-        const isTeacher = r.loai_ho_so === 'giao_vien';
+      let displayCount = 10;
+      let isSalaryLoading = false;
 
-        // Lương cơ bản / Lương ca
-        let detailLuongText = '';
-        if (isTeacher) {
-          detailLuongText = `
-            <div class="font-semibold text-slate-700 text-[11px]">Nhóm: ${r.don_gia_ca_nhom ? r.don_gia_ca_nhom.toLocaleString('vi-VN') : '150.000'}đ/ca</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">Kèm: ${r.don_gia_ca_kem ? r.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ/ca</div>
+      function renderSalaryRows() {
+        const chunk = records.slice(0, displayCount);
+        tableBody.innerHTML = chunk.map((r, index) => {
+          const isPaid = r.trang_thai === 'da_thanh_toan';
+          const isTeacher = r.loai_ho_so === 'giao_vien';
+
+          // Lương cơ bản / Lương ca
+          let detailLuongText = '';
+          if (isTeacher) {
+            detailLuongText = `
+              <div class="font-semibold text-slate-700 text-[11px]">Nhóm: ${r.don_gia_ca_nhom ? r.don_gia_ca_nhom.toLocaleString('vi-VN') : '150.000'}đ/ca</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Kèm: ${r.don_gia_ca_kem ? r.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ/ca</div>
+            `;
+          } else {
+            detailLuongText = `
+              <div class="font-semibold text-slate-700 text-[11px]">${r.luong_cung_ngay ? r.luong_cung_ngay.toLocaleString('vi-VN') : '300.000'}đ/ngày</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Tính theo công quét thẻ</div>
+            `;
+          }
+
+          const statusClass = isPaid
+            ? 'bg-emerald-100 text-emerald-800'
+            : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+          const statusLabel = isPaid
+            ? 'Đã thanh toán'
+            : 'Chưa thanh toán';
+
+          // Cấu hình ô nhập liệu Phụ cấp & Khấu trừ (Cải tiến 1)
+          const phuCapInput = isPaid
+            ? `<span class="font-bold text-slate-600">${r.phu_cap.toLocaleString('vi-VN')}đ</span>`
+            : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
+                 <input type="text" class="input-phu-cap w-full outline-none text-slate-700 text-center font-bold text-[11px]" data-idx="${index}" value="${r.phu_cap.toLocaleString('vi-VN')}">
+                 <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
+               </div>`;
+
+          const khauTruInput = isPaid
+            ? `<span class="font-bold text-red-600">${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}đ</span>`
+            : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
+                 <input type="text" class="input-khau-tru w-full outline-none text-slate-700 text-center font-bold text-[11px] text-red-600" data-idx="${index}" value="${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}">
+                 <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
+               </div>`;
+
+          return `
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="py-3 px-5">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
+                    ${r.ho_ten.charAt(0)}
+                  </div>
+                  <div>
+                    <span class="font-bold text-slate-800 block text-xs">${r.ho_ten}</span>
+                    <span class="text-[10px] text-slate-400 block">${r.ma_ho_so} — ${isTeacher ? 'Giáo viên' : 'Nhân viên'}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-5">
+                <button type="button" class="btn-view-work-days text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
+                  ${r.work_days} ngày công
+                </button>
+              </td>
+              <td class="py-3 px-5">
+                ${isTeacher
+              ? `<button type="button" class="btn-view-sessions text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
+                       ${r.group_sessions + r.tutor_sessions} ca dạy
+                     </button>
+                     <div class="text-[9px] text-slate-400 mt-0.5">(${r.group_sessions} nhóm / ${r.tutor_sessions} kèm)</div>`
+              : '<span class="text-slate-400 font-medium">—</span>'}
+              </td>
+              <td class="py-3 px-5">${detailLuongText}</td>
+              <td class="py-3 px-5">${phuCapInput}</td>
+              <td class="py-3 px-5">${khauTruInput}</td>
+              <td class="py-3 px-5 font-extrabold text-[#0066cc] text-[13px]">
+                <span class="row-thuc-linh" id="thuc-linh-${index}">${r.thuc_linh.toLocaleString('vi-VN')}</span>đ
+              </td>
+              <td class="py-3 px-5">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusClass}">
+                  ${statusLabel}
+                </span>
+                ${r.ngay_thanh_toan ? `<div class="text-[9px] text-slate-400 mt-1 font-semibold">${new Date(r.ngay_thanh_toan).toLocaleDateString('vi-VN')}</div>` : ''}
+              </td>
+              <td class="py-3 px-5 text-right">
+                ${isPaid
+              ? `<span class="text-slate-400 font-bold text-[11px]">Đã duyệt chi</span>`
+              : `<button type="button" class="btn-pay-salary px-3 py-1 bg-apple-blue text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
+              </td>
+            </tr>
           `;
-        } else {
-          detailLuongText = `
-            <div class="font-semibold text-slate-700 text-[11px]">${r.luong_cung_ngay ? r.luong_cung_ngay.toLocaleString('vi-VN') : '300.000'}đ/ngày</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">Tính theo công quét thẻ</div>
+        }).join('');
+
+        if (records.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="9" class="py-8 text-center text-slate-400 text-xs italic">Không tìm thấy dữ liệu nhân sự phù hợp để hiển thị.</td>
+            </tr>
           `;
         }
 
-        const statusClass = isPaid
-          ? 'bg-emerald-100 text-emerald-800'
-          : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-        const statusLabel = isPaid
-          ? 'Đã thanh toán'
-          : 'Chưa thanh toán';
+        attachSalaryEvents();
+      }
 
-        // Cấu hình ô nhập liệu Phụ cấp & Khấu trừ (Cải tiến 1)
-        const phuCapInput = isPaid
-          ? `<span class="font-bold text-slate-600">${r.phu_cap.toLocaleString('vi-VN')}đ</span>`
-          : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
-               <input type="text" class="input-phu-cap w-full outline-none text-slate-700 text-center font-bold text-[11px]" data-idx="${index}" value="${r.phu_cap.toLocaleString('vi-VN')}">
-               <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
-             </div>`;
+      function attachSalaryEvents() {
+        // Lắng nghe sự kiện input đổi Phụ cấp & Khấu trừ (Cải tiến 1)
+        tableBody.querySelectorAll('.input-phu-cap').forEach(input => {
+          input.addEventListener('input', (e) => {
+            let cleanValue = e.target.value.replace(/\D/g, '');
+            let numVal = parseFloat(cleanValue) || 0;
+            e.target.value = numVal.toLocaleString('vi-VN');
 
-        const khauTruInput = isPaid
-          ? `<span class="font-bold text-red-600">${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}đ</span>`
-          : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
-               <input type="text" class="input-khau-tru w-full outline-none text-slate-700 text-center font-bold text-[11px] text-red-600" data-idx="${index}" value="${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}">
-               <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
-             </div>`;
+            const idx = parseInt(e.target.getAttribute('data-idx'));
+            const r = records[idx];
+            if (!r) return;
 
-        return `
-          <tr class="hover:bg-slate-50/50 transition-colors">
-            <td class="py-3 px-5">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
-                  ${r.ho_ten.charAt(0)}
-                </div>
-                <div>
-                  <span class="font-bold text-slate-800 block text-xs">${r.ho_ten}</span>
-                  <span class="text-[10px] text-slate-400 block">${r.ma_ho_so} — ${isTeacher ? 'Giáo viên' : 'Nhân viên'}</span>
-                </div>
-              </div>
-            </td>
-            <td class="py-3 px-5">
-              <button type="button" class="btn-view-work-days text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
-                ${r.work_days} ngày công
-              </button>
-            </td>
-            <td class="py-3 px-5">
-              ${isTeacher
-            ? `<button type="button" class="btn-view-sessions text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
-                     ${r.group_sessions + r.tutor_sessions} ca dạy
-                   </button>
-                   <div class="text-[9px] text-slate-400 mt-0.5">(${r.group_sessions} nhóm / ${r.tutor_sessions} kèm)</div>`
-            : '<span class="text-slate-400 font-medium">—</span>'}
-            </td>
-            <td class="py-3 px-5">${detailLuongText}</td>
-            <td class="py-3 px-5">${phuCapInput}</td>
-            <td class="py-3 px-5">${khauTruInput}</td>
-            <td class="py-3 px-5 font-extrabold text-[#0066cc] text-[13px]">
-              <span class="row-thuc-linh" id="thuc-linh-${index}">${r.thuc_linh.toLocaleString('vi-VN')}</span>đ
-            </td>
-            <td class="py-3 px-5">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusClass}">
-                ${statusLabel}
-              </span>
-              ${r.ngay_thanh_toan ? `<div class="text-[9px] text-slate-400 mt-1 font-semibold">${new Date(r.ngay_thanh_toan).toLocaleDateString('vi-VN')}</div>` : ''}
-            </td>
-            <td class="py-3 px-5 text-right">
-              ${isPaid
-            ? `<span class="text-slate-400 font-bold text-[11px]">Đã duyệt chi</span>`
-            : `<button type="button" class="btn-pay-salary px-3 py-1 bg-apple-blue text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
-            </td>
-          </tr>
-        `;
-      }).join('');
+            r.phu_cap = numVal;
 
-      // Lắng nghe sự kiện input đổi Phụ cấp & Khấu trừ (Cải tiến 1)
-      tableBody.querySelectorAll('.input-phu-cap').forEach(input => {
-        input.addEventListener('input', (e) => {
-          // Format có dấu chấm phân cách hàng nghìn
-          let cleanValue = e.target.value.replace(/\D/g, '');
-          let numVal = parseFloat(cleanValue) || 0;
-          e.target.value = numVal.toLocaleString('vi-VN');
+            let khauTruInputVal = tableBody.querySelector(`.input-khau-tru[data-idx="${idx}"]`)?.value || '0';
+            let khauTruVal = parseFloat(khauTruInputVal.replace(/\./g, '')) || 0;
+            r.khau_tru = khauTruVal;
 
-          const idx = parseInt(e.target.getAttribute('data-idx'));
-          const r = records[idx];
-          if (!r) return;
+            r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
 
-          // Cập nhật giá trị phụ cấp
-          r.phu_cap = numVal;
-
-          // Tính toán lại thực lĩnh
-          let khauTruInputVal = tableBody.querySelector(`.input-khau-tru[data-idx="${idx}"]`)?.value || '0';
-          let khauTruVal = parseFloat(khauTruInputVal.replace(/\./g, '')) || 0;
-          r.khau_tru = khauTruVal;
-
-          r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
-
-          document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
-          updateKPICards();
+            document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
+            updateKPICards();
+          });
         });
-      });
 
-      tableBody.querySelectorAll('.input-khau-tru').forEach(input => {
-        input.addEventListener('input', (e) => {
-          let cleanValue = e.target.value.replace(/\D/g, '');
-          let numVal = parseFloat(cleanValue) || 0;
-          e.target.value = numVal.toLocaleString('vi-VN');
+        tableBody.querySelectorAll('.input-khau-tru').forEach(input => {
+          input.addEventListener('input', (e) => {
+            let cleanValue = e.target.value.replace(/\D/g, '');
+            let numVal = parseFloat(cleanValue) || 0;
+            e.target.value = numVal.toLocaleString('vi-VN');
 
-          const idx = parseInt(e.target.getAttribute('data-idx'));
-          const r = records[idx];
-          if (!r) return;
+            const idx = parseInt(e.target.getAttribute('data-idx'));
+            const r = records[idx];
+            if (!r) return;
 
-          // Cập nhật giá trị khấu trừ
-          r.khau_tru = numVal;
+            r.khau_tru = numVal;
 
-          // Tính toán lại thực lĩnh
-          let phuCapInputVal = tableBody.querySelector(`.input-phu-cap[data-idx="${idx}"]`)?.value || '0';
-          let phuCapVal = parseFloat(phuCapInputVal.replace(/\./g, '')) || 0;
-          r.phu_cap = phuCapVal;
+            let phuCapInputVal = tableBody.querySelector(`.input-phu-cap[data-idx="${idx}"]`)?.value || '0';
+            let phuCapVal = parseFloat(phuCapInputVal.replace(/\./g, '')) || 0;
+            r.phu_cap = phuCapVal;
 
-          r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
+            r.thuc_linh = r.luong_cung + r.luong_ca_day + r.phu_cap - r.khau_tru;
 
-          document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
-          updateKPICards();
+            document.getElementById(`thuc-linh-${idx}`).textContent = r.thuc_linh.toLocaleString('vi-VN');
+            updateKPICards();
+          });
         });
-      });
 
-      // Xem chi tiết công chấm công (Cải tiến 3)
-      tableBody.querySelectorAll('.btn-view-work-days').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const idx = parseInt(btn.getAttribute('data-idx'));
-          const record = records[idx];
-          if (!record) return;
+        // Xem chi tiết công chấm công (Cải tiến 3)
+        tableBody.querySelectorAll('.btn-view-work-days').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const record = records[idx];
+            if (!record) return;
 
-          const modal = document.getElementById('salary-detail-modal');
-          const title = document.getElementById('detail-modal-title');
-          const subtitle = document.getElementById('detail-modal-subtitle');
-          const th1 = document.getElementById('modal-table-header-1');
-          const th2 = document.getElementById('modal-table-header-2');
-          const body = document.getElementById('detail-modal-body');
+            const modal = document.getElementById('salary-detail-modal');
+            const title = document.getElementById('detail-modal-title');
+            const subtitle = document.getElementById('detail-modal-subtitle');
+            const th1 = document.getElementById('modal-table-header-1');
+            const th2 = document.getElementById('modal-table-header-2');
+            const body = document.getElementById('detail-modal-body');
 
-          title.textContent = `Lịch sử quét thẻ check-in / check-out`;
-          subtitle.textContent = `Nhân sự: ${record.ho_ten} — Tháng ${filterMonth}/${filterYear}`;
-          th1.textContent = 'Ngày làm việc';
-          th2.textContent = 'Trạng thái chấm công';
+            title.textContent = `Lịch sử quét thẻ check-in / check-out`;
+            subtitle.textContent = `Nhân sự: ${record.ho_ten} — Tháng ${filterMonth}/${filterYear}`;
+            th1.textContent = 'Ngày làm việc';
+            th2.textContent = 'Trạng thái chấm công';
 
-          body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử chấm công...</td></tr>`;
-          modal.classList.remove('hidden');
+            body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử chấm công...</td></tr>`;
+            modal.classList.remove('hidden');
 
-          try {
-            // Lấy log chi tiết chấm công của người đó
-            const res = await fetch(`${API_BASE}/checkin-logs`, {
-              headers: {
-                'x-user-role': userRole,
-                'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+            try {
+              const res = await fetch(`${API_BASE}/checkin-logs`, {
+                headers: {
+                  'x-user-role': userRole,
+                  'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+                }
+              });
+              const d = await res.json();
+              const allLogs = d.data || [];
+
+              const filtered = allLogs.filter(log => {
+                if (log.ho_so_id !== record.id) return false;
+                const date = new Date(log.ngay_quet);
+                return (date.getMonth() + 1) === filterMonth && date.getFullYear() === filterYear;
+              });
+
+              const dayMap = {};
+              filtered.forEach(log => {
+                if (!dayMap[log.ngay_quet]) dayMap[log.ngay_quet] = [];
+                dayMap[log.ngay_quet].push(log.gio_quet ? log.gio_quet.slice(0, 5) : 'Quét');
+              });
+
+              const sortedDays = Object.keys(dayMap).sort((a, b) => b.localeCompare(a));
+
+              if (sortedDays.length === 0) {
+                body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Không có dữ liệu chấm quét thẻ trong tháng.</td></tr>`;
+              } else {
+                body.innerHTML = sortedDays.map(dayStr => {
+                  const times = dayMap[dayStr];
+                  const cleanDayStr = dayStr.split('-').reverse().join('/');
+                  return `
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="py-2.5 font-bold text-slate-700">${cleanDayStr}</td>
+                      <td class="py-2.5">
+                        <div class="flex flex-wrap gap-1">
+                          ${times.map(t => `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-semibold text-[10px]">${t}</span>`).join('')}
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('');
               }
-            });
-            const d = await res.json();
-            const allLogs = d.data || [];
-
-            // Lọc log thuộc về tháng này và hồ sơ này
-            const filtered = allLogs.filter(log => {
-              if (log.ho_so_id !== record.id) return false;
-              const date = new Date(log.ngay_quet);
-              return (date.getMonth() + 1) === filterMonth && date.getFullYear() === filterYear;
-            });
-
-            // Group logs theo ngày học để hiển thị danh sách ngày và các lượt quét
-            const dayMap = {};
-            filtered.forEach(log => {
-              if (!dayMap[log.ngay_quet]) dayMap[log.ngay_quet] = [];
-              dayMap[log.ngay_quet].push(log.gio_quet ? log.gio_quet.slice(0, 5) : 'Quét');
-            });
-
-            const sortedDays = Object.keys(dayMap).sort((a, b) => b.localeCompare(a)); // mới nhất lên đầu
-
-            if (sortedDays.length === 0) {
-              body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Không có dữ liệu chấm quét thẻ trong tháng.</td></tr>`;
-            } else {
-              body.innerHTML = sortedDays.map(dayStr => {
-                const times = dayMap[dayStr];
-                const cleanDayStr = dayStr.split('-').reverse().join('/');
-                return `
-                  <tr class="hover:bg-slate-50/50">
-                    <td class="py-2.5 font-bold text-slate-700">${cleanDayStr}</td>
-                    <td class="py-2.5">
-                      <div class="flex flex-wrap gap-1">
-                        ${times.map(t => `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-semibold text-[10px]">${t}</span>`).join('')}
-                      </div>
-                    </td>
-                  </tr>
-                `;
-              }).join('');
+            } catch (e) {
+              body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-red-500 italic">Lỗi khi tải thông tin: ${e.message}</td></tr>`;
             }
-          } catch (e) {
-            body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-red-500 italic">Lỗi khi tải thông tin: ${e.message}</td></tr>`;
-          }
+          });
         });
-      });
 
-      // Xem chi tiết ca dạy giáo viên (Cải tiến 3)
-      tableBody.querySelectorAll('.btn-view-sessions').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const idx = parseInt(btn.getAttribute('data-idx'));
-          const record = records[idx];
-          if (!record) return;
+        // Xem chi tiết ca dạy giáo viên (Cải tiến 3)
+        tableBody.querySelectorAll('.btn-view-sessions').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const record = records[idx];
+            if (!record) return;
 
-          const modal = document.getElementById('salary-detail-modal');
-          const title = document.getElementById('detail-modal-title');
-          const subtitle = document.getElementById('detail-modal-subtitle');
-          const th1 = document.getElementById('modal-table-header-1');
-          const th2 = document.getElementById('modal-table-header-2');
-          const body = document.getElementById('detail-modal-body');
+            const modal = document.getElementById('salary-detail-modal');
+            const title = document.getElementById('detail-modal-title');
+            const subtitle = document.getElementById('detail-modal-subtitle');
+            const th1 = document.getElementById('modal-table-header-1');
+            const th2 = document.getElementById('modal-table-header-2');
+            const body = document.getElementById('detail-modal-body');
 
-          title.textContent = `Danh sách ca dạy học đã dạy`;
-          subtitle.textContent = `Giáo viên: ${record.ho_ten} — Tháng ${filterMonth}/${filterYear}`;
-          th1.textContent = 'Thời gian học';
-          th2.textContent = 'Thông tin ca học & Loại hình';
+            title.textContent = `Danh sách ca dạy học đã dạy`;
+            subtitle.textContent = `Giáo viên: ${record.ho_ten} — Tháng ${filterMonth}/${filterYear}`;
+            th1.textContent = 'Thời gian học';
+            th2.textContent = 'Thông tin ca học & Loại hình';
 
-          body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử giảng dạy...</td></tr>`;
-          modal.classList.remove('hidden');
+            body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử giảng dạy...</td></tr>`;
+            modal.classList.remove('hidden');
 
-          try {
-            const res = await fetch(`${API_BASE}/schedules?giao_vien_id=${record.id}`, {
-              headers: {
-                'x-user-role': userRole,
-                'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+            try {
+              const res = await fetch(`${API_BASE}/schedules?giao_vien_id=${record.id}`, {
+                headers: {
+                  'x-user-role': userRole,
+                  'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+                }
+              });
+              const d = await res.json();
+              const allSessions = d.data || [];
+
+              const filtered = allSessions.filter(s => {
+                if (s.trang_thai !== 'da_hoc') return false;
+                const date = new Date(s.ngay_hoc);
+                return (date.getMonth() + 1) === filterMonth && date.getFullYear() === filterYear;
+              });
+
+              if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Không tìm thấy ca dạy học nào đã hoàn thành trong tháng.</td></tr>`;
+              } else {
+                body.innerHTML = filtered.map(s => {
+                  const dateClean = s.ngay_hoc.split('-').reverse().join('/');
+                  const isNhom = s.loai_buoi === 'nhom';
+                  const typeTag = isNhom
+                    ? `<span class="px-2 py-0.5 bg-blue-50 text-apple-blue border border-blue-100 rounded-full font-bold text-[9px]">Lớp nhóm</span>`
+                    : `<span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full font-bold text-[9px]">Kèm 1-1</span>`;
+
+                  return `
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="py-2.5 font-bold text-slate-700">
+                        <div>${dateClean}</div>
+                        <div class="text-[10px] text-slate-400 font-semibold mt-0.5">${s.gio_bat_dau.slice(0, 5)} - ${s.gio_ket_thuc.slice(0, 5)}</div>
+                      </td>
+                      <td class="py-2.5">
+                        <div class="font-bold text-slate-800 text-[11.5px]">${s.ten_hoc_vien || 'Lớp học nhóm'}</div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                          ${typeTag}
+                          <span class="text-[10px] text-slate-400 font-semibold">GV: ${s.ten_giao_vien}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('');
               }
-            });
-            const d = await res.json();
-            const allSessions = d.data || [];
-
-            // Lọc các ca dạy đã học thành công của tháng hiện tại
-            const filtered = allSessions.filter(s => {
-              if (s.trang_thai !== 'da_hoc') return false;
-              const date = new Date(s.ngay_hoc);
-              return (date.getMonth() + 1) === filterMonth && date.getFullYear() === filterYear;
-            });
-
-            if (filtered.length === 0) {
-              body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-400 italic">Không tìm thấy ca dạy học nào đã hoàn thành trong tháng.</td></tr>`;
-            } else {
-              body.innerHTML = filtered.map(s => {
-                const dateClean = s.ngay_hoc.split('-').reverse().join('/');
-                const isNhom = s.loai_buoi === 'nhom';
-                const typeTag = isNhom
-                  ? `<span class="px-2 py-0.5 bg-blue-50 text-apple-blue border border-blue-100 rounded-full font-bold text-[9px]">Lớp nhóm</span>`
-                  : `<span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full font-bold text-[9px]">Kèm 1-1</span>`;
-
-                return `
-                  <tr class="hover:bg-slate-50/50">
-                    <td class="py-2.5 font-bold text-slate-700">
-                      <div>${dateClean}</div>
-                      <div class="text-[10px] text-slate-400 font-semibold mt-0.5">${s.gio_bat_dau.slice(0, 5)} - ${s.gio_ket_thuc.slice(0, 5)}</div>
-                    </td>
-                    <td class="py-2.5">
-                      <div class="font-bold text-slate-800 text-[11.5px]">${s.ten_hoc_vien || 'Lớp học nhóm'}</div>
-                      <div class="flex items-center gap-1.5 mt-1">
-                        ${typeTag}
-                        <span class="text-[10px] text-slate-400 font-semibold">GV: ${s.ten_giao_vien}</span>
-                      </div>
-                    </td>
-                  </tr>
-                `;
-              }).join('');
+            } catch (e) {
+              body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-red-500 italic">Lỗi khi tải thông tin: ${e.message}</td></tr>`;
             }
-          } catch (e) {
-            body.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-red-500 italic">Lỗi khi tải thông tin: ${e.message}</td></tr>`;
-          }
+          });
         });
-      });
 
-      // Gắn sự kiện click Thanh toán
-      tableBody.querySelectorAll('.btn-pay-salary').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const idx = parseInt(btn.getAttribute('data-idx'));
-          const record = records[idx];
-          if (!record) return;
+        // Gắn sự kiện click Thanh toán
+        tableBody.querySelectorAll('.btn-pay-salary').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.getAttribute('data-idx'));
+            const record = records[idx];
+            if (!record) return;
 
-          if (!confirm(`Xác nhận thanh toán lương tháng ${filterMonth}/${filterYear} cho nhân sự ${record.ho_ten} với số tiền thực lĩnh ${record.thuc_linh.toLocaleString('vi-VN')}đ?\n(Phụ cấp: ${record.phu_cap.toLocaleString('vi-VN')}đ, Khấu trừ: ${record.khau_tru.toLocaleString('vi-VN')}đ)`)) {
-            return;
-          }
-
-          try {
-            const res = await fetch(`${API_BASE}/payroll/${record.id}/pay`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-user-role': userRole,
-                'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
-              },
-              body: JSON.stringify({
-                month: filterMonth,
-                year: filterYear,
-                luong_cung: record.luong_cung,
-                luong_ca_day: record.luong_ca_day,
-                phu_cap: record.phu_cap,
-                khau_tru: record.khau_tru,
-                thuc_linh: record.thuc_linh
-              })
-            });
-
-            const result = await res.json();
-            if (result.success) {
-              showToast(`Thanh toán lương cho ${record.ho_ten} thành công!`);
-              loadSalaryData();
-            } else {
-              showToast(result.error || 'Lỗi thanh toán lương', 'error');
+            if (!confirm(`Xác nhận thanh toán lương tháng ${filterMonth}/${filterYear} cho nhân sự ${record.ho_ten} với số tiền thực lĩnh ${record.thuc_linh.toLocaleString('vi-VN')}đ?\n(Phụ cấp: ${record.phu_cap.toLocaleString('vi-VN')}đ, Khấu trừ: ${record.khau_tru.toLocaleString('vi-VN')}đ)`)) {
+              return;
             }
-          } catch (err) {
-            showToast('Lỗi kết nối máy chủ', 'error');
-          }
-        });
-      });
 
-      if (records.length === 0) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="py-8 text-center text-slate-400 text-xs italic">Không tìm thấy dữ liệu nhân sự phù hợp để hiển thị.</td>
-          </tr>
-        `;
+            try {
+              const res = await fetch(`${API_BASE}/payroll/${record.id}/pay`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-user-role': userRole,
+                  'x-user-branch': localStorage.getItem('userBranch') || 'Trung tâm chính'
+                },
+                body: JSON.stringify({
+                  month: filterMonth,
+                  year: filterYear,
+                  luong_cung: record.luong_cung,
+                  luong_ca_day: record.luong_ca_day,
+                  phu_cap: record.phu_cap,
+                  khau_tru: record.khau_tru,
+                  thuc_linh: record.thuc_linh
+                })
+              });
+
+              const result = await res.json();
+              if (result.success) {
+                showToast(`Thanh toán lương cho ${record.ho_ten} thành công!`);
+                loadSalaryData();
+              } else {
+                showToast(result.error || 'Lỗi thanh toán lương', 'error');
+              }
+            } catch (err) {
+              showToast('Lỗi kết nối máy chủ', 'error');
+            }
+          });
+        });
+      }
+
+      renderSalaryRows();
+
+      if (window.salaryTableObserver) {
+        window.salaryTableObserver.disconnect();
+      }
+      const salSentinel = document.getElementById('salary-table-sentinel');
+      if (salSentinel) {
+        window.salaryTableObserver = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && displayCount < records.length && !isSalaryLoading) {
+            isSalaryLoading = true;
+            setTimeout(() => {
+              displayCount = Math.min(displayCount + 10, records.length);
+              renderSalaryRows();
+              isSalaryLoading = false;
+            }, 150);
+          }
+        }, { rootMargin: '10px' });
+        window.salaryTableObserver.observe(salSentinel);
       }
 
     } catch (err) {
