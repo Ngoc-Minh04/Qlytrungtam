@@ -278,11 +278,243 @@ export async function renderCourseRegistrations(container) {
       renderCourseRegistrations(container);
     });
 
+    // Hàm kích hoạt thanh toán PayOS và hiện QR
+    async function triggerPayOSPayment() {
+      const studentId = document.getElementById('reg-student-id').value;
+      const pkgId = packageSelect.value;
+      if (!studentId || !pkgId) {
+        showToast('Vui lòng chọn Học viên và Gói học trước khi chọn thanh toán chuyển khoản!', 'error');
+        document.getElementById('reg-pay-method').value = 'Tien mat';
+        return;
+      }
+
+      const type = typeSelect.value;
+      const isTutoring = type === 'hoc_kem';
+
+      let createPayload = {
+        ho_so_id: parseInt(studentId),
+        tu_ngay: regStartInput.value,
+        den_ngay: regEndInput.value,
+        chi_nhanh_mua: 'Trung tâm chính',
+        returnUrl: window.location.href,
+        cancelUrl: window.location.href
+      };
+
+      if (isTutoring) {
+        createPayload.goi_hoc_kem_id = parseInt(pkgId);
+        createPayload.giao_vien_id = document.getElementById('reg-teacher-id').value ? parseInt(document.getElementById('reg-teacher-id').value) : null;
+      } else {
+        createPayload.goi_hoc_phi_id = parseInt(pkgId);
+      }
+
+      try {
+        showToast('Đang khởi tạo mã QR thanh toán PayOS...');
+        const payLinkRes = await fetch(`${API_BASE}/payment/create-payment-link`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(createPayload)
+        });
+        const payLinkData = await payLinkRes.json();
+        if (!payLinkData.success) {
+          showToast(payLinkData.error || 'Lỗi khởi tạo thanh toán', 'error');
+          document.getElementById('reg-pay-method').value = 'Tien mat';
+          return;
+        }
+
+        const { checkoutUrl, orderCode, amount, qrCode } = payLinkData.data;
+
+        // Hiển thị modal QR
+        let qrModal = document.getElementById('payos-qr-modal');
+        if (!qrModal) {
+          qrModal = document.createElement('div');
+          qrModal.id = 'payos-qr-modal';
+          qrModal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none';
+          document.body.appendChild(qrModal);
+        }
+
+        qrModal.innerHTML = `
+          <div class="bg-white rounded-2xl p-6 w-[320px] shadow-2xl border border-apple-divider/40 text-center transform scale-95 transition-all duration-300 flex flex-col items-center justify-center space-y-4">
+            <h4 class="font-bold text-apple-ink text-sm">QUÉT MÃ QR THANH TOÁN</h4>
+            <p class="text-[10px] text-slate-500">Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử để quét mã</p>
+            
+            <div class="relative w-48 h-48 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 shadow-inner">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode || checkoutUrl)}" alt="QR PayOS" class="w-full h-full object-contain">
+              <div class="absolute inset-0 bg-apple-blue/5 animate-pulse pointer-events-none"></div>
+            </div>
+
+            <div class="w-full bg-slate-50 rounded-xl p-3 text-left space-y-1 text-[11px] border border-slate-100">
+              <div class="flex justify-between"><span class="text-slate-500">Số tiền:</span><span class="font-bold text-rose-500">${amount.toLocaleString('vi-VN')} đ</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Nội dung:</span><span class="font-bold text-apple-ink">DK ${packageSelect.options[packageSelect.selectedIndex].text.split('(')[0].trim()}</span></div>
+            </div>
+
+            <div class="flex items-center gap-1.5 justify-center text-[10px] text-apple-blue font-semibold animate-pulse">
+              <span class="inline-block w-1.5 h-1.5 bg-apple-blue rounded-full"></span>
+              <span>Đang chờ bạn quét mã thanh toán...</span>
+            </div>
+
+            <div class="w-full flex flex-col gap-2 pt-2">
+              <a href="${checkoutUrl}" target="_blank" class="w-full py-2 bg-apple-blue hover:opacity-90 text-white font-bold rounded-xl text-xs transition active:scale-95 shadow-sm block text-center">Thanh toán trực tiếp</a>
+              <button id="btn-cancel-payos" class="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition active:scale-95">Hủy bỏ giao dịch</button>
+            </div>
+          </div>
+        `;
+
+        setTimeout(() => {
+          qrModal.classList.remove('pointer-events-none');
+          qrModal.classList.add('opacity-100');
+          qrModal.querySelector('div').classList.remove('scale-95');
+          qrModal.querySelector('div').classList.add('scale-100');
+        }, 50);
+
+        // Hàm hiển thị biên lai thành công chuyên nghiệp
+        function showSuccessReceipt(data) {
+          let receiptModal = document.getElementById('payment-success-modal');
+          if (!receiptModal) {
+            receiptModal = document.createElement('div');
+            receiptModal.id = 'payment-success-modal';
+            receiptModal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none';
+            document.body.appendChild(receiptModal);
+          }
+
+          receiptModal.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 w-[340px] shadow-2xl border border-apple-divider/40 text-center transform scale-95 transition-all duration-300 flex flex-col items-center justify-center space-y-4">
+              <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 animate-bounce">
+                <span class="material-symbols-outlined text-3xl font-bold">check_circle</span>
+              </div>
+              
+              <div class="space-y-1">
+                <h4 class="font-extrabold text-apple-ink text-sm">THANH TOÁN THÀNH CÔNG</h4>
+                <p class="text-[10px] text-emerald-600 font-semibold">Giao dịch đã được ghi nhận hệ thống</p>
+              </div>
+
+              <div class="w-full bg-slate-50 rounded-xl p-3 text-left space-y-1.5 text-[11px] border border-slate-100">
+                <div class="flex justify-between border-b border-slate-100 pb-1"><span class="text-slate-500">Mã giao dịch:</span><span class="font-bold text-apple-ink">#${data.orderCode}</span></div>
+                <div class="flex justify-between border-b border-slate-100 pb-1"><span class="text-slate-500">Học viên:</span><span class="font-bold text-apple-ink">${data.studentName}</span></div>
+                <div class="flex justify-between border-b border-slate-100 pb-1"><span class="text-slate-500">Gói đăng ký:</span><span class="font-bold text-apple-ink">${data.packageName}</span></div>
+                <div class="flex justify-between border-b border-slate-100 pb-1"><span class="text-slate-500">Số tiền:</span><span class="font-extrabold text-rose-500">${Number(data.amount).toLocaleString('vi-VN')} đ</span></div>
+                <div class="flex justify-between border-b border-slate-100 pb-1"><span class="text-slate-500">Phương thức:</span><span class="font-bold text-apple-blue">${data.method === 'chuyen_khoan' ? 'Chuyển khoản (PayOS)' : 'Tiền mặt'}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Thời gian:</span><span class="font-medium text-slate-500">${new Date().toLocaleString('vi-VN')}</span></div>
+              </div>
+
+              <div class="w-full flex flex-col gap-2 pt-2">
+                <button id="btn-success-close" class="w-full py-2 bg-apple-blue hover:opacity-90 text-white font-bold rounded-xl text-xs transition active:scale-95 shadow-sm">Đóng & Tiếp tục</button>
+                <button id="btn-success-view-profile" class="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs transition active:scale-95">Đến hồ sơ học viên</button>
+              </div>
+            </div>
+          `;
+
+          setTimeout(() => {
+            receiptModal.classList.remove('pointer-events-none');
+            receiptModal.classList.add('opacity-100');
+            receiptModal.querySelector('div').classList.remove('scale-95');
+            receiptModal.querySelector('div').classList.add('scale-100');
+          }, 50);
+
+          function hideSuccessModal() {
+            receiptModal.classList.add('pointer-events-none');
+            receiptModal.classList.remove('opacity-100');
+            receiptModal.querySelector('div').classList.remove('scale-100');
+            receiptModal.querySelector('div').classList.add('scale-95');
+          }
+
+          document.getElementById('btn-success-close')?.addEventListener('click', () => {
+            hideSuccessModal();
+            if (data.isTutoring) {
+              sessionStorage.setItem('auto_schedule_data', JSON.stringify({
+                type: 'hoc_kem',
+                hoc_vien_id: parseInt(data.studentId),
+                goi_hoc_kem_id: parseInt(data.pkgId),
+                giao_vien_id: document.getElementById('reg-teacher-id').value ? parseInt(document.getElementById('reg-teacher-id').value) : null
+              }));
+              if (typeof window._navigatePage === 'function') {
+                window._navigatePage('class-management');
+              } else {
+                window.location.hash = '/class-management';
+              }
+            } else {
+              renderCourseRegistrations(container);
+            }
+          });
+
+          document.getElementById('btn-success-view-profile')?.addEventListener('click', () => {
+            hideSuccessModal();
+            sessionStorage.setItem('auto_open_student_id', data.studentId);
+            if (typeof window._navigatePage === 'function') {
+              window._navigatePage('students-list');
+            } else {
+              window.location.hash = '/students-list';
+            }
+          });
+        }
+
+        // Start polling
+        let pollInterval = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`${API_BASE}/payment/check-status/${orderCode}`);
+            const statusData = await statusRes.json();
+            if (statusData.success && statusData.paid) {
+              clearInterval(pollInterval);
+              hideQrModal();
+              showToast('Thanh toán qua PayOS thành công!');
+
+              showSuccessReceipt({
+                orderCode: orderCode,
+                studentName: document.getElementById('reg-student-id').options[document.getElementById('reg-student-id').selectedIndex].text.split('-')[0].trim(),
+                packageName: packageSelect.options[packageSelect.selectedIndex].text.split('(')[0].trim(),
+                amount: amount,
+                method: 'chuyen_khoan',
+                isTutoring: isTutoring,
+                studentId: studentId,
+                pkgId: pkgId
+              });
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }, 2000);
+
+        function hideQrModal() {
+          clearInterval(pollInterval);
+          qrModal.classList.add('pointer-events-none');
+          qrModal.classList.remove('opacity-100');
+          qrModal.querySelector('div').classList.remove('scale-100');
+          qrModal.querySelector('div').classList.add('scale-95');
+        }
+
+        document.getElementById('btn-cancel-payos')?.addEventListener('click', () => {
+          hideQrModal();
+          document.getElementById('reg-pay-method').value = 'Tien mat';
+          showToast('Đã hủy thanh toán qua PayOS.', 'warning');
+        });
+
+      } catch (err) {
+        showToast('Không thể kết nối máy chủ thanh toán', 'error');
+        document.getElementById('reg-pay-method').value = 'Tien mat';
+      }
+    }
+
+    // Lắng nghe thay đổi dropdown phương thức thanh toán
+    document.getElementById('reg-pay-method')?.addEventListener('change', (e) => {
+      if (e.target.value === 'Chuyen khoan') {
+        triggerPayOSPayment();
+      }
+    });
+
     document.getElementById('reg-course-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const type = typeSelect.value;
       const isTutoring = type === 'hoc_kem';
+      const payMethod = document.getElementById('reg-pay-method').value;
 
+      if (payMethod === 'Chuyen khoan') {
+        // Nếu chọn chuyển khoản, trigger lại QR flow để tiếp tục quét nếu cần
+        triggerPayOSPayment();
+        return;
+      }
+
+      // Luồng Tiền mặt bình thường
       let url = `${API_BASE}/registrations`;
       let payload = {
         ho_so_id: parseInt(document.getElementById('reg-student-id').value),
@@ -290,7 +522,7 @@ export async function renderCourseRegistrations(container) {
         den_ngay: regEndInput.value,
         gia_thuc_te: parseCurrencyInput(priceInput.value),
         so_tien_da_thu: parseCurrencyInput(paidInput.value),
-        phuong_thuc_tt: document.getElementById('reg-pay-method').value
+        phuong_thuc_tt: payMethod
       };
 
       if (isTutoring) {
@@ -322,21 +554,17 @@ export async function renderCourseRegistrations(container) {
         const result = await res.json();
         if (result.success) {
           showToast('Ghi nhận đóng học phí thành công!');
-          if (isTutoring) {
-            sessionStorage.setItem('auto_schedule_data', JSON.stringify({
-              type: 'hoc_kem',
-              hoc_vien_id: payload.hoc_vien_id,
-              goi_hoc_kem_id: payload.goi_hoc_kem_id,
-              giao_vien_id: payload.giao_vien_id
-            }));
-            if (typeof window._navigatePage === 'function') {
-              window._navigatePage('class-management');
-            } else {
-              window.location.hash = '/class-management';
-            }
-          } else {
-            renderCourseRegistrations(container);
-          }
+          
+          showSuccessReceipt({
+            orderCode: result.data.id || 'N/A',
+            studentName: document.getElementById('reg-student-id').options[document.getElementById('reg-student-id').selectedIndex].text.split('-')[0].trim(),
+            packageName: packageSelect.options[packageSelect.selectedIndex].text.split('(')[0].trim(),
+            amount: payload.so_tien_da_thu,
+            method: 'tien_mat',
+            isTutoring: isTutoring,
+            studentId: payload.hoc_vien_id || payload.ho_so_id,
+            pkgId: payload.goi_hoc_kem_id || payload.goi_hoc_phi_id
+          });
         } else {
           showToast(result.error || 'Lỗi không xác định', 'error');
         }

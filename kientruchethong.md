@@ -71,6 +71,17 @@ Hệ thống kế thừa và chuyển đổi từ Paradise Gym SQLite sang Postg
 - **POST `/api/reports`**: Giáo viên tạo nhận xét sổ liên lạc / nhật ký cho học sinh.
 - **GET `/api/reports/student/:studentId`**: Lấy lịch sử sổ liên lạc của học sinh theo thứ tự thời gian mới nhất.
 
+### 3.5. Cổng thanh toán trực tuyến PayOS
+- **POST `/api/payment/create-payment-link`**
+  - Mô tả: Tạo link thanh toán VietQR qua cổng PayOS.
+  - Body: `{ ho_so_id, goi_hoc_phi_id, goi_hoc_kem_id, tu_ngay, den_ngay, chi_nhanh_mua, returnUrl, cancelUrl }`
+  - Logic: Lưu tạm một đơn đăng ký ở trạng thái `'huy'` (trạng thái chờ của Postgres), sinh `orderCode` ngẫu nhiên và gọi SDK PayOS để tạo link thanh toán VietQR.
+- **GET `/api/payment/check-status/:orderCode`**
+  - Mô tả: API kiểm tra trạng thái thanh toán (cho Frontend chạy Polling).
+  - Logic: Tra cứu trạng thái trong DB local. Nếu chưa kích hoạt, chủ động gọi API PayOS kiểm tra. Nếu giao dịch đã thanh toán thành công (`PAID`), tiến hành cập nhật trạng thái đơn đăng ký thành `'dang_hoat_dong'`, đồng bộ doanh thu.
+- **POST `/api/payment/webhook`**
+  - Mô tả: Webhook xác thực chữ ký và nhận thông báo trạng thái thanh toán tự động từ PayOS.
+
 ---
 
 ## 4. Cơ Chế Hoạt Động Của Cron Jobs (`backend/cronjobs.js`)

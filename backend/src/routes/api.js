@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
+const { createPaymentLink, payOS } = require('../utils/payos');
 const cloudinary = require('cloudinary').v2;
 
 // Cấu hình Cloudinary
@@ -5263,6 +5264,257 @@ router.post('/checkin-logs', verifyAccess(['admin', 'le_tan', 'giao_vien']), asy
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/payment/create-payment-link: Tạo link thanh toán PayOS cho học viên
+router.post('/payment/create-payment-link', async (req, res) => {
+  const { 
+    ho_so_id, 
+    goi_hoc_phi_id, 
+    goi_tap_id, 
+    goi_hoc_kem_id, 
+    goi_pt_id, 
+    giao_vien_id, 
+    tu_ngay, 
+    den_ngay, 
+    chi_nhanh_mua, 
+    returnUrl, 
+    cancelUrl 
+  } = req.body;
+
+  const targetHoSoId = ho_so_id;
+  const targetGoiHocPhiId = goi_hoc_phi_id || goi_tap_id;
+  const targetGoiHocKemId = goi_hoc_kem_id || goi_pt_id;
+
+  if (!targetHoSoId || (!targetGoiHocPhiId && !targetGoiHocKemId)) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc: ho_so_id và gói học' });
+  }
+
+  try {
+    // 1. Kiểm tra hồ sơ học viên tồn tại
+    const hvCheck = await pool.query('SELECT ho_ten, chi_nhanh FROM ho_so WHERE id = $1 AND is_deleted = 0', [targetHoSoId]);
+    if (hvCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học viên' });
+    }
+    const student = hvCheck.rows[0];
+
+    let amount = 0;
+    let desc = 'Thanh toan';
+    let goi = null;
+
+    if (targetGoiHocPhiId) {
+      // Gói đại trà
+      const goiCheck = await pool.query('SELECT * FROM goi_hoc_phi WHERE id = $1 AND is_deleted = 0', [targetGoiHocPhiId]);
+      if (goiCheck.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Không tìm thấy gói học phí đại trà' });
+      }
+      goi = goiCheck.rows[0];
+      amount = goi.gia;
+      desc = `DK ${goi.ten_goi}`;
+    } else {
+      // Gói học kèm
+      const goiCheck = await pool.query('SELECT * FROM goi_hoc_kem WHERE id = $1 AND is_deleted = 0', [targetGoiHocKemId]);
+      if (goiCheck.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Không tìm thấy gói học kèm 1-1' });
+      }
+      goi = goiCheck.rows[0];
+      amount = goi.gia;
+      desc = `DK ${goi.ten_goi}`;
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ success: false, error: 'Số tiền thanh toán phải lớn hơn 0' });
+    }
+
+    // Sinh orderCode dạng số nguyên ngẫu nhiên
+    const orderCode = Math.floor(10000000 + Math.random() * 90000000);
+
+    // Tính toán thời hạn
+    const tuNgayStr = tu_ngay || new Date().toISOString().split('T')[0];
+    let tuNgayDate = new Date(tuNgayStr);
+    let denNgayDate = den_ngay ? new Date(den_ngay) : null;
+    if (!denNgayDate && goi.so_thang) {
+      denNgayDate = new Date(tuNgayDate);
+      denNgayDate.setMonth(denNgayDate.getMonth() + goi.so_thang);
+      if (goi.so_ngay_them) {
+        denNgayDate.setDate(denNgayDate.getDate() + goi.so_ngay_them);
+      }
+    }
+    const denNgayStr = denNgayDate ? denNgayDate.toISOString().split('T')[0] : new Date(tuNgayDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Tạo bản ghi lưu tạm với trạng thái 'huy' (coi như chưa thanh toán thành công)
+    if (targetGoiHocPhiId) {
+      await pool.query(`
+        INSERT INTO dang_ky_khoa_hoc (
+          ho_so_id, goi_hoc_phi_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu,
+          phuong_thuc_tt, chi_nhanh_mua, trang_thai, payos_order_code, payos_status, ngay_tao, ngay_cap_nhat
+        ) VALUES ($1, $2, $3, $4, $5, 0, 'chuyen_khoan', $6, 'huy', $7, 'PENDING', NOW(), NOW())
+      `, [targetHoSoId, targetGoiHocPhiId, tuNgayStr, denNgayStr, amount, chi_nhanh_mua || student.chi_nhanh || 'Trung tâm chính', String(orderCode)]);
+    } else {
+      await pool.query(`
+        INSERT INTO dang_ky_hoc_kem (
+          hoc_vien_id, giao_vien_id, goi_hoc_kem_id, so_buoi_dang_ky, so_buoi_da_hoc,
+          tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, chi_nhanh_mua,
+          trang_thai, payos_order_code, payos_status, ngay_tao, ngay_cap_nhat
+        ) VALUES ($1, $2, $3, $4, 0, $5, $6, $7, 0, 'chuyen_khoan', $8, 'huy', $9, 'PENDING', NOW(), NOW())
+      `, [targetHoSoId, giao_vien_id || null, targetGoiHocKemId, goi.so_buoi || null, tuNgayStr, denNgayStr, amount, chi_nhanh_mua || student.chi_nhanh || 'Trung tâm chính', String(orderCode)]);
+    }
+
+    // Gọi PayOS tạo link
+    const paymentLink = await createPaymentLink(orderCode, amount, desc, returnUrl, cancelUrl);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orderCode,
+        amount,
+        checkoutUrl: paymentLink.checkoutUrl,
+        qrCode: paymentLink.qrCode
+      }
+    });
+
+  } catch (err) {
+    console.error('[PayOS Create Link Error]:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/payment/webhook: Xử lý dữ liệu gọi về từ PayOS
+router.post('/payment/webhook', async (req, res) => {
+  try {
+    const webhookData = payOS.webhooks.verify(req.body);
+    console.log('[PayOS Webhook] Verified Data:', webhookData);
+
+    if (webhookData.status === 'PAID') {
+      const orderCodeStr = String(webhookData.orderCode);
+
+      // 1. Kiểm tra dang_ky_khoa_hoc
+      const checkKhoaHoc = await pool.query('SELECT id FROM dang_ky_khoa_hoc WHERE payos_order_code = $1', [orderCodeStr]);
+      if (checkKhoaHoc.rows.length > 0) {
+        await pool.query(`
+          UPDATE dang_ky_khoa_hoc
+          SET trang_thai = 'dang_hoat_dong',
+              payos_status = 'PAID',
+              so_tien_da_thu = $1,
+              phuong_thuc_tt = 'chuyen_khoan',
+              ngay_thanh_toan = NOW(),
+              ngay_cap_nhat = NOW()
+          WHERE id = $2
+        `, [webhookData.amount, checkKhoaHoc.rows[0].id]);
+        console.log(`[PayOS Webhook] Kích hoạt khóa học thành công cho đơn: ${orderCodeStr}`);
+      } else {
+        // 2. Kiểm tra dang_ky_hoc_kem
+        const checkHocKem = await pool.query('SELECT id FROM dang_ky_hoc_kem WHERE payos_order_code = $1', [orderCodeStr]);
+        if (checkHocKem.rows.length > 0) {
+          await pool.query(`
+            UPDATE dang_ky_hoc_kem
+            SET trang_thai = 'dang_hoat_dong',
+                payos_status = 'PAID',
+                so_tien_da_thu = $1,
+                phuong_thuc_tt = 'chuyen_khoan',
+                ngay_thanh_toan = NOW(),
+                ngay_cap_nhat = NOW()
+          WHERE id = $2
+        `, [webhookData.amount, checkHocKem.rows[0].id]);
+          console.log(`[PayOS Webhook] Kích hoạt học kèm thành công cho đơn: ${orderCodeStr}`);
+        } else {
+          console.warn(`[PayOS Webhook] Không tìm thấy đơn hàng: ${orderCodeStr}`);
+        }
+      }
+    }
+
+    res.status(200).json({ success: true, message: 'Webhook processed' });
+  } catch (err) {
+    console.error('[PayOS Webhook Error]:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/payment/check-status/:orderCode: Kiểm tra trạng thái thanh toán đơn hàng PayOS
+router.get('/payment/check-status/:orderCode', async (req, res) => {
+  const { orderCode } = req.params;
+  try {
+    const orderCodeStr = String(orderCode);
+    const orderCodeNum = Number(orderCode);
+    
+    // 1. Kiểm tra dang_ky_khoa_hoc trong CSDL local trước
+    const checkKhoaHoc = await pool.query(
+      "SELECT id, trang_thai, gia_thuc_te FROM dang_ky_khoa_hoc WHERE payos_order_code = $1", 
+      [orderCodeStr]
+    );
+    
+    if (checkKhoaHoc.rows.length > 0) {
+      const reg = checkKhoaHoc.rows[0];
+      if (reg.trang_thai === 'dang_hoat_dong') {
+        return res.status(200).json({ success: true, paid: true });
+      }
+      
+      // Nếu local chưa cập nhật, chủ động kiểm tra trực tiếp từ PayOS
+      try {
+        const paymentInfo = await payOS.paymentRequests.get(orderCodeNum);
+        if (paymentInfo && paymentInfo.status === 'PAID') {
+          // Thực hiện cập nhật giống Webhook
+          await pool.query(`
+            UPDATE dang_ky_khoa_hoc
+            SET trang_thai = 'dang_hoat_dong',
+                payos_status = 'PAID',
+                so_tien_da_thu = $1,
+                phuong_thuc_tt = 'chuyen_khoan',
+                ngay_thanh_toan = NOW(),
+                ngay_cap_nhat = NOW()
+            WHERE id = $2
+          `, [paymentInfo.amount, reg.id]);
+          console.log(`[PayOS Polling] Kích hoạt khóa học thành công trực tiếp cho đơn: ${orderCodeStr}`);
+          return res.status(200).json({ success: true, paid: true });
+        }
+      } catch (payosErr) {
+        console.warn(`[PayOS Polling API Check Failed]:`, payosErr.message);
+      }
+      
+      return res.status(200).json({ success: true, paid: false });
+    }
+
+    // 2. Kiểm tra dang_ky_hoc_kem
+    const checkHocKem = await pool.query(
+      "SELECT id, trang_thai, gia_thuc_te FROM dang_ky_hoc_kem WHERE payos_order_code = $1", 
+      [orderCodeStr]
+    );
+
+    if (checkHocKem.rows.length > 0) {
+      const reg = checkHocKem.rows[0];
+      if (reg.trang_thai === 'dang_hoat_dong') {
+        return res.status(200).json({ success: true, paid: true });
+      }
+
+      // Chủ động kiểm tra trực tiếp từ PayOS
+      try {
+        const paymentInfo = await payOS.paymentRequests.get(orderCodeNum);
+        if (paymentInfo && paymentInfo.status === 'PAID') {
+          await pool.query(`
+            UPDATE dang_ky_hoc_kem
+            SET trang_thai = 'dang_hoat_dong',
+                payos_status = 'PAID',
+                so_tien_da_thu = $1,
+                phuong_thuc_tt = 'chuyen_khoan',
+                ngay_thanh_toan = NOW(),
+                ngay_cap_nhat = NOW()
+            WHERE id = $2
+          `, [paymentInfo.amount, reg.id]);
+          console.log(`[PayOS Polling] Kích hoạt học kèm thành công trực tiếp cho đơn: ${orderCodeStr}`);
+          return res.status(200).json({ success: true, paid: true });
+        }
+      } catch (payosErr) {
+        console.warn(`[PayOS Polling API Check Failed]:`, payosErr.message);
+      }
+
+      return res.status(200).json({ success: true, paid: false });
+    }
+
+    res.status(200).json({ success: true, paid: false, message: 'Không tìm thấy đơn hàng' });
+  } catch (err) {
+    console.error('[PayOS Check Status Error]:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

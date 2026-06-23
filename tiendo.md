@@ -1,3 +1,63 @@
+### [23/06/2026 14:15] — Tích hợp biên lai thanh toán thành công và tự động chuyển hướng chi tiết học viên
+- **Loại**: Cải tiến trải nghiệm người dùng (UI/UX) & Phát triển tính năng mới
+- **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  - **CourseRegistrations.js**: Bổ sung hàm hiển thị Biên lai thanh toán thành công (`showSuccessReceipt`) khi thanh toán chuyển khoản PayOS hoặc đóng học phí bằng tiền mặt hoàn tất. Biên lai hiển thị đầy đủ thông tin: Mã giao dịch, Tên học viên, Tên gói, Số tiền thực thu, Phương thức và Thời gian. Hỗ trợ nút điều hướng nhanh "Đến hồ sơ học viên".
+  - **StudentsList.js**: Tích hợp cơ chế tự động phát hiện `auto_open_student_id` từ `sessionStorage` khi chuyển từ trang biên lai sang. Hệ thống sẽ tự động tìm kiếm học viên trong danh sách và kích hoạt bật Modal chi tiết học viên, giúp đồng bộ hiển thị và giải quyết triệt để phản hồi "học viên chưa được nhận gói học".
+- **Kết quả**: Thành công
+
+### [23/06/2026 14:03] — Khắc phục lỗi quét mã QR MoMo/Ngân hàng (VietQR Format)
+- **Loại**: Cải tiến tính năng & Sửa lỗi hiển thị (UI/UX)
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API trả về thêm chuỗi `qrCode` (VietQR) được cung cấp bởi PayOS.
+  - **Frontend**: Thay đổi dữ liệu nguồn ảnh QR từ link web `checkoutUrl` thành chuỗi `qrCode` (VietQR), cho phép các ứng dụng MoMo, ZaloPay và các ứng dụng Ngân hàng nhận diện và tự điền thông tin chuyển khoản chính xác khi quét.
+- **Kết quả**: Thành công
+
+### [23/06/2026 13:58] — Sửa lỗi 500 khi gọi API tạo link thanh toán PayOS
+- **Loại**: Sửa lỗi runtime (Bug Fix)
+- **File**: `backend/src/utils/payos.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - Khắc phục lỗi `payOS.createPaymentLink is not a function` do truyền sai định dạng tham số vào constructor PayOS (bắt buộc phải nhận một object cấu hình `{ clientId, apiKey, checksumKey }`).
+  - Cập nhật hàm tạo link thanh toán sang `payOS.paymentRequests.create(paymentData)` và hàm xác thực webhook sang `payOS.webhooks.verify(req.body)` đúng theo quy định của SDK `@payos/node` vừa cài đặt.
+- **Kết quả**: Thành công
+
+### [23/06/2026 13:54] — Kích hoạt hiện mã QR PayOS ngay khi chọn phương thức Chuyển khoản
+- **Loại**: Cải tiến trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**:
+  - Gắn sự kiện `change` lắng nghe thay đổi của dropdown phương thức thanh toán `#reg-pay-method`.
+  - Ngay khi Lễ tân click chọn "Chuyển khoản", hệ thống sẽ tự động kiểm tra xem đã điền đầy đủ Học viên và Gói học chưa. Nếu đã điền đủ, hệ thống tự động gọi API và hiển thị popup mã QR PayOS ngay lập tức cho khách hàng quét thanh toán mà không cần đợi bấm nút submit gửi đơn nữa.
+- **Kết quả**: Thành open thành công
+
+### [23/06/2026 13:46] — Tích hợp hiển thị mã QR PayOS và kiểm tra thanh toán tự động ở Frontend
+- **Loại**: Cải tiến tính năng & Trải nghiệm giao diện (UI/UX)
+- **File**: `frontend/src/pages/CourseRegistrations.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - **Backend**: Thêm endpoint `GET /api/payment/check-status/:orderCode` để kiểm tra trạng thái thanh toán thời gian thực của đơn hàng.
+  - **Frontend**:
+    - Khi Lễ tân chọn phương thức "Chuyển khoản" và bấm lưu, hệ thống sẽ tự động gọi API tạo link thanh toán, sau đó hiển thị popup mã QR PayOS vô cùng premium (backdrop-blur-sm, hiệu ứng nhịp đập pulse).
+    - Triển khai cơ chế tự động thăm dò (polling) trạng thái thanh toán mỗi 2 giây. Khi người dùng quét mã thành công, giao diện tự động ẩn popup, hiện thông báo chúc mừng và hoàn tất ghi nhận đơn hàng (tiền mặt lưu trực tiếp không cần quét).
+- **Kết quả**: Thành công
+
+### [23/06/2026 13:42] — Khắc phục lỗi khởi tạo PayOS constructor (TypeError: PayOS is not a constructor)
+- **Loại**: Sửa lỗi runtime (Bug Fix)
+- **File**: `backend/src/utils/payos.js`
+- **Mô tả**:
+  - Do module `@payos/node` export dạng CommonJS bọc trong thuộc tính, việc require trực tiếp `PayOS` gây ra lỗi constructor.
+  - Đã cập nhật cơ chế import lấy chính xác class `PayOS` bằng fallback: `PayOSModule.PayOS || PayOSModule.default || PayOSModule`.
+- **Kết quả**: Thành công
+
+### [23/06/2026 13:40] — Tích hợp cổng thanh toán PayOS vào Backend trung tâm
+- **Loại**: Phát triển tính năng mới
+- **File**: `backend/package.json`, `backend/.env`, `backend/.env.example`, `backend/src/utils/payos.js`, `backend/src/routes/api.js`
+- **Mô tả**:
+  - Cài đặt thư viện SDK `@payos/node` và cấu hình file utility `payos.js`.
+  - Cấu hình các biến môi trường Client ID, API Key, Checksum Key vào file `.env` và cập nhật file `.env.example`.
+  - Phát triển API Tạo link thanh toán `POST /api/payment/create-payment-link` hỗ trợ cả gói học phí đại trà và gói học kèm, tự động lưu thông tin đơn hàng với trạng thái tạm thời là `'huy'`.
+  - Phát triển API Webhook `POST /api/payment/webhook` xác thực chữ ký của PayOS, khi nhận trạng thái `PAID` sẽ tự động kích hoạt trạng thái đơn hàng thành `'dang_hoat_dong'`, từ đó đồng bộ doanh thu thông qua các cơ chế báo cáo.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 13:23] — Sửa lỗi hiển thị Việt hóa trong bảng Nhật ký hệ thống (Audit Logs)
 - **Loại**: Sửa lỗi hiển thị & Trải nghiệm người dùng (UI/UX)
 - **File**: `frontend/src/pages/AuditLogs.js`
