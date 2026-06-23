@@ -1,3 +1,28 @@
+### [23/06/2026 14:46] — Thay đổi model Gemini và cập nhật API Key
+- **Loại**: Cấu hình hệ thống & Tương thích API
+- **File**: `backend/src/routes/api.js`, `backend/.env`
+- **Mô tả**:
+  - Cập nhật model Gemini trong API `/api/chatbot` sang dùng dòng model mới nhất `gemini-2.0-flash` để tương thích tốt nhất với API Key AI Studio mới được cấp.
+  - Cập nhật biến môi trường `GEMINI_API_KEY` mới của người dùng vào cấu hình `.env` của backend.
+- **Kết quả**: Thành công
+
+### [23/06/2026 14:28] — Sửa lỗi thiếu trigger mở hiển thị popup QR Code trong Đăng ký khóa học
+- **Loại**: Sửa lỗi giao diện (Bug Fix)
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**:
+  - Khắc phục lỗi popup hiển thị mã QR VietQR PayOS bị vô hình (vẫn chèn HTML nhưng không xóa class `pointer-events-none` và `opacity-0` để kích hoạt hiệu ứng CSS hiện lên).
+  - Đã thêm hàm `setTimeout` kích hoạt mở lớp phủ hiển thị popup QR ngay sau khi tải xong thông tin link thanh toán thành công.
+- **Kết quả**: Thành công
+
+### [23/06/2026 14:22] — Tích hợp thanh toán QR VietQR PayOS khi mua gói mới tại Hồ sơ học viên
+- **Loại**: Phát triển tính năng mới & Cải tiến trải nghiệm (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  - Viết hàm `triggerPayOSPayment()` hỗ trợ gọi API backend lấy link thanh toán và hiển thị popup QR Code tự động kèm theo số tiền và nội dung chuyển khoản.
+  - Thêm cơ chế polling kiểm tra trạng thái thanh toán từ backend mỗi 2 giây. Khi thanh toán thành công, hệ thống tự động tắt popup QR, lưu thông tin gói học vào CSDL và hiển thị hóa đơn thành công.
+  - Lắng nghe sự thay đổi trên dropdown phương thức thanh toán `#reg-phuong-thuc` (khi chọn "Chuyển khoản" sẽ mở QR VietQR) và nút đăng ký `#btn-submit-register-pkg`.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 14:15] — Tích hợp biên lai thanh toán thành công và tự động chuyển hướng chi tiết học viên
 - **Loại**: Cải tiến trải nghiệm người dùng (UI/UX) & Phát triển tính năng mới
 - **File**: `frontend/src/pages/CourseRegistrations.js`, `frontend/src/pages/StudentsList.js`
