@@ -258,9 +258,8 @@ export async function renderAccountManagement(container) {
       <table class="w-full text-xs">
         <thead>
           <tr class="bg-[#fafafa] border-b border-[#f0f0f2]">
-            <th class="text-left px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tài khoản</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide hidden md:table-cell">Hồ sơ</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Vai trò</th>
+            <th class="text-left px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Người sở hữu</th>
+            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Thông tin đăng nhập</th>
             <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide hidden sm:table-cell">Đăng nhập cuối</th>
             <th class="text-center px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trạng thái</th>
             <th class="text-right px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Thao tác</th>
@@ -273,28 +272,26 @@ export async function renderAccountManagement(container) {
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
                        style="background:${a.vai_tro === 'hoc_vien' ? '#f97316' : a.vai_tro === 'giao_vien' ? '#059669' : a.vai_tro === 'admin' ? '#7c3aed' : '#0066cc'}">
-                    ${(a.ten_dang_nhap || '?').charAt(0).toUpperCase()}
+                    ${(a.ho_ten || a.ten_dang_nhap || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p class="font-semibold text-[#1d1d1f]">${a.ten_dang_nhap}</p>
-                    <p class="text-[9px] text-slate-400">ID: ${a.id}</p>
+                    <p class="font-semibold text-[#1d1d1f]">${a.ho_ten || 'Tài khoản hệ thống'}</p>
+                    <div class="mt-1">
+                      <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${ROLE_CLS[a.vai_tro] || 'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro] || a.vai_tro}</span>
+                    </div>
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3.5 hidden md:table-cell">
-                ${a.ho_ten
-        ? `<p class="font-medium text-[#1d1d1f]">${a.ho_ten}</p><p class="text-[9px] text-slate-400">${a.ma_ho_so || ''}</p>`
-        : `<span class="text-slate-300 text-[10px]">Không liên kết</span>`}
-              </td>
               <td class="px-4 py-3.5">
-                <span class="text-[9px] font-bold px-2 py-1 rounded-full ${ROLE_CLS[a.vai_tro] || 'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro] || a.vai_tro}</span>
+                <p class="font-medium text-[#1d1d1f]">${a.ten_dang_nhap}</p>
+                ${a.email ? `<p class="text-[10px] text-slate-400 mt-0.5">${a.email}</p>` : ''}
               </td>
               <td class="px-4 py-3.5 hidden sm:table-cell">
                 <p class="text-[10px] text-slate-500">${a.lan_dang_nhap_cuoi ? fmt(a.lan_dang_nhap_cuoi) : 'Chưa đăng nhập'}</p>
               </td>
               <td class="px-4 py-3.5 text-center">
                 <button onclick="window._acctToggle(${a.id}, ${a.is_active}, this)"
-                  class="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full transition
+                  class="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full transition cursor-pointer
                     ${a.is_active
         ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
         : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
@@ -311,6 +308,12 @@ export async function renderAccountManagement(container) {
                   <button onclick="window._acctEdit(${a.id})"
                     class="w-7 h-7 rounded-lg flex items-center justify-center text-[#0066cc] hover:bg-[#0066cc]/5 transition" title="Sửa tài khoản">
                     <span class="material-symbols-outlined text-[15px]">edit</span>
+                  </button>
+                  <button onclick="window._acctToggle(${a.id}, ${a.is_active}, this)"
+                    class="w-7 h-7 rounded-lg flex items-center justify-center transition 
+                      ${a.is_active ? 'text-amber-500 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}" 
+                    title="${a.is_active ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'}">
+                    <span class="material-symbols-outlined text-[15px]">${a.is_active ? 'lock' : 'lock_open'}</span>
                   </button>
                   <button onclick="window._acctDelete(${a.id}, '${a.ten_dang_nhap}')"
                     class="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 transition" title="Xóa tài khoản">
@@ -555,6 +558,8 @@ export async function renderAccountManagement(container) {
  
   // Toggle active
   window._acctToggle = async (id, current, btn) => {
+    const actionText = current ? 'KHÓA' : 'MỞ KHÓA / KÍCH HOẠT';
+    if (!confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này?`)) return;
     try {
       const r = await fetch(`${API_BASE}/accounts/${id}/toggle`, { method: 'PUT', headers: { 'x-user-role': 'admin' } });
       const res = await r.json();

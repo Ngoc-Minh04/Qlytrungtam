@@ -1,3 +1,48 @@
+### [23/06/2026 10:23] — Tích hợp hộp thoại xác nhận khi Khóa/Mở khóa tài khoản
+- **Loại**: Cải tiến bảo mật & Trải nghiệm người dùng (UI/UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Bổ sung hộp thoại cảnh báo xác nhận `confirm` trước khi tiến hành Khóa hoặc Mở khóa tài khoản người dùng.
+  - Ngăn chặn hoàn toàn việc Admin vô tình lỡ tay click nhầm làm khóa tài khoản của học viên hay nhân sự ngoài ý muốn.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:22] — Khôi phục tính năng Click trực tiếp vào Trạng thái tài khoản
+- **Loại**: Cải tiến trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Chuyển đổi lại badge hiển thị ở cột Trạng thái thành nút bấm có thể tương tác (`onclick`).
+  - Hỗ trợ cả 2 luồng thao tác song song: Admin có thể click nhanh trực tiếp vào badge Trạng thái (Hoạt động / Bị khóa) hoặc sử dụng nút bấm biểu tượng Ổ khóa trong cột Thao tác để bật/tắt kích hoạt tài khoản.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:20] — Bổ sung nút Khóa/Mở khóa tài khoản trực quan
+- **Loại**: Cải tiến giao diện & Trải nghiệm người dùng (UI/UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Chuyển đổi cột Trạng thái thành dạng hiển thị tĩnh (badge "Hoạt động" / "Bị khóa" chỉ để xem, không click được) để tránh Admin nhầm lẫn.
+  - Bổ sung nút Khóa / Mở khóa dạng biểu tượng **Ổ khóa** (`lock` / `lock_open`) trực tiếp vào cột Thao tác:
+    * Khi tài khoản Đang hoạt động: Hiện nút Khóa (icon `lock` màu vàng cam).
+    * Khi tài khoản Bị khóa: Hiện nút Mở khóa (icon `lock_open` màu xanh lá).
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:15] — Tái cấu trúc bảng quản lý tài khoản sang dạng 2 cột trực quan
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Chuyển đổi cấu trúc danh sách tài khoản sang dạng 2 cột chính tách biệt rõ ràng:
+    * **Cột 1 (Người sở hữu)**: Hiển thị Avatar tròn, Họ và tên (chữ đậm) và nhãn Vai trò (badge màu) ngay bên dưới.
+    * **Cột 2 (Thông tin đăng nhập)**: Hiển thị Số điện thoại đăng nhập (chữ to) và Email (chữ nhỏ).
+  - Cải tiến này giúp Admin quản lý cực kỳ trực quan, thông thoáng mắt và hoạt động hoàn hảo khi hiển thị trên các màn hình điện thoại di động nhỏ gọn.
+- **Kết quả**: Thành công
+
+### [23/06/2026 10:10] — Gộp cột Họ tên và Tên đăng nhập trong Quản lý tài khoản
+- **Loại**: Cải tiến giao diện & UI/UX
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - Gộp thông tin cột "Tài khoản" và cột "Hồ sơ" làm một cột duy nhất là "Tài khoản người dùng".
+  - Hiển thị Họ và tên của người sở hữu tài khoản nổi bật làm tiêu đề chính (chữ đậm) giúp nhận diện cực kỳ trực quan, phía dưới là Tên đăng nhập (Số điện thoại) và Mã số hồ sơ liên kết dạng chữ nhỏ gọn gàng.
+  - Cải tiến này giúp tối ưu hóa không gian hiển thị của bảng dữ liệu, tránh bị ẩn thông tin người dùng trên các thiết bị di động.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 10:03] — Ẩn trường Chi nhánh học viên và Khóa tên đăng nhập Giáo viên/Nhân viên
 - **Loại**: Cải tiến UI/UX & Nghiệp vụ
 - **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
