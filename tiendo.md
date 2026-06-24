@@ -1,3 +1,15 @@
+### [24/06/2026 16:23] — Cập nhật cơ chế đăng nhập không phân biệt hoa thường và reset mật khẩu Admin
+- **Loại**: Sửa lỗi logic Backend & Vận hành DB
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Reset mật khẩu của tài khoản `Admin` về mật khẩu mặc định `123456`. Đồng thời, tối ưu câu lệnh SQL xác thực đăng nhập sử dụng hàm `LOWER()` để hỗ trợ đăng nhập không phân biệt chữ hoa, chữ thường cho tên tài khoản (ví dụ: gõ `admin` hay `Admin` đều hợp lệ).
+- **Kết quả**: Thành công
+
+### [24/06/2026 16:18] — Điều chỉnh tỷ lệ cột và chống tràn nhãn trạng thái trang Lớp học & Xếp lịch
+- **Loại**: Chỉnh sửa giao diện (UI/UX)
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**: Điều chỉnh tỷ lệ grid cột từ 4:6 sang 3:7 (card Đăng ký lịch dạy chiếm 3 phần, card Lịch sử đặt lịch chiếm 7 phần) để tăng không gian hiển thị danh sách lớp học. Đồng thời thêm thuộc tính `whitespace-nowrap` vào cột Trạng thái để ngăn chặn nhãn "Đang hoạt động/Đang tiến hành" bị xuống dòng khi co giãn màn hình.
+- **Kết quả**: Thành công
+
 ### [24/06/2026 11:56] — Lọc bỏ học viên và giáo viên đã xóa khỏi số liệu thống kê của Chatbot
 - **Loại**: Sửa bug logic Backend
 - **File**: `backend/src/routes/api.js`

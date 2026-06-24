@@ -8,8 +8,8 @@ export async function renderClassManagement(container) {
   container.innerHTML = `
     <div class="space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
-        <!-- Form bên trái (Đăng ký lịch dạy - chiếm 4 phần) -->
-        <div class="lg:col-span-4 bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
+        <!-- Form bên trái (Đăng ký lịch dạy - chiếm 3 phần) -->
+        <div class="lg:col-span-3 bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
           <div class="flex justify-between items-center pb-1 border-b border-apple-divider/40">
             <h3 class="font-bold text-apple-ink text-sm">Đăng ký lịch dạy</h3>
             <button id="btn-refresh-class-form" class="flex items-center justify-center gap-1 px-2.5 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[11px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[28px]" type="button">
@@ -156,8 +156,8 @@ export async function renderClassManagement(container) {
           </form>
         </div>
 
-        <!-- Danh sách lịch sử đặt lịch bên phải (chiếm 6 phần) -->
-        <div class="lg:col-span-6 bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col shadow-sm" id="class-list-container">
+        <!-- Danh sách lịch sử đặt lịch bên phải (chiếm 7 phần) -->
+        <div class="lg:col-span-7 bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col shadow-sm" id="class-list-container">
           <div class="p-6 flex items-center justify-center text-slate-400 text-xs">Đang tải lịch sử đặt lịch...</div>
         </div>
       </div>
@@ -1201,7 +1201,7 @@ export async function renderClassManagement(container) {
               </td>
               <td class="px-5 py-3.5 text-slate-600 font-semibold">${item.thu_gop}</td>
               <td class="px-5 py-3.5 font-bold text-apple-blue whitespace-nowrap">${gioHocStr} (${item.si_so}/50 HS)</td>
-              <td class="px-5 py-3.5">
+              <td class="px-5 py-3.5 whitespace-nowrap">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
               </td>
               <td class="px-5 py-3.5 text-right whitespace-nowrap">
@@ -1292,7 +1292,7 @@ export async function renderClassManagement(container) {
               </td>
               <td class="px-5 py-3.5 text-slate-600 font-semibold">${thuLabel}</td>
               <td class="px-5 py-3.5 font-bold text-slate-700 whitespace-nowrap">${gioHocStr}</td>
-              <td class="px-5 py-3.5">
+              <td class="px-5 py-3.5 whitespace-nowrap">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.trang_thai_class}">${item.trang_thai_label}</span>
               </td>
               <td class="px-5 py-3.5 text-right whitespace-nowrap">

@@ -3042,7 +3042,7 @@ router.post('/auth/login', async (req, res) => {
        FROM tai_khoan tk
        JOIN vai_tro vt ON tk.vai_tro_id = vt.id
        LEFT JOIN ho_so hs ON tk.ho_so_id = hs.id
-       WHERE tk.ten_dang_nhap = $1 AND (tk.is_deleted = 0 OR tk.is_deleted IS NULL)`,
+       WHERE LOWER(tk.ten_dang_nhap) = LOWER($1) AND (tk.is_deleted = 0 OR tk.is_deleted IS NULL)`,
       [ten_dang_nhap]
     );
 
