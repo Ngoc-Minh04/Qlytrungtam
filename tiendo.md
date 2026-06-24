@@ -1,3 +1,27 @@
+### [24/06/2026 11:56] — Lọc bỏ học viên và giáo viên đã xóa khỏi số liệu thống kê của Chatbot
+- **Loại**: Sửa bug logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Cập nhật câu SQL SELECT đếm số học viên và giáo viên trong API `/api/chatbot` bằng cách thêm điều kiện `is_deleted = 0`, giúp số lượng học sinh/giáo viên chatbot báo cáo khớp chính xác với Dashboard.
+- **Kết quả**: Thành công
+
+### [24/06/2026 11:52] — Khởi động lại Server Backend trung tâm
+- **Loại**: Vận hành hệ thống
+- **File**: Không có (Khởi chạy process)
+- **Mô tả**: Phát hiện tiến trình cũ chạy ngầm bị cache code, đã giải phóng port 3006 và chạy lại `npm run dev` bằng Nodemon để đồng bộ code mới của API chatbot.
+- **Kết quả**: Thành công
+
+### [24/06/2026 11:50] — Cung cấp thêm số liệu doanh thu Hôm nay, Hôm qua, Tuần này cho Chatbot
+- **Loại**: Sửa bug logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Bổ sung các câu truy vấn và đưa thông tin doanh thu Hôm nay, Hôm qua, Tuần này vào context truyền cho chatbot Stella AI. Giúp chatbot trả lời chính xác từng mốc thời gian khi được hỏi.
+- **Kết quả**: Thành công
+
+### [24/06/2026 11:47] — Đồng bộ doanh thu thực tế cho Chatbot Stella AI
+- **Loại**: Sửa bug logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Cập nhật các câu truy vấn doanh thu trong API `/api/chatbot` để tính gộp dữ liệu từ cả 2 bảng `dang_ky_khoa_hoc` (khóa học đại trà) và `dang_ky_hoc_kem` (học kèm), giúp chatbot trả lời khớp chính xác với số liệu thực tế hiển thị trên Dashboard.
+- **Kết quả**: Thành công
+
 ### [24/06/2026 11:12] — Chuyển đổi Chatbot AI sang Groq
 - **Loại**: Chỉnh sửa cấu hình & Code chatbot
 - **File**: `backend/.env`, `backend/src/routes/api.js`, `frontend/src/pages/Chatbot.js`

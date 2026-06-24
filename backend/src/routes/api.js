@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const { pool } = require('../config/db');
 const { createPaymentLink, payOS } = require('../utils/payos');
 const cloudinary = require('cloudinary').v2;
@@ -4261,7 +4263,15 @@ Bạn có thể giúp về mọi khía cạnh của trung tâm:
 
 router.post('/chatbot', async (req, res) => {
   const role = req.headers['x-user-role'] || 'hoc_vien';
-  const hoTen = req.headers['x-ho-ten'] || '';
+  let hoTen = req.headers['x-ho-ten'] || '';
+  const hoTenBase64 = req.headers['x-ho-ten-base64'] || '';
+  if (hoTenBase64) {
+    try {
+      hoTen = Buffer.from(hoTenBase64, 'base64').toString('utf8');
+    } catch (e) {
+      console.error('Failed to decode hoTen Base64:', e.message);
+    }
+  }
   const { message, history } = req.body;
 
   if (!message || !message.trim()) {
@@ -4273,15 +4283,142 @@ router.post('/chatbot', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Chưa cấu hình API Key cho chatbot AI.' });
   }
 
-  try {
+    // Truy vấn dữ liệu thực tế từ database để cung cấp ngữ cảnh chính xác cho AI
+    let dbStatsContext = '';
+    if (role === 'admin' || role === 'le_tan') {
+      try {
+        // 1. Tính tổng doanh thu thực tế (so_tien_da_thu - so_tien_hoan) của các gói học khác trạng thái 'tam_dung'
+        const revenueRes = await pool.query(`
+          SELECT 
+            (
+              SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+              FROM dang_ky_hoc_kem
+              WHERE trang_thai != 'tam_dung'
+            ) + (
+              SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+              FROM dang_ky_khoa_hoc
+              WHERE trang_thai != 'tam_dung'
+            ) as total_revenue,
+            (
+              SELECT COALESCE(SUM(GREATEST(0, COALESCE(gia_thuc_te, 0) - COALESCE(so_tien_da_thu, 0))), 0)
+              FROM dang_ky_hoc_kem
+              WHERE trang_thai != 'tam_dung'
+            ) + (
+              SELECT COALESCE(SUM(GREATEST(0, COALESCE(gia_thuc_te, 0) - COALESCE(so_tien_da_thu, 0))), 0)
+              FROM dang_ky_khoa_hoc
+              WHERE trang_thai != 'tam_dung'
+            ) as unpaid_revenue
+        `);
+        const totalRev = parseFloat(revenueRes.rows[0]?.total_revenue || 0);
+        const unpaidRev = parseFloat(revenueRes.rows[0]?.unpaid_revenue || 0);
+
+        // 2. Tính doanh thu hôm nay, hôm qua, tuần này, tháng này
+        const now = new Date();
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        const localToday = new Date(now.getTime() - tzOffset);
+        const todayStr = localToday.toISOString().split('T')[0];
+
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000 - tzOffset);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const currentDay = localToday.getDay();
+        const distance = currentDay === 0 ? -6 : 1 - currentDay;
+        const monday = new Date(localToday.getTime() + distance * 24 * 60 * 60 * 1000);
+        const mondayStr = monday.toISOString().split('T')[0];
+
+        const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // - Doanh thu hôm nay
+        const todayRevRes = await pool.query(`
+          SELECT (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_hoc_kem
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date = $1::date
+          ) + (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_khoa_hoc
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date = $1::date
+          ) as today_revenue
+        `, [todayStr]);
+        const todayRev = parseFloat(todayRevRes.rows[0]?.today_revenue || 0);
+
+        // - Doanh thu hôm qua
+        const yesterdayRevRes = await pool.query(`
+          SELECT (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_hoc_kem
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date = $1::date
+          ) + (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_khoa_hoc
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date = $1::date
+          ) as yesterday_revenue
+        `, [yesterdayStr]);
+        const yesterdayRev = parseFloat(yesterdayRevRes.rows[0]?.yesterday_revenue || 0);
+
+        // - Doanh thu tuần này
+        const weekRevRes = await pool.query(`
+          SELECT (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_hoc_kem
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1::date AND ngay_tao::date <= $2::date
+          ) + (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_khoa_hoc
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1::date AND ngay_tao::date <= $2::date
+          ) as week_revenue
+        `, [mondayStr, todayStr]);
+        const weekRev = parseFloat(weekRevRes.rows[0]?.week_revenue || 0);
+
+        // - Doanh thu tháng này
+        const monthRevRes = await pool.query(`
+          SELECT (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_hoc_kem
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::text LIKE $1
+          ) + (
+            SELECT COALESCE(SUM(COALESCE(so_tien_da_thu, 0) - COALESCE(so_tien_hoan, 0)), 0)
+            FROM dang_ky_khoa_hoc
+            WHERE trang_thai != 'tam_dung' AND ngay_tao::text LIKE $1
+          ) as month_revenue
+        `, [`${thisMonth}%`]);
+        const monthRev = parseFloat(monthRevRes.rows[0]?.month_revenue || 0);
+
+        // 3. Đếm số lượng học viên và giáo viên hoạt động (không tính những người đã bị xóa)
+        const studentsCountRes = await pool.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'hoc_vien' AND is_deleted = 0");
+        const teachersCountRes = await pool.query("SELECT COUNT(*) FROM ho_so WHERE loai_ho_so = 'giao_vien' AND is_deleted = 0");
+        
+        const studentsCount = studentsCountRes.rows[0]?.count || 0;
+        const teachersCount = teachersCountRes.rows[0]?.count || 0;
+
+        const fmtVal = (n) => new Intl.NumberFormat('vi-VN').format(n);
+
+        dbStatsContext = `
+DƯ LIỆU THỐNG KÊ THỰC TẾ TỪ HỆ THỐNG DỰ ÁN (CẬP NHẬT NGAY LÚC NÀY):
+- Doanh thu hôm nay (ngày ${localToday.toLocaleDateString('vi-VN')}): ${fmtVal(todayRev)} VNĐ.
+- Doanh thu hôm qua: ${fmtVal(yesterdayRev)} VNĐ.
+- Doanh thu tuần này: ${fmtVal(weekRev)} VNĐ.
+- Doanh thu của tháng hiện tại (${now.getMonth() + 1}/${now.getFullYear()}): ${fmtVal(monthRev)} VNĐ.
+- Tổng doanh thu trung tâm từ trước đến nay: ${fmtVal(totalRev)} VNĐ.
+- Học phí còn thiếu (chưa thu): ${fmtVal(unpaidRev)} VNĐ.
+- Tổng số học viên hiện tại: ${studentsCount} học viên.
+- Tổng số giáo viên & trợ giảng hiện tại: ${teachersCount} người.
+Bạn PHẢI sử dụng chính xác các số liệu thống kê thực tế này để trả lời khi Admin hỏi về doanh thu, số tiền đóng, số học viên, giáo viên của trung tâm. Không được tự bịa ra số liệu khác.
+`;
+      } catch (dbErr) {
+        console.error('Failed to fetch stats for chatbot context:', dbErr.message);
+      }
+    }
+
     // Chuyển đổi history sang format Groq / OpenAI
     const formattedHistory = (history || []).map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
     }));
 
+  try {
     const messages = [
-      { role: 'system', content: getChatSystemPrompt(role, hoTen) },
+      { role: 'system', content: getChatSystemPrompt(role, hoTen) + '\n' + dbStatsContext },
       ...formattedHistory,
       { role: 'user', content: message.trim() }
     ];
@@ -4334,7 +4471,7 @@ router.post('/chatbot', async (req, res) => {
       handleChatbotFallback(message, hoTen, res);
     });
 
-    groqReq.write(postData);
+    groqReq.write(Buffer.from(postData, 'utf8'));
     groqReq.end();
 
   } catch (err) {

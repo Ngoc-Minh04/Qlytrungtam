@@ -13,10 +13,10 @@ export function initChatbot() {
   const hoTen = localStorage.getItem('hoTen') || '';
 
   const roleConfig = {
-    admin:     { label: 'Admin', color: '#6366f1', bg: 'from-[#6366f1] to-[#4f46e5]', hint: 'Hỏi về doanh thu, nhân sự, vận hành...' },
-    le_tan:    { label: 'Lễ tân', color: '#0066cc', bg: 'from-[#0066cc] to-[#004ea8]', hint: 'Hỏi về tiếp nhận HV, đăng ký, học phí...' },
+    admin: { label: 'Admin', color: '#6366f1', bg: 'from-[#6366f1] to-[#4f46e5]', hint: 'Hỏi về doanh thu, nhân sự, vận hành...' },
+    le_tan: { label: 'Lễ tân', color: '#0066cc', bg: 'from-[#0066cc] to-[#004ea8]', hint: 'Hỏi về tiếp nhận HV, đăng ký, học phí...' },
     giao_vien: { label: 'Giáo viên', color: '#059669', bg: 'from-[#059669] to-[#047857]', hint: 'Hỏi về lịch dạy, học viên, phương pháp...' },
-    hoc_vien:  { label: 'Học viên', color: '#d97706', bg: 'from-[#f59e0b] to-[#d97706]', hint: 'Hỏi về lịch học, học phí, đặt lịch...' },
+    hoc_vien: { label: 'Học viên', color: '#d97706', bg: 'from-[#f59e0b] to-[#d97706]', hint: 'Hỏi về lịch học, học phí, đặt lịch...' },
   };
   const cfg = roleConfig[role] || roleConfig['hoc_vien'];
 
@@ -69,7 +69,7 @@ export function initChatbot() {
             <div class="text-white font-bold text-[13px] leading-tight">Stella AI</div>
             <div class="text-white/70 text-[10px] flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span>
-              Trợ lý ${cfg.label} · Powered by Groq
+              Trợ lý ${cfg.label} · Powered by Education
             </div>
           </div>
         </div>
@@ -106,10 +106,10 @@ export function initChatbot() {
 
   // Quick suggestions theo role
   const quickSuggestions = {
-    hoc_vien:  ['📅 Lịch học của tôi', '💰 Học phí còn lại', '📝 Đặt lịch học thêm', '📖 Mẹo học tiếng Anh'],
+    hoc_vien: ['📅 Lịch học của tôi', '💰 Học phí còn lại', '📝 Đặt lịch học thêm', '📖 Mẹo học tiếng Anh'],
     giao_vien: ['📋 Lịch dạy hôm nay', '👥 Danh sách học viên', '✍️ Cách viết sổ liên lạc', '📊 Thống kê tháng'],
-    le_tan:    ['➕ Đăng ký học viên mới', '💳 Quy trình thu phí', '❌ Xử lý hủy khóa', '📆 Xếp lịch học'],
-    admin:     ['📈 Phân tích doanh thu', '👤 Quản lý tài khoản', '🏫 Báo cáo vận hành', '⚙️ Cấu hình hệ thống'],
+    le_tan: ['➕ Đăng ký học viên mới', '💳 Quy trình thu phí', '❌ Xử lý hủy khóa', '📆 Xếp lịch học'],
+    admin: ['📈 Phân tích doanh thu', '👤 Quản lý tài khoản', '🏫 Báo cáo vận hành', '⚙️ Cấu hình hệ thống'],
   };
 
   const quickBtnsEl = document.getElementById('stella-quick-btns');
@@ -192,7 +192,7 @@ export function initChatbot() {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': role,
-          'X-Ho-Ten': hoTen,
+          'X-Ho-Ten-Base64': btoa(unescape(encodeURIComponent(hoTen || ''))),
         },
         body: JSON.stringify({ message: text, history: _chatHistory.slice(-10) })
       });
@@ -203,7 +203,8 @@ export function initChatbot() {
       const reply = data.success ? data.reply : (data.error || 'Có lỗi xảy ra, vui lòng thử lại.');
       addMessage('bot', reply);
       _chatHistory.push({ role: 'bot', content: reply });
-    } catch {
+    } catch (err) {
+      console.error('Chatbot fetch error detail:', err);
       hideTyping();
       _isTyping = false;
       addMessage('bot', '⚠️ Mình đang gặp sự cố kết nối. Bạn vui lòng thử lại nhé!');
