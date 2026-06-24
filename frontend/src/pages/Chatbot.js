@@ -69,7 +69,7 @@ export function initChatbot() {
             <div class="text-white font-bold text-[13px] leading-tight">Stella AI</div>
             <div class="text-white/70 text-[10px] flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span>
-              Trợ lý ${cfg.label} · Powered by Gemini
+              Trợ lý ${cfg.label} · Powered by Groq
             </div>
           </div>
         </div>

@@ -28,7 +28,9 @@ function isTimeToShowAttendance(ngayHoc, gioBatDau) {
   const datePart = ngayHoc.substring(0, 10);
   const timePart = gioBatDau.substring(0, 5);
   const targetTime = new Date(`${datePart}T${timePart}:00`);
-  return new Date() >= targetTime;
+  // Cho phép điểm danh trước 30 phút (30 * 60 * 1000 miligiây)
+  const allowTime = new Date(targetTime.getTime() - 30 * 60 * 1000);
+  return new Date() >= allowTime;
 }
 
 function sortSessions(sessions) {
@@ -364,9 +366,9 @@ async function _tabOverview(c) {
                           <button onclick="window._tpAttend(${l.id},'vang')"
                             class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
                         ` : `
-                          <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                          <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                             class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition">✓ Đã học</button>
-                          <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                          <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                             class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition">✗ Vắng</button>
                         `}
                       </div>`;
@@ -474,10 +476,10 @@ async function _tabSchedule(c) {
                                 class="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-3 py-1.5 font-bold transition">
                                 <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
                             ` : `
-                              <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                              <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                                 class="flex items-center gap-1 text-[10px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-3 py-1.5 font-bold transition">
                                 <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã học</button>
-                              <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                              <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                                 class="flex items-center gap-1 text-[10px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-3 py-1.5 font-bold transition">
                                 <span class="material-symbols-outlined text-[12px]">cancel</span> HV Vắng</button>
                             `}
@@ -596,10 +598,10 @@ async function _tabSchedule(c) {
                                   class="text-[9px] bg-red-100 text-red-700 hover:bg-red-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
                                   ✗ Vắng</button>
                               ` : `
-                                <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                                   class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
                                   ✓ Đã học</button>
-                                <button onclick="showToast('Chưa đến giờ học, không thể điểm danh trước!', 'error')"
+                                <button onclick="showToast('Chưa đến giờ học (chỉ cho phép điểm danh trước tối đa 30 phút)!', 'error')"
                                   class="text-[9px] opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200 rounded-xl px-2 py-0.5 font-bold transition flex items-center gap-0.5">
                                   ✗ Vắng</button>
                               `}

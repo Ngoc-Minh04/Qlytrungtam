@@ -1,3 +1,17 @@
+### [24/06/2026 11:12] — Chuyển đổi Chatbot AI sang Groq
+- **Loại**: Chỉnh sửa cấu hình & Code chatbot
+- **File**: `backend/.env`, `backend/src/routes/api.js`, `frontend/src/pages/Chatbot.js`
+- **Mô tả**: Tích hợp Groq API Key mới hoạt động ổn định và thay thế hoàn toàn Gemini API (đang bị giới hạn quota 0 ở khu vực EU) để chatbot có thể trò chuyện bình thường. Sử dụng model llama-3.3-70b-versatile của Groq.
+- **Kết quả**: Thành công
+
+### [24/06/2026 09:34] — Cho phép giáo viên điểm danh sớm 30 phút
+- **Loại**: Cập nhật logic nghiệp vụ (Feature Update)
+- **File**: `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**:
+  - Chỉnh sửa hàm `isTimeToShowAttendance` cho phép giáo viên điểm danh học viên trước giờ bắt đầu lớp học tối đa 30 phút thay vì phải đợi đúng giờ như trước.
+  - Cập nhật lại các thông báo Toast cảnh báo lỗi khi bấm điểm danh quá sớm để phản ánh đúng thông tin logic mới.
+- **Kết quả**: Thành công
+
 ### [23/06/2026 14:46] — Thay đổi model Gemini và cập nhật API Key
 - **Loại**: Cấu hình hệ thống & Tương thích API
 - **File**: `backend/src/routes/api.js`, `backend/.env`

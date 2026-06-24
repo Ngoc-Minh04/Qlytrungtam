@@ -4206,10 +4206,9 @@ router.put('/notes/:id', async (req, res) => {
 });
 
 // ============================================================
-// CHATBOT AI — Gemini (phân quyền theo role)
+// CHATBOT AI — Groq (phân quyền theo role)
 // ============================================================
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const https = require('https');
 
 // System prompt theo từng role
 function getChatSystemPrompt(role, hoTen) {
@@ -4269,44 +4268,99 @@ router.post('/chatbot', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Tin nhắn không được để trống' });
   }
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: getChatSystemPrompt(role, hoTen)
-    });
+  const groqApiKey = process.env.GROQ_API_KEY || '';
+  if (!groqApiKey) {
+    return res.status(500).json({ success: false, error: 'Chưa cấu hình API Key cho chatbot AI.' });
+  }
 
-    // Chuyển đổi history sang format Gemini
-    const chatHistory = (history || []).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
+  try {
+    // Chuyển đổi history sang format Groq / OpenAI
+    const formattedHistory = (history || []).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
     }));
 
-    const chat = model.startChat({ history: chatHistory });
-    const result = await chat.sendMessage(message.trim());
-    const reply = result.response.text();
+    const messages = [
+      { role: 'system', content: getChatSystemPrompt(role, hoTen) },
+      ...formattedHistory,
+      { role: 'user', content: message.trim() }
+    ];
 
-    res.json({ success: true, reply });
+    const postData = JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: messages,
+      temperature: 0.7
+    });
+
+    const options = {
+      hostname: 'api.groq.com',
+      port: 443,
+      path: '/openai/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${groqApiKey}`,
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const groqReq = https.request(options, (groqRes) => {
+      let data = '';
+
+      groqRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      groqRes.on('end', () => {
+        try {
+          const parsedData = JSON.parse(data);
+          if (groqRes.statusCode === 200) {
+            const reply = parsedData.choices[0].message.content;
+            res.json({ success: true, reply });
+          } else {
+            console.error('Groq API error response:', parsedData);
+            // Fallback sang offline trợ lý nếu Groq sập hoặc lỗi
+            handleChatbotFallback(message, hoTen, res);
+          }
+        } catch (e) {
+          console.error('Failed to parse Groq response:', data);
+          handleChatbotFallback(message, hoTen, res);
+        }
+      });
+    });
+
+    groqReq.on('error', (err) => {
+      console.error('Groq request error:', err.message);
+      handleChatbotFallback(message, hoTen, res);
+    });
+
+    groqReq.write(postData);
+    groqReq.end();
+
   } catch (err) {
-    console.error('Gemini API error:', err.message);
-    
-    // Tạo phản hồi ngoại tuyến thông minh làm cứu cánh thay vì crash lỗi 500
-    let reply = `Chào ${hoTen || 'bạn'}! Stella AI hiện đang trong chế độ offline (Bảo trì phím kết nối API). Mình tạm thời trả lời nhanh: `;
-    const msgLower = message.toLowerCase();
-    if (msgLower.includes('lịch') || msgLower.includes('ngày') || msgLower.includes('ca')) {
-      reply += 'Lịch dạy hoặc lịch học của bạn đã được hiển thị đầy đủ trên màn hình thời khóa biểu chính. Bạn có thể kiểm tra trực tiếp ở đó nhé!';
-    } else if (msgLower.includes('học phí') || msgLower.includes('tiền') || msgLower.includes('đóng')) {
-      reply += 'Thông tin chi tiết về học phí, số tiền đã đóng và số tiền còn thiếu nằm trong tab "Học phí". Vui lòng kiểm tra hoặc liên hệ bộ phận Lễ tân nếu cần hỗ trợ.';
-    } else if (msgLower.includes('sổ liên lạc') || msgLower.includes('nhận xét') || msgLower.includes('nhật ký')) {
-      reply += 'Nhật ký học tập và nhận xét chi tiết sau mỗi buổi dạy được cập nhật trong tab "Sổ liên lạc". Giáo viên có thể điền thông tin và gửi trực tiếp tại đây.';
-    } else if (msgLower.includes('học sinh') || msgLower.includes('học viên') || msgLower.includes('sinh viên')) {
-      reply += 'Danh sách học viên và thông tin chi tiết từng bạn được quản lý trong tab "Học viên". Bạn có thể xem lịch sử học tập và tiến độ của các em tại đó.';
-    } else {
-      reply += 'Stella AI đã ghi nhận ý kiến của bạn. Ban quản trị trung tâm sẽ phản hồi lại bạn sớm nhất!';
-    }
-    
-    res.json({ success: true, reply });
+    console.error('Chatbot route exception:', err.message);
+    handleChatbotFallback(message, hoTen, res);
   }
 });
+
+// Hàm fallback hỗ trợ phản hồi ngoại tuyến thông minh
+function handleChatbotFallback(message, hoTen, res) {
+  let reply = `Chào ${hoTen || 'bạn'}! Stella AI hiện đang trong chế độ offline (Bảo trì kết nối). Mình tạm thời trả lời nhanh: `;
+  const msgLower = message.toLowerCase();
+  if (msgLower.includes('lịch') || msgLower.includes('ngày') || msgLower.includes('ca')) {
+    reply += 'Lịch dạy hoặc lịch học của bạn đã được hiển thị đầy đủ trên màn hình thời khóa biểu chính. Bạn có thể kiểm tra trực tiếp ở đó nhé!';
+  } else if (msgLower.includes('học phí') || msgLower.includes('tiền') || msgLower.includes('đóng')) {
+    reply += 'Thông tin chi tiết về học phí, số tiền đã đóng và số tiền còn thiếu nằm trong tab "Học phí". Vui lòng kiểm tra hoặc liên hệ bộ phận Lễ tân nếu cần hỗ trợ.';
+  } else if (msgLower.includes('sổ liên lạc') || msgLower.includes('nhận xét') || msgLower.includes('nhật ký')) {
+    reply += 'Nhật ký học tập và nhận xét chi tiết sau mỗi buổi dạy được cập nhật trong tab "Sổ liên lạc". Giáo viên có thể điền thông tin và gửi trực tiếp tại đây.';
+  } else if (msgLower.includes('học sinh') || msgLower.includes('học viên') || msgLower.includes('sinh viên')) {
+    reply += 'Danh sách học viên và thông tin chi tiết từng bạn được quản lý trong tab "Học viên". Bạn có thể xem lịch sử học tập và tiến độ của các em tại đó.';
+  } else {
+    reply += 'Stella AI đã ghi nhận ý kiến của bạn. Ban quản trị trung tâm sẽ phản hồi lại bạn sớm nhất!';
+  }
+  res.json({ success: true, reply });
+}
+
 
 // ============================================================
 // AVATAR UPLOAD — Cloudinary
