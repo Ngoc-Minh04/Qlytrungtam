@@ -88,13 +88,15 @@ export async function renderRevenueReport(container) {
         </div>
       </div>
 
-      <!-- Transaction Table -->
-      <div class="bg-white rounded-3xl p-6 border border-apple-divider shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-        <h3 class="font-bold text-apple-ink text-xs mb-4 uppercase tracking-wider">Chi tiết lịch sử thanh toán</h3>
-        <div class="overflow-x-auto">
+      <!-- Transaction Table (Scrollable Card) -->
+      <div class="bg-white rounded-3xl border border-apple-divider shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md flex flex-col max-h-[520px] overflow-hidden">
+        <div class="p-6 pb-4 border-b border-apple-divider/40 shrink-0">
+          <h3 class="font-bold text-apple-ink text-xs uppercase tracking-wider">Chi tiết lịch sử thanh toán</h3>
+        </div>
+        <div class="overflow-y-auto flex-1 overflow-x-auto">
           <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-apple-parchment border-b border-apple-divider text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <thead class="sticky top-0 bg-white z-10">
+              <tr class="bg-apple-parchment border-b border-apple-divider text-[10px] font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm">
                 <th class="py-3 px-4">Khách hàng</th>
                 <th class="py-3 px-4">Nội dung</th>
                 <th class="py-3 px-4">Phân loại</th>

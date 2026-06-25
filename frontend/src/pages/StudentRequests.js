@@ -160,9 +160,9 @@ async function loadCancellationsTab(container) {
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="bg-white rounded-2xl border border-slate-150 overflow-hidden shadow-sm">
-          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 bg-slate-50/50">
+        <!-- Table (Scrollable Card) -->
+        <div class="bg-white rounded-2xl border border-slate-150 overflow-hidden shadow-sm flex flex-col max-h-[420px]">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
               <span class="material-symbols-outlined text-[#0071e3] text-[18px]">manage_accounts</span>
               Danh sách đăng ký đang hoạt động
@@ -174,10 +174,10 @@ async function loadCancellationsTab(container) {
               <span class="text-[10px] text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full font-bold">${activeRegs.length} bản ghi</span>
             </div>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-y-auto flex-1 overflow-x-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap text-xs">
-              <thead>
-                <tr class="bg-[#f9fafb] text-[10px] font-bold text-slate-550 uppercase tracking-wider border-b border-slate-100">
+              <thead class="sticky top-0 bg-white z-10">
+                <tr class="bg-[#f9fafb] text-[10px] font-bold text-slate-550 uppercase tracking-wider border-b border-slate-100 backdrop-blur-sm">
                   <th class="px-5 py-3">HỌC VIÊN / GÓI</th>
                   <th class="px-5 py-3">THỜI HẠN</th>
                   <th class="px-5 py-3">HỌC PHÍ</th>
@@ -236,9 +236,7 @@ async function loadCancellationsTab(container) {
     `;
 
     const tableBody = tabContent.querySelector('#cancellations-table-body');
-    setupSwipePagination(activeRegs, tableBody, (pageList) => {
-      tableBody.innerHTML = renderRows(pageList);
-    }, 10);
+    tableBody.innerHTML = renderRows(activeRegs);
 
     tabContent.querySelector('#btn-refresh-cancel')?.addEventListener('click', () => {
       loadCancellationsTab(container);

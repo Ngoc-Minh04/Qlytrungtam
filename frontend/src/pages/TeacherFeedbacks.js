@@ -57,6 +57,12 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
     if (s >= 1 && s <= 5) distribution[s]++;
   });
  
+  // Tính tỷ lệ đánh giá tốt (>= 4 sao)
+  const goodFeedbacksCount = filtered.filter(f => (f.so_sao || 0) >= 4).length;
+  const satisfactionRate = totalFeedbacks > 0
+    ? Math.round((goodFeedbacksCount / totalFeedbacks) * 100)
+    : 0;
+  
   // Tính stats theo từng GV từ statsMap hoặc từ allRatings
   const teacherStats = teachers.map(t => {
     const st = statsMap[t.id] || {};
@@ -67,7 +73,7 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
       count: st.count || 0
     };
   });
- 
+  
   container.innerHTML = `
     <div class="space-y-6 animate-fadeIn">
  
@@ -88,11 +94,11 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
         </div>
       </div>
  
-      <!-- Overview Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Overview Stats (Bento Card - 3 Cột Đều Nhau) -->
+      <div class="bg-white border border-slate-150 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 overflow-hidden">
  
-        <!-- Điểm TB tổng / GV được chọn -->
-        <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm">
+        <!-- Cột 1: Điểm TB tổng / GV được chọn -->
+        <div class="p-5 flex flex-col items-center justify-center text-center bg-slate-50/10">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
             ${filterTeacherId === 'all' ? 'Điểm TB toàn trung tâm' : 'Điểm TB giáo viên'}
           </span>
@@ -102,31 +108,48 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
               <span class="material-symbols-outlined fill-current text-[18px] ${i < Math.round(parseFloat(avgRating)) ? 'text-amber-400' : 'text-slate-200'}">star</span>
             `).join('')}
           </div>
-          <span class="text-[10px] text-slate-400 mt-3 block">Từ ${totalFeedbacks} lượt đánh giá</span>
+          <span class="text-[10px] text-slate-400 mt-3 block font-semibold">Từ ${totalFeedbacks} lượt đánh giá</span>
         </div>
  
-        <!-- Phân bổ sao -->
-        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm md:col-span-2 flex flex-col justify-center">
-          <div class="max-w-md w-full mx-auto md:mx-0">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3.5">Phân bổ xếp hạng</span>
-            <div class="space-y-2">
-              ${[5, 4, 3, 2, 1].map(star => {
-                const count = distribution[star];
-                const pct = totalFeedbacks > 0 ? (count / totalFeedbacks) * 100 : 0;
-                return `
-                  <div class="flex items-center text-xs gap-3">
-                    <span class="w-10 font-semibold text-slate-650 shrink-0 text-right">${star} ★</span>
-                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div class="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div>
-                    </div>
-                    <span class="w-8 text-slate-400 font-bold shrink-0">${count}</span>
+        <!-- Cột 2: Phân bổ sao -->
+        <div class="p-5 flex flex-col justify-center bg-white">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Phân bổ xếp hạng</span>
+          <div class="space-y-2">
+            ${[5, 4, 3, 2, 1].map(star => {
+              const count = distribution[star];
+              const pct = totalFeedbacks > 0 ? (count / totalFeedbacks) * 100 : 0;
+              return `
+                <div class="flex items-center text-xs gap-3">
+                  <span class="w-10 font-semibold text-slate-650 shrink-0 text-right">${star} ★</span>
+                  <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div>
                   </div>
-                `;
-              }).join('')}
-            </div>
+                  <span class="w-8 text-slate-400 font-bold shrink-0">${count}</span>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
  
+        <!-- Cột 3: Tỷ lệ hài lòng -->
+        <div class="p-5 flex flex-col items-center justify-center text-center bg-slate-50/10">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Chỉ số hài lòng</span>
+          <div class="relative flex items-center justify-center">
+            <!-- Vòng tròn tiến độ SVG Apple-style -->
+            <svg class="w-24 h-24 transform -rotate-90">
+              <circle cx="48" cy="48" r="38" stroke="#f1f5f9" stroke-width="6.5" fill="transparent" />
+              <circle cx="48" cy="48" r="38" stroke="#10b981" stroke-width="7" fill="transparent"
+                stroke-dasharray="${2 * Math.PI * 38}"
+                stroke-dashoffset="${2 * Math.PI * 38 * (1 - satisfactionRate / 100)}"
+                stroke-linecap="round"
+                class="transition-all duration-1000 ease-out" />
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center">
+              <span class="text-2xl font-black text-slate-800 tracking-tighter">${satisfactionRate}%</span>
+            </div>
+          </div>
+          <span class="text-[10px] text-slate-400 mt-2 block font-semibold">Tỷ lệ đánh giá tốt (>= 4★)</span>
+        </div>
       </div>
  
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">

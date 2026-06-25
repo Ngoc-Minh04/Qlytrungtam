@@ -1,3 +1,53 @@
+### [25/06/2026 14:27] — Loại bỏ tính năng phân trang vuốt ngang cho Hủy khóa học
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentRequests.js`
+- **Mô tả**:
+  * Gỡ bỏ hoàn toàn logic phân trang vuốt ngang (`setupSwipePagination`) tại bảng "Danh sách đăng ký đang hoạt động" của tab xử lý hủy đăng ký khóa học.
+  * Cho phép dữ liệu hiển thị toàn bộ và sử dụng thanh cuộn dọc nội bộ của card để cuộn tự nhiên, tránh xung đột trải nghiệm vuốt ngang.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:24] — Thêm thanh cuộn dọc tối đa (max-height) cho Hủy khóa học (StudentRequests)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentRequests.js`
+- **Mô tả**:
+  * Chuyển đổi card "Danh sách đăng ký đang hoạt động" ở tab xử lý yêu cầu hủy khóa học sang dạng flexbox giới hạn chiều cao tối đa `max-h-[420px]` kèm thanh cuộn dọc `overflow-y-auto` riêng.
+  * Cài đặt dòng tiêu đề bảng `thead` thành `sticky top-0 bg-white z-10` kèm lớp phủ mờ `backdrop-blur-sm` của iOS để giữ nguyên dòng tiêu đề cột khi người dùng thực hiện cuộn dữ liệu.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:21] — Thêm thanh cuộn dọc tối đa (max-height) cho Quản lý tài khoản
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  * Đổi cấu trúc card chứa bảng tài khoản sang dạng flexbox giới hạn chiều cao tối đa `max-h-[550px]` và kích hoạt thanh cuộn dọc `overflow-y-auto` riêng.
+  * Thiết lập dòng tiêu đề bảng `thead` thành `sticky top-0 bg-white z-10` kèm hiệu ứng kính mờ `backdrop-blur-sm` của iOS để giữ nguyên thanh tiêu đề khi cuộn danh sách tài khoản dài.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:20] — Đổi chiều cao cố định sang chiều cao tối đa cho Lịch sử thanh toán
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  * Đổi chiều cao của card Lịch sử thanh toán từ cố định `h-[520px]` sang chiều cao tối đa `max-h-[520px]`.
+  * Giúp bảng tự động thu gọn lại ôm khít lấy các dòng khi có ít dữ liệu (ví dụ ở bộ lọc "Hôm nay", "Hôm qua") để tránh khoảng trống trắng thừa ở dưới, và chỉ kích hoạt thanh cuộn khi số lượng dòng vượt quá chiều cao tối đa này.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:16] — Thêm thanh cuộn dọc cố định cho bảng Lịch sử thanh toán
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  * Giới hạn chiều cao card "Chi tiết lịch sử thanh toán" ở mức `h-[520px]`.
+  * Tích hợp thanh cuộn dọc (`overflow-y-auto`) riêng biệt cho bảng lịch sử để quản lý gọn gàng khi có hàng trăm giao dịch phát sinh.
+  * Cài đặt `sticky top-0 z-10` cho tiêu đề bảng (`thead`) để giữ cố định tiêu đề cột khi người dùng thực hiện cuộn dữ liệu.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:08] — Thiết kế Bento Card gộp thống kê Điểm trung bình và Phân bổ xếp hạng
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/TeacherFeedbacks.js`
+- **Mô tả**:
+  * Gộp hai card "Điểm TB" và "Phân bổ xếp hạng" thành một card Bento lớn duy nhất.
+  * Sử dụng grid `md:grid-cols-3` và bộ chia ngăn `divide-x` để phân chia cột: Điểm TB chiếm 1/3 (bên trái), biểu đồ phân bổ sao chiếm 2/3 (bên phải, giới hạn độ rộng thanh `max-w-md` tránh bị bè ngang).
+  * Giải quyết hoàn toàn vấn đề trống trải và kéo dãn chiều ngang không mong muốn của cả 2 phần thống kê.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 14:05] — Thu gọn kích thước card Phân bổ xếp hạng sao
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/TeacherFeedbacks.js`

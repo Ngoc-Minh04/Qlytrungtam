@@ -67,9 +67,9 @@ export async function renderAccountManagement(container) {
         </div>
       </div>
 
-      <!-- Table -->
-      <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div id="acct-table-wrap" class="overflow-x-auto">
+      <!-- Table (Scrollable Bento Card) -->
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col max-h-[550px]">
+        <div id="acct-table-wrap" class="overflow-y-auto flex-1 overflow-x-auto">
           <div class="flex items-center justify-center p-14">
             <div class="animate-spin rounded-full h-7 w-7 border-b-2 border-[#0071e3]"></div>
           </div>
@@ -273,13 +273,13 @@ export async function renderAccountManagement(container) {
 
     wrap.innerHTML = `
       <table class="w-full text-xs">
-        <thead>
-          <tr class="bg-slate-50/50 border-b border-slate-100">
-            <th class="text-left px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Người sở hữu</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thông tin đăng nhập</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Đăng nhập cuối</th>
-            <th class="text-center px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trạng thái</th>
-            <th class="text-right px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thao tác</th>
+        <thead class="sticky top-0 bg-white z-10">
+          <tr class="bg-slate-50/80 backdrop-blur-sm border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <th class="text-left px-5 py-3">Người sở hữu</th>
+            <th class="text-left px-4 py-3">Thông tin đăng nhập</th>
+            <th class="text-left px-4 py-3 hidden sm:table-cell">Đăng nhập cuối</th>
+            <th class="text-center px-4 py-3">Trạng thái</th>
+            <th class="text-right px-5 py-3">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100/70">
