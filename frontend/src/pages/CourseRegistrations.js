@@ -29,30 +29,32 @@ export async function renderCourseRegistrations(container) {
     const teachers = teachersData.data || [];
 
     container.innerHTML = `
-      <div class="space-y-3">
-        <div class="bg-white rounded-xl border border-apple-divider overflow-visible flex flex-col lg:flex-row max-w-3xl mx-auto shadow-sm">
+      <div class="py-4 md:py-6">
+        <div class="bg-white rounded-2xl border border-apple-divider overflow-visible flex flex-col lg:flex-row max-w-4xl mx-auto shadow-sm">
           <!-- Left Column -->
-          <div class="w-full lg:w-1/3 p-4 bg-apple-parchment flex flex-col items-center justify-start border-b lg:border-b-0 lg:border-r border-apple-divider/40 rounded-t-xl lg:rounded-tr-none lg:rounded-l-xl">
-            <button id="btn-refresh-course-registrations" class="self-start mb-2 flex items-center justify-center gap-1 px-2 py-0.5 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[10px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[26px]" type="button">
-              <span class="material-symbols-outlined text-[14px]">refresh</span>Tải lại
-            </button>
-            <div class="w-20 h-20 rounded-xl bg-white flex flex-col items-center justify-center mb-3 shadow-sm border border-apple-divider/60">
-              <span class="material-symbols-outlined text-2xl text-apple-blue opacity-85">payments</span>
+          <div class="w-full lg:w-1/3 p-6 bg-apple-parchment flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-apple-divider/40 rounded-t-2xl lg:rounded-tr-none lg:rounded-l-2xl">
+            <div class="w-24 h-24 rounded-2xl bg-white flex flex-col items-center justify-center mb-4 shadow-sm border border-apple-divider/60">
+              <span class="material-symbols-outlined text-3xl text-apple-blue opacity-85">payments</span>
             </div>
-            <div class="text-center space-y-0.5">
-              <h3 class="font-bold text-apple-ink text-xs">Thanh toán & Thu phí học</h3>
-              <p class="text-[9.5px] text-slate-500 leading-relaxed"></p>
+            <div class="text-center space-y-1">
+              <h3 class="font-bold text-apple-ink text-sm">Thanh toán & Thu phí học</h3>
+              <p class="text-[10px] text-slate-400 leading-relaxed">Ghi nhận thông tin đăng ký học và xử lý hóa đơn, học phí.</p>
             </div>
           </div>
           
           <!-- Right Column: Form -->
-          <div class="w-full lg:w-2/3 p-4">
+          <div class="w-full lg:w-2/3 p-6">
+            <div class="flex items-center justify-between border-b border-apple-parchment pb-1 mb-2">
+              <h3 class="font-bold text-apple-ink text-xs flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-apple-blue text-[14px]">person</span>
+                Thông tin Học viên & Loại hình
+              </h3>
+              <button id="btn-refresh-course-registrations" class="flex items-center justify-center gap-1 px-3 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-[10.5px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[28px]" type="button">
+                <span class="material-symbols-outlined text-[14px]">refresh</span>Tải lại
+              </button>
+            </div>
             <form id="reg-course-form" class="space-y-3 text-[11.5px]">
               <div>
-                <h3 class="font-bold text-apple-ink text-xs mb-2 border-b border-apple-parchment pb-1 flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-apple-blue text-[14px]">person</span>
-                  Thông tin Học viên & Loại hình
-                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
                     <label class="block font-semibold text-slate-600 mb-0.5">Học viên <span class="text-rose-500 font-bold">*</span></label>

@@ -1,3 +1,9 @@
+### [25/06/2026 16:30] — Cải thiện bố cục form Đăng ký / Thu phí học (CourseRegistrations.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/CourseRegistrations.js`
+- **Mô tả**: Thiết lập lại độ rộng tối đa của form Đăng ký / Thu phí học thành `max-w-4xl` và căn giữa bằng `mx-auto` thay vì dãn rộng 100% `w-full` để tránh việc form bị dẹt và quá dài theo chiều ngang trên màn hình lớn. Khôi phục tỷ lệ chia cột `1/3` (cột trái) và `2/3` (cột phải) kèm padding `p-6` và `py-4 md:py-6` để thu hẹp khoảng trống dư thừa bên dưới. Đồng thời di chuyển nút "Tải lại" từ góc cột bên trái (gây lệch tâm icon/tiêu đề và tạo khoảng trống xấu) sang vị trí góc trên cùng bên phải của khu vực form để cân đối và gọn gàng hơn.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 16:24] — Loại bỏ giao dịch nháp chưa thanh toán khỏi báo cáo doanh thu (api.js)
 - **Loại**: Sửa lỗi logic (Bug Fix)
 - **File**: `backend/src/routes/api.js`
