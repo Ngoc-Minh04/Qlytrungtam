@@ -1,6 +1,22 @@
-### [24/06/2026 16:23] — Cập nhật cơ chế đăng nhập không phân biệt hoa thường và reset mật khẩu Admin
-- **Loại**: Sửa lỗi logic Backend & Vận hành DB
+### [25/06/2026 08:17] — Tích hợp gói học vào Chatbot Stella AI & Phân quyền doanh thu
+- **Loại**: Chỉnh sửa tính năng / Sửa bug
 - **File**: `backend/src/routes/api.js`
+- **Mô tả**: Tải thông tin các gói học phí đại trà (goi_hoc_phi) và các gói dạy kèm (goi_hoc_kem) từ database và truyền trực tiếp vào context của Stella AI để trả lời người dùng khi được hỏi. Đồng thời, cấu hình phân quyền dữ liệu nhạy cảm (doanh thu trung tâm, thống kê học viên/giáo viên) chỉ dành riêng cho tài khoản Admin và Lễ tân.
+- **Kết quả**: Thành công
+
+### [24/06/2026 20:02] — Sửa lỗi 500 khi ghi nhận lượt quét check-in thủ công cho nhân sự
+- **Loại**: Sửa bug logic Backend & Frontend
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**:
+  - **Frontend**: Cập nhật dropdown phương thức chấm công trong modal từ giá trị `"van_tay"` không hợp lệ sang các giá trị hợp lệ với CHECK constraint của CSDL như `"thu_cong"`, `"the_tu"`, `"qr_code"`, `"khuon_mat"`.
+  - **Backend**: Xóa bỏ route `POST /checkin-logs` trùng lặp đầu tiên ở dòng 2005. Sửa đổi giá trị mặc định của `phuong_thuc` khi bị null từ `"van_tay"` thành `"thu_cong"` để tránh vi phạm check constraint của cơ sở dữ liệu.
+- **Kết quả**: Thành công
+
+### [24/06/2026 19:58] — Loại bỏ trùng lặp route checkin-logs
+- **Mô tả**: Xóa bỏ định nghĩa route `GET /checkin-logs` trùng lặp đầu tiên (dòng 2004) vốn giới hạn dữ liệu ở LIMIT 100 và thiếu các trường định dạng ngày giờ. Việc này giúp giữ lại route chuẩn xác ở dưới (dòng 5406) trả về đầy đủ thông tin log check-in/out, giải quyết xung đột route gây lỗi 500 cục bộ trên trình duyệt.
+- **Kết quả**: Thành công
+
+### [24/06/2026 16:23] — Cập nhật cơ chế đăng nhập không phân biệt hoa thường và reset mật khẩu Admin
 - **Mô tả**: Reset mật khẩu của tài khoản `Admin` về mật khẩu mặc định `123456`. Đồng thời, tối ưu câu lệnh SQL xác thực đăng nhập sử dụng hàm `LOWER()` để hỗ trợ đăng nhập không phân biệt chữ hoa, chữ thường cho tên tài khoản (ví dụ: gõ `admin` hay `Admin` đều hợp lệ).
 - **Kết quả**: Thành công
 

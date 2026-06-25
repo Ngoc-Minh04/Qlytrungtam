@@ -2000,62 +2000,9 @@ router.get('/audit-logs', verifyAccess(['admin']), async (req, res) => {
   }
 });
 
-// GET /api/checkin-logs: Xem nhật ký check-in
-router.get('/checkin-logs', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT l.*, h.ho_ten, h.ma_ho_so 
-      FROM luot_vao_ra l 
-      LEFT JOIN ho_so h ON l.ho_so_id = h.id 
-      ORDER BY l.thoi_diem DESC LIMIT 100
-    `);
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+// GET /api/checkin-logs is defined further down at line 5405 to avoid duplicate definition conflict.
 
-// POST /api/checkin-logs: Thêm lượt quét check-in chấm công thủ công (Admin & Lễ tân)
-router.post('/checkin-logs', verifyAccess(['admin', 'le_tan']), async (req, res) => {
-  const { ho_so_id, chi_nhanh_thuc_hien, thoi_diem, phuong_thuc } = req.body;
-
-  if (!ho_so_id || !thoi_diem) {
-    return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc' });
-  }
-
-  try {
-    const hsRes = await pool.query('SELECT ho_ten, ma_ho_so FROM ho_so WHERE id = $1', [ho_so_id]);
-    if (hsRes.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ tương ứng' });
-    }
-    const targetUser = hsRes.rows[0];
-
-    const queryStr = `
-      INSERT INTO luot_vao_ra (ho_so_id, thoi_diem, loai, phuong_thuc, chi_nhanh_thuc_hien)
-      VALUES ($1, $2, 'vao', $3, $4)
-      RETURNING *
-    `;
-    const result = await pool.query(queryStr, [
-      ho_so_id, 
-      thoi_diem, 
-      phuong_thuc || 'van_tay', 
-      chi_nhanh_thuc_hien || 'Trung tâm chính'
-    ]);
-
-    await createNotification(
-      'cham_cong_thu_cong',
-      'Chấm công thủ công',
-      `Đã ghi nhận lượt chấm công thủ công cho "${targetUser.ho_ten}" vào lúc ${new Date(thoi_diem).toLocaleTimeString('vi-VN')} ngày ${new Date(thoi_diem).toLocaleDateString('vi-VN')}.`,
-      result.rows[0].id,
-      'luot_vao_ra',
-      'nhan_vien'
-    );
-
-    res.status(201).json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+// POST /api/checkin-logs is defined further down at line 5422 to avoid duplicate definition conflict.
 
 
 // ============================================================
@@ -4285,6 +4232,33 @@ router.post('/chatbot', async (req, res) => {
 
     // Truy vấn dữ liệu thực tế từ database để cung cấp ngữ cảnh chính xác cho AI
     let dbStatsContext = '';
+    
+    // 1. Lấy thông tin các gói học để dùng chung cho mọi vai trò (học viên, giáo viên, lễ tân, admin đều xem được)
+    let packageContext = '';
+    try {
+      const packagesRes = await pool.query("SELECT ten_goi, mo_ta, so_thang, gia FROM goi_hoc_phi WHERE is_deleted = 0 ORDER BY gia ASC");
+      const tutoringRes = await pool.query("SELECT ten_goi, mo_ta, loai_goi, so_buoi, so_thang, gia FROM goi_hoc_kem WHERE is_deleted = 0 ORDER BY gia ASC");
+      
+      const fmtVal = (n) => new Intl.NumberFormat('vi-VN').format(n);
+      
+      let khList = packagesRes.rows.map(r => `- **${r.ten_goi}**: Thời hạn ${r.so_thang} tháng, Học phí: ${fmtVal(r.gia)} VNĐ (${r.mo_ta || 'Không có mô tả'}).`).join('\n');
+      let tutoringList = tutoringRes.rows.map(r => {
+        const duration = r.loai_goi === 'theo_buoi' ? `${r.so_buoi} buổi` : `${r.so_thang} tháng (${r.so_buoi} buổi)`;
+        return `- **${r.ten_goi} (Dạy kèm)**: ${duration}, Học phí: ${fmtVal(r.gia)} VNĐ (${r.mo_ta || 'Không có mô tả'}).`;
+      }).join('\n');
+
+      packageContext = `
+DANH SÁCH CÁC GÓI HỌC/KHÓA HỌC HIỆN CÓ TẠI TRUNG TÂM (STELLAR ACADEMY):
+* Khóa học đại trà (Lớp thường):
+${khList || 'Chưa có gói học đại trà nào.'}
+
+* Các gói dạy kèm 1-1 / Lớp học kèm:
+${tutoringList || 'Chưa có gói dạy kèm nào.'}
+`;
+    } catch (pkgErr) {
+      console.error('Failed to fetch packages for chatbot context:', pkgErr.message);
+    }
+
     if (role === 'admin' || role === 'le_tan') {
       try {
         // 1. Tính tổng doanh thu thực tế (so_tien_da_thu - so_tien_hoan) của các gói học khác trạng thái 'tam_dung'
@@ -4394,7 +4368,7 @@ router.post('/chatbot', async (req, res) => {
         const fmtVal = (n) => new Intl.NumberFormat('vi-VN').format(n);
 
         dbStatsContext = `
-DƯ LIỆU THỐNG KÊ THỰC TẾ TỪ HỆ THỐNG DỰ ÁN (CẬP NHẬT NGAY LÚC NÀY):
+DƯ LIỆU THỐNG KÊ THỰC TẾ TỪ HỆ THỐNG DỰ ÁN (CẬP NHẬT NGAY LÚC NÀY - CHỈ CÓ ADMIN/LỄ TÂN XEM ĐƯỢC):
 - Doanh thu hôm nay (ngày ${localToday.toLocaleDateString('vi-VN')}): ${fmtVal(todayRev)} VNĐ.
 - Doanh thu hôm qua: ${fmtVal(yesterdayRev)} VNĐ.
 - Doanh thu tuần này: ${fmtVal(weekRev)} VNĐ.
@@ -4403,12 +4377,14 @@ DƯ LIỆU THỐNG KÊ THỰC TẾ TỪ HỆ THỐNG DỰ ÁN (CẬP NHẬT NGAY
 - Học phí còn thiếu (chưa thu): ${fmtVal(unpaidRev)} VNĐ.
 - Tổng số học viên hiện tại: ${studentsCount} học viên.
 - Tổng số giáo viên & trợ giảng hiện tại: ${teachersCount} người.
-Bạn PHẢI sử dụng chính xác các số liệu thống kê thực tế này để trả lời khi Admin hỏi về doanh thu, số tiền đóng, số học viên, giáo viên của trung tâm. Không được tự bịa ra số liệu khác.
+Bạn PHẢI sử dụng chính xác các số liệu thống kê thực tế này để trả lời khi Admin hoặc Lễ tân hỏi về doanh thu, số tiền đóng, số học viên, giáo viên của trung tâm. Không được tự bịa ra số liệu khác.
 `;
       } catch (dbErr) {
         console.error('Failed to fetch stats for chatbot context:', dbErr.message);
       }
     }
+
+    dbStatsContext = packageContext + '\n' + dbStatsContext;
 
     // Chuyển đổi history sang format Groq / OpenAI
     const formattedHistory = (history || []).map(msg => ({
@@ -5439,7 +5415,7 @@ router.post('/checkin-logs', verifyAccess(['admin', 'le_tan', 'giao_vien']), asy
     `;
     const result = await pool.query(insertQuery, [
       ho_so_id, 
-      phuong_thuc || 'van_tay', 
+      phuong_thuc || 'thu_cong', 
       chi_nhanh_thuc_hien || 'Trung tâm chính',
       thoi_diem || new Date().toISOString()
     ]);

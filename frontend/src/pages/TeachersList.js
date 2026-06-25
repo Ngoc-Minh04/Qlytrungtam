@@ -219,7 +219,7 @@ export async function renderTeachersList(container, role) {
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
+                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập</label>
                     <input type="text" id="modal-teacher-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
                   </div>
                   <div>
@@ -304,7 +304,7 @@ export async function renderTeachersList(container, role) {
           (t.ma_ho_so && t.ma_ho_so.toLowerCase().includes(q)) ||
           (t.so_dien_thoai && t.so_dien_thoai.includes(q));
         const matchesExpertise = exp === "" || t.chuyen_mon === exp;
-        
+
         let matchesExperience = true;
         if (experienceVal) {
           const years = parseInt(t.kinh_nghiem) || 0;
@@ -389,14 +389,14 @@ export async function renderTeachersList(container, role) {
     document.getElementById('btn-add-teacher-modal')?.addEventListener('click', () => {
       addModal.classList.remove('hidden');
       document.getElementById('add-teacher-modal-form').reset();
-      
+
       const phoneInput = document.getElementById('modal-teacher-phone');
       const usernameInput = document.getElementById('modal-teacher-username');
       const passwordInput = document.getElementById('modal-teacher-password');
       const autoAccCheckbox = document.getElementById('modal-teacher-autoAccount');
       const avatarPreview = document.getElementById('modal-add-avatar-preview');
       if (avatarPreview) avatarPreview.classList.add('hidden');
-      
+
       if (autoAccCheckbox && autoAccCheckbox.checked) {
         usernameInput.value = phoneInput.value;
         passwordInput.value = '123456';
@@ -798,7 +798,7 @@ function showTeacherDetailModal(t, container, role) {
   modal.querySelector('#teacher-edit-inplace-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const saveBtn = modal.querySelector('#btn-save-teacher-edit');
-    
+
     const phoneVal = modal.querySelector('#t-edit-phone').value.trim();
     if (!isValidPhone(phoneVal)) {
       showToast('Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0', 'error');

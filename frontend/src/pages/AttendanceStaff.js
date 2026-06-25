@@ -88,8 +88,10 @@ export async function renderAttendanceStaff(container) {
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phương thức chấm công</label>
               <select name="phuong_thuc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
-                <option value="van_tay">Thẻ Vân tay</option>
-                <option value="qr_code">QR Code Động</option>
+                <option value="thu_cong">Ghi nhận thủ công</option>
+                <option value="the_tu">Thẻ từ / Vân tay</option>
+                <option value="qr_code">QR Code</option>
+                <option value="khuon_mat">Khuôn mặt</option>
               </select>
             </div>
 
