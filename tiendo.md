@@ -1,3 +1,31 @@
+### [25/06/2026 11:32] — Nâng cấp đồng bộ giao diện Nội quy trung tâm chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/CenterRules.js`
+- **Mô tả**:
+  - **Khung chứa & Tiêu đề**: Tái cấu trúc khung chứa tiêu đề và danh sách sang dạng Bento card kính mờ cao cấp với viền siêu mỏng `border-slate-100/80` và đổ bóng nhẹ.
+  - **Danh mục nội quy**: Cải tiến tag đối tượng (Học viên, Giáo viên, Nhân viên) sang tông màu pastel dịu nhẹ và tinh giản các nút sửa/xóa thành dạng tròn tối giản.
+  - **Modal**: Đồng bộ hóa modal Thêm/Sửa nội quy lên phong cách Apple Premium với góc bo tròn lớn `rounded-[28px]` và hiệu ứng `backdrop-blur-md` tinh tế.
+- **Kết quả**: Thành công
+
+### [25/06/2026 11:29] — Nâng cấp đồng bộ giao diện Quản lý tài khoản chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/AccountManagement.js`
+- **Mô tả**:
+  - **iOS Segmented Control**: Chuyển đổi bộ lọc phân vai trò tài khoản sang kiểu trượt phân khúc iOS mượt mà.
+  - **Bento Stats & Table**: Nâng cấp 4 thẻ thông số tài khoản và bảng danh sách sang phong cách kính mờ, viền siêu mỏng `border-slate-100/70`, avatar phối màu pastel dịu nhẹ theo từng vai trò.
+  - **Modal**: Đồng bộ hóa cả 3 modal tạo mới, sửa và xem chi tiết sang góc bo tròn `rounded-[28px]` kết hợp hiệu ứng `backdrop-blur-md` sang trọng.
+- **Kết quả**: Thành công
+
+### [25/06/2026 11:22] — Nâng cấp đồng bộ giao diện Chất lượng đào tạo (Nhật ký & Dặn dò, Đánh giá) chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`, `frontend/src/pages/TeacherFeedbacks.js`
+- **Mô tả**:
+  - **iOS Segmented Control**: Cập nhật tab chuyển đổi giữa Sổ liên lạc và Ghi chú dặn dò giáo viên sang kiểu trượt phân khúc iOS.
+  - **Nhật ký & Ghi chú dặn dò**: Timeline được định dạng lại với các đường line và bullet siêu mảnh, hộp đựng dặn dò đổi sang màu vàng nhạt pastel Glassmorphic dịu nhẹ. Các select filter và button "Thêm dặn dò" được bo tròn nhẵn mịn.
+  - **Đánh giá giáo viên**: Nâng cấp các biểu đồ xếp hạng, bento cards phân bổ sao và hộp thoại phản hồi của học sinh sang kiểu kính mờ Apple tinh khiết.
+  - **Modal**: Đồng bộ hóa góc bo các modal tạo mới/sửa dặn dò rộng `rounded-[28px]`, phủ bóng và backdrop blur.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 11:15] — Nâng cấp đồng bộ giao diện Chấm công & Tính lương phụ cấp chuẩn Apple Premium
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/SalaryManagement.js`

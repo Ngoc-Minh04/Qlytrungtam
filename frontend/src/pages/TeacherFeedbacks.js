@@ -45,18 +45,18 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
   const filtered = filterTeacherId === 'all'
     ? allRatings
     : allRatings.filter(r => String(r.giao_vien_id) === String(filterTeacherId));
-
+ 
   const totalFeedbacks = filtered.length;
   const avgRating = totalFeedbacks > 0
     ? (filtered.reduce((sum, f) => sum + (f.so_sao || 0), 0) / totalFeedbacks).toFixed(1)
     : '0.0';
-
+ 
   const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
   filtered.forEach(f => {
     const s = f.so_sao;
     if (s >= 1 && s <= 5) distribution[s]++;
   });
-
+ 
   // Tính stats theo từng GV từ statsMap hoặc từ allRatings
   const teacherStats = teachers.map(t => {
     const st = statsMap[t.id] || {};
@@ -67,33 +67,33 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
       count: st.count || 0
     };
   });
-
+ 
   container.innerHTML = `
     <div class="space-y-6 animate-fadeIn">
-
+ 
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 class="text-xl font-bold tracking-tight text-slate-800">Đánh giá & Phản hồi Giáo viên</h2>
-          <p class="text-xs text-slate-500">Dữ liệu thực từ học viên sau các buổi học.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Dữ liệu đánh giá thực tế từ học viên sau mỗi buổi học</p>
         </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <select id="filter-teacher" class="border border-[#e2e2e4] rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white shadow-sm outline-none focus:border-apple-blue transition h-[32px]">
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <select id="filter-teacher" class="border border-slate-200 rounded-full px-4 py-1.5 text-xs font-bold text-slate-700 bg-white shadow-sm outline-none focus:border-[#0071e3] transition cursor-pointer h-[34px]">
             <option value="all" ${filterTeacherId === 'all' ? 'selected' : ''}>Tất cả giáo viên</option>
             ${teachers.map(t => `<option value="${t.id}" ${String(filterTeacherId) === String(t.id) ? 'selected' : ''}>${t.ho_ten}</option>`).join('')}
           </select>
-          <button id="btn-refresh-feedbacks" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+          <button id="btn-refresh-feedbacks" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
             <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
           </button>
         </div>
       </div>
-
+ 
       <!-- Overview Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+ 
         <!-- Điểm TB tổng / GV được chọn -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
             ${filterTeacherId === 'all' ? 'Điểm TB toàn trung tâm' : 'Điểm TB giáo viên'}
           </span>
           <span class="text-5xl font-extrabold text-slate-800 tracking-tight block">${avgRating}</span>
@@ -104,64 +104,64 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
           </div>
           <span class="text-[10px] text-slate-400 mt-4 block">Từ ${totalFeedbacks} lượt đánh giá</span>
         </div>
-
+ 
         <!-- Phân bổ sao -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm md:col-span-2 space-y-3">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Phân bổ xếp hạng</span>
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm md:col-span-2 space-y-3.5 flex flex-col justify-center">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Phân bổ xếp hạng</span>
           <div class="space-y-2">
             ${[5, 4, 3, 2, 1].map(star => {
               const count = distribution[star];
               const pct = totalFeedbacks > 0 ? (count / totalFeedbacks) * 100 : 0;
               return `
                 <div class="flex items-center text-xs gap-3">
-                  <span class="w-10 font-semibold text-slate-600 shrink-0 text-right">${star} ★</span>
+                  <span class="w-10 font-semibold text-slate-650 shrink-0 text-right">${star} ★</span>
                   <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div class="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div>
                   </div>
-                  <span class="w-8 text-slate-400 font-medium shrink-0">${count}</span>
+                  <span class="w-8 text-slate-400 font-bold shrink-0">${count}</span>
                 </div>
               `;
             }).join('')}
           </div>
         </div>
-
+ 
       </div>
-
+ 
       ${filterTeacherId === 'all' && teacherStats.length > 0 ? `
       <!-- Bảng điểm từng GV -->
-      <div class="bg-white border border-[#e2e2e4] rounded-2xl overflow-hidden shadow-sm">
-        <div class="px-5 py-4 border-b border-[#f3f3f5]">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <span class="material-symbols-outlined text-apple-blue text-[18px]">leaderboard</span>
+      <div class="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#0071e3] text-[18px]">leaderboard</span>
             Xếp hạng chất lượng giảng dạy
           </h3>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
-            <thead class="bg-[#f3f3f5]">
-              <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-[#e2e2e4]">
+            <thead>
+              <tr class="text-[10px] font-bold text-slate-455 uppercase tracking-wider border-b border-slate-100 bg-slate-50/20">
                 <th class="px-5 py-3 text-left">Giáo viên</th>
                 <th class="px-5 py-3 text-center">Điểm TB</th>
                 <th class="px-5 py-3 text-center">Số đánh giá</th>
                 <th class="px-5 py-3 text-center">Sao</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-100">
               ${teacherStats.sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg)).map((t, idx) => `
-                <tr class="border-b border-[#f3f3f5] hover:bg-slate-50 transition">
+                <tr class="hover:bg-slate-50/50 transition-colors">
                   <td class="px-5 py-3">
                     <div class="flex items-center gap-2">
-                      <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold
-                        ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-100 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-[#f3f3f5] text-slate-500'}">
+                      <span class="w-5 h-5 flex items-center justify-center rounded-full text-[9px] font-extrabold
+                        ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-100 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}">
                         ${idx + 1}
                       </span>
-                      <span class="font-semibold text-slate-800">${t.ho_ten}</span>
+                      <span class="font-bold text-slate-800">${t.ho_ten}</span>
                     </div>
                   </td>
                   <td class="px-5 py-3 text-center">
-                    <span class="font-extrabold text-lg ${t.avg === '—' ? 'text-slate-400' : parseFloat(t.avg) >= 4.5 ? 'text-emerald-600' : parseFloat(t.avg) >= 3.5 ? 'text-amber-600' : 'text-red-500'}">${t.avg}</span>
+                    <span class="font-extrabold text-sm ${t.avg === '—' ? 'text-slate-400' : parseFloat(t.avg) >= 4.5 ? 'text-emerald-600' : parseFloat(t.avg) >= 3.5 ? 'text-amber-600' : 'text-red-500'}">${t.avg}</span>
                   </td>
-                  <td class="px-5 py-3 text-center text-slate-500">${t.count}</td>
+                  <td class="px-5 py-3 text-center text-slate-500 font-medium">${t.count}</td>
                   <td class="px-5 py-3 text-center">
                     <div class="flex justify-center gap-0.5">
                       ${Array.from({ length: 5 }).map((_, i) => `
@@ -176,15 +176,15 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
         </div>
       </div>
       ` : ''}
-
+ 
       <!-- Danh sách đánh giá -->
-      <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm space-y-4">
-        <div class="border-b border-[#f3f3f5] pb-3 flex justify-between items-center">
-          <h3 class="font-bold text-slate-800 text-sm">Tất cả nhận xét</h3>
-          <span class="text-[10px] text-slate-400">Mới nhất trước</span>
+      <div class="bg-white border border-slate-150 rounded-2xl p-6 shadow-sm space-y-4">
+        <div class="border-b border-slate-100 pb-3 flex justify-between items-center bg-slate-50/50 -mx-6 -mt-6 p-6">
+          <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Tất cả nhận xét</h3>
+          <span class="text-[10px] text-slate-400 font-bold">Mới nhất trước</span>
         </div>
-
-        <div class="space-y-4">
+ 
+        <div class="space-y-4 pt-2">
           ${filtered.length === 0 ? `
             <div class="py-10 text-center text-slate-400 text-xs">
               <span class="material-symbols-outlined text-[32px] opacity-30 block mb-2">rate_review</span>
@@ -195,11 +195,11 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
             const hvName = item.hoc_vien_ten || item.ten_hoc_vien || `HV #${item.hoc_vien_id}`;
             const gvName = item.giao_vien_ten || item.ten_giao_vien || `GV #${item.giao_vien_id}`;
             return `
-              <div class="border-b border-[#f3f3f5] last:border-0 pb-4 last:pb-0 space-y-2">
+              <div class="border-b border-slate-100 last:border-0 pb-4 last:pb-0 space-y-2">
                 <div class="flex justify-between items-start flex-wrap gap-2">
                   <div>
                     <span class="font-bold text-slate-800 text-xs block">${hvName}</span>
-                    <span class="text-[10px] text-slate-400 block">Đánh giá GV: <strong class="text-slate-600">${gvName}</strong></span>
+                    <span class="text-[10px] text-slate-400 block font-semibold">Đánh giá GV: <strong class="text-slate-650">${gvName}</strong></span>
                   </div>
                   <div class="flex flex-col items-end gap-1">
                     <div class="flex gap-0.5">
@@ -207,11 +207,11 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
                         <span class="material-symbols-outlined fill-current text-[14px] ${i < (item.so_sao || 0) ? 'text-amber-400' : 'text-slate-200'}">star</span>
                       `).join('')}
                     </div>
-                    <span class="text-[9px] text-slate-400">${ngay}</span>
+                    <span class="text-[9px] text-slate-400 font-medium">${ngay}</span>
                   </div>
                 </div>
                 ${item.nhan_xet ? `
-                  <p class="text-xs text-slate-600 leading-relaxed bg-[#fafafc] border border-slate-100 rounded-xl p-3">
+                  <p class="text-xs text-slate-650 leading-relaxed bg-slate-50/40 border border-slate-100/70 rounded-xl p-3 font-medium">
                     ${item.nhan_xet}
                   </p>
                 ` : `<p class="text-[10px] text-slate-400 italic">Không có nhận xét.</p>`}
@@ -220,16 +220,16 @@ function renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, st
           }).join('')}
         </div>
       </div>
-
+ 
     </div>
   `;
-
+ 
   // Events
   document.getElementById('btn-refresh-feedbacks')?.addEventListener('click', () => {
     _selectedTeacherId = 'all';
     renderTeacherFeedbacks(container);
   });
-
+ 
   document.getElementById('filter-teacher')?.addEventListener('change', (e) => {
     _selectedTeacherId = e.target.value;
     renderFeedbacksUI(container, userRole, hoSoId, teachers, allRatings, statsMap, _selectedTeacherId);

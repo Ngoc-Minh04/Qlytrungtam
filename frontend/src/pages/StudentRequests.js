@@ -15,35 +15,44 @@ export async function renderStudentRequests(container) {
 
 function renderTabShell(container) {
   container.innerHTML = `
-    <div class="space-y-5">
-      <!-- Tab Switcher -->
-      <div class="flex gap-1 bg-[#f3f3f5] rounded-2xl p-1 w-fit">
+    <div class="space-y-6 animate-fadeIn">
+      <!-- Tab Switcher Premium: iOS Segmented Control -->
+      <div class="inline-flex bg-slate-100/80 p-0.5 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
         <button id="tab-cancellations" data-tab="cancellations"
-          class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all ${_activeTab === 'cancellations' ? 'bg-white text-apple-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
-          <span class="material-symbols-outlined text-[14px] align-middle mr-1">cancel</span>Hủy khóa học
+          class="tab-btn px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px]">cancel</span>Hủy khóa học
         </button>
         <button id="tab-bookings" data-tab="bookings"
-          class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all ${_activeTab === 'bookings' ? 'bg-white text-apple-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
-          <span class="material-symbols-outlined text-[14px] align-middle mr-1">calendar_add_on</span>Yêu cầu đặt lịch
+          class="tab-btn px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px]">calendar_add_on</span>Yêu cầu đặt lịch
         </button>
       </div>
       <!-- Content -->
-      <div id="tab-content">
-        <div class="flex justify-center items-center py-12">
-          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div>
+      <div id="tab-content" class="space-y-6">
+        <div class="flex justify-center items-center py-16">
+          <div class="animate-spin rounded-full h-7 w-7 border-b-2 border-[#0071e3]"></div>
         </div>
       </div>
     </div>
   `;
-
+ 
   // Tab switch events
   container.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      _activeTab = btn.dataset.tab;
+    const updateStyle = () => {
       container.querySelectorAll('.tab-btn').forEach(b => {
         const active = b.dataset.tab === _activeTab;
-        b.className = `tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all ${active ? 'bg-white text-apple-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`;
+        if (active) {
+          b.className = 'tab-btn px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none bg-white text-slate-800 shadow-sm border border-slate-200/20 flex items-center gap-1.5';
+        } else {
+          b.className = 'tab-btn px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none text-slate-500 hover:text-slate-700 flex items-center gap-1.5';
+        }
       });
+    };
+    updateStyle();
+ 
+    btn.addEventListener('click', async () => {
+      _activeTab = btn.dataset.tab;
+      updateStyle();
       if (_activeTab === 'cancellations') {
         await loadCancellationsTab(container);
       } else {
@@ -125,50 +134,50 @@ async function loadCancellationsTab(container) {
     }
 
     tabContent.innerHTML = `
-      <div class="space-y-5">
-        <!-- Stats -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 shadow-sm">
+      <div class="space-y-6">
+        <!-- Stats Bento Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition duration-300">
             <div class="flex items-center gap-2 mb-1">
               <span class="material-symbols-outlined text-emerald-500 text-[18px]">check_circle</span>
-              <span class="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Đang hoạt động</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Đang hoạt động</span>
             </div>
-            <div class="text-2xl font-extrabold text-apple-ink">${allRegs.filter(r => r.trang_thai === 'dang_hoat_dong').length}</div>
+            <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-1">${allRegs.filter(r => r.trang_thai === 'dang_hoat_dong').length}</div>
           </div>
-          <div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 shadow-sm">
+          <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition duration-300">
             <div class="flex items-center gap-2 mb-1">
               <span class="material-symbols-outlined text-red-500 text-[18px]">cancel</span>
-              <span class="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Đã hủy</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Đã hủy</span>
             </div>
-            <div class="text-2xl font-extrabold text-apple-ink">${allRegs.filter(r => r.trang_thai === 'huy').length}</div>
+            <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-1">${allRegs.filter(r => r.trang_thai === 'huy').length}</div>
           </div>
-          <div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 shadow-sm col-span-2 sm:col-span-1">
+          <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition duration-300 col-span-2 sm:col-span-1">
             <div class="flex items-center gap-2 mb-1">
               <span class="material-symbols-outlined text-slate-400 text-[18px]">history</span>
-              <span class="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">Tổng đăng ký</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tổng đăng ký</span>
             </div>
-            <div class="text-2xl font-extrabold text-apple-ink">${allRegs.length}</div>
+            <div class="text-3xl font-extrabold text-[#0071e3] tracking-tight mt-1">${allRegs.length}</div>
           </div>
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden shadow-sm">
-          <div class="px-5 py-4 border-b border-[#f3f3f5] flex items-center justify-between flex-wrap gap-2">
-            <h3 class="font-bold text-apple-ink text-sm flex items-center gap-2">
-              <span class="material-symbols-outlined text-apple-blue text-[18px]">manage_accounts</span>
+        <div class="bg-white rounded-2xl border border-slate-150 overflow-hidden shadow-sm">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 bg-slate-50/50">
+            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#0071e3] text-[18px]">manage_accounts</span>
               Danh sách đăng ký đang hoạt động
             </h3>
             <div class="flex items-center gap-2">
-              <button id="btn-refresh-cancel" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+              <button id="btn-refresh-cancel" class="flex items-center justify-center gap-1.5 px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
                 <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
               </button>
-              <span class="text-[10px] text-slate-400 bg-[#f3f3f5] px-3 py-1.5 rounded-full font-bold">${activeRegs.length} bản ghi</span>
+              <span class="text-[10px] text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full font-bold">${activeRegs.length} bản ghi</span>
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse whitespace-nowrap">
+            <table class="w-full text-left border-collapse whitespace-nowrap text-xs">
               <thead>
-                <tr class="bg-[#f3f3f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-[#e2e2e4]">
+                <tr class="bg-[#f9fafb] text-[10px] font-bold text-slate-550 uppercase tracking-wider border-b border-slate-100">
                   <th class="px-5 py-3">HỌC VIÊN / GÓI</th>
                   <th class="px-5 py-3">THỜI HẠN</th>
                   <th class="px-5 py-3">HỌC PHÍ</th>
@@ -177,17 +186,17 @@ async function loadCancellationsTab(container) {
                   <th class="px-5 py-3 text-right">THAO TÁC</th>
                 </tr>
               </thead>
-              <tbody id="cancellations-table-body"></tbody>
+              <tbody id="cancellations-table-body" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </div>
       </div>
 
       <!-- MODAL HỦY KHÓA HỌC -->
-      <div id="cancel-reg-modal" class="fixed inset-0 bg-black/45 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl overflow-hidden" style="animation: modalIn 0.2s ease">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-[#f3f3f5]">
-            <h3 class="text-sm font-bold text-[#1a1c1d] flex items-center gap-2">
+      <div id="cancel-reg-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-[28px] max-w-md w-full border border-slate-100 shadow-2xl overflow-hidden" style="animation: modalIn 0.2s ease">
+          <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <span class="material-symbols-outlined text-red-500 text-[20px]">cancel</span>
               Hủy đăng ký khóa học
             </h3>
@@ -196,27 +205,27 @@ async function loadCancellationsTab(container) {
             </button>
           </div>
           <form id="cancel-reg-form" class="p-6 space-y-4 text-xs">
-            <div class="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-xl">
-              <span class="material-symbols-outlined text-red-500 text-[20px]">warning</span>
-              <p class="text-red-700 font-medium text-[11px]">Hành động này sẽ hủy khóa học của học viên <strong id="cancel-student-name" class="font-extrabold">—</strong>. Không thể hoàn tác.</p>
+            <div class="flex items-center gap-3 p-4.5 bg-red-50/60 border border-red-100 rounded-2xl">
+              <span class="material-symbols-outlined text-red-500 text-[20px] shrink-0">warning</span>
+              <p class="text-red-700 font-medium text-[11px] leading-relaxed">Hành động này sẽ hủy khóa học của học viên <strong id="cancel-student-name" class="font-extrabold text-red-800">—</strong>. Không thể hoàn tác.</p>
             </div>
-            <div class="space-y-1">
-              <label class="block font-semibold text-slate-600">Số tiền hoàn trả (VNĐ)</label>
-              <input type="text" id="cancel-refund-amount" placeholder="0"
-                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Số tiền hoàn trả (VNĐ)</label>
+              <input type="text" id="cancel-refund-amount" placeholder="0" required
+                class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition bg-slate-50/50 font-bold text-slate-700">
             </div>
-            <div class="space-y-1">
-              <label class="block font-semibold text-slate-600">Lý do hủy</label>
-              <textarea id="cancel-reason" rows="3" placeholder="Nhập lý do hủy khóa học..."
-                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa] resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Lý do hủy</label>
+              <textarea id="cancel-reason" rows="3" placeholder="Nhập lý do hủy khóa học..." required
+                class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition bg-slate-50/50 resize-none font-medium text-slate-700"></textarea>
             </div>
-            <div class="flex justify-end gap-2 pt-2 border-t border-[#f3f3f5]">
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" id="btn-cancel-cancel-reg"
-                class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95">
+                class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold transition active:scale-95">
                 Đóng
               </button>
               <button type="submit"
-                class="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition active:scale-95 shadow-sm">
+                class="flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold transition active:scale-95 shadow-sm">
                 <span class="material-symbols-outlined text-[15px]">delete_forever</span>
                 Xác nhận hủy
               </button>
@@ -224,9 +233,6 @@ async function loadCancellationsTab(container) {
           </form>
         </div>
       </div>
-      <style>
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-      </style>
     `;
 
     const tableBody = tabContent.querySelector('#cancellations-table-body');

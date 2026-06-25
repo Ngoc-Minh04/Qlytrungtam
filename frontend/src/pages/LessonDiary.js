@@ -17,35 +17,39 @@ export async function renderLessonDiary(container) {
 
   async function renderWrapper() {
     container.innerHTML = `
-      <div class="space-y-5">
-        <!-- Tab pills -->
-        <div class="flex gap-2">
-          <button data-lt="diary" class="lt-tab flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all
-            ${activeTab === 'diary' ? 'bg-[#0066cc] text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
-            <span class="material-symbols-outlined text-[14px]">menu_book</span> Sổ liên lạc
+      <div class="space-y-6">
+        <!-- Tab pills Premium Segmented Control -->
+        <div class="inline-flex bg-slate-100/80 p-0.5 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
+          <button data-lt="diary" class="lt-tab px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5" type="button">
+            <span class="material-symbols-outlined text-[15px]">menu_book</span> Sổ liên lạc
           </button>
-          <button data-lt="notes" class="lt-tab flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all
-            ${activeTab === 'notes' ? 'bg-[#0066cc] text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
-            <span class="material-symbols-outlined text-[14px]">sticky_note_2</span> Ghi chú dặn dò GV
+          <button data-lt="notes" class="lt-tab px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5" type="button">
+            <span class="material-symbols-outlined text-[15px]">sticky_note_2</span> Ghi chú dặn dò GV
           </button>
         </div>
-        <div id="lt-content"></div>
+        <div id="lt-content" class="space-y-6"></div>
       </div>`;
-
+ 
     container.querySelectorAll('.lt-tab').forEach(btn => {
+      const type = btn.dataset.lt;
+      if (activeTab === type) {
+        btn.className = 'lt-tab px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none bg-white text-slate-800 shadow-sm border border-slate-200/20 flex items-center gap-1.5';
+      } else {
+        btn.className = 'lt-tab px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none text-slate-500 hover:text-slate-700 flex items-center gap-1.5';
+      }
       btn.addEventListener('click', async () => {
         activeTab = btn.dataset.lt;
         await renderWrapper();
       });
     });
-
+ 
     if (activeTab === 'diary') await _loadDiaryTab();
     else await _loadNotesTab();
   }
-
+ 
   async function _loadDiaryTab() {
     const content = document.getElementById('lt-content');
-    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div></div>`;
+    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-[#0071e3]"></div></div>`;
     try {
       let students = [];
       let selectedStudentId = null;
@@ -60,13 +64,13 @@ export async function renderLessonDiary(container) {
       }
       await loadDiaryData(content, userRole, students, selectedStudentId);
     } catch (err) {
-      content.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-xs"><strong>Lỗi:</strong> ${err.message}</div>`;
+      content.innerHTML = `<div class="bg-red-50 border border-red-100 text-red-700 rounded-[20px] p-4 text-xs"><strong>Lỗi:</strong> ${err.message}</div>`;
     }
   }
-
+ 
   async function _loadNotesTab() {
     const content = document.getElementById('lt-content');
-    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-apple-blue"></div></div>`;
+    content.innerHTML = `<div class="flex items-center justify-center py-10"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-[#0071e3]"></div></div>`;
     try {
       const headers = { 'x-user-role': userRole, 'x-ho-so-id': hoSoId };
       const [stdRes, notesRes] = await Promise.all([
@@ -76,32 +80,32 @@ export async function renderLessonDiary(container) {
       const students = (await stdRes.json()).data || [];
       let notes = (await notesRes.json()).data || [];
       let filterStudentId = '';
-
+ 
       function renderNotes(list) {
         if (list.length === 0) return `<div class="py-12 text-center text-xs text-slate-400"><span class="material-symbols-outlined text-4xl text-slate-200 block mb-2">sticky_note_2</span>Chưa có ghi chú dặn dò nào</div>`;
         return list.map(n => {
           const showActionBtns = (userRole === 'admin' || userRole === 'le_tan' || String(n.giao_vien_id) === String(hoSoId));
           return `
-          <div class="flex gap-3 p-4 bg-amber-50/40 border border-amber-100/60 rounded-2xl relative group">
-            <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-outlined text-amber-600 text-[17px]">sticky_note_2</span>
+          <div class="flex gap-3.5 p-5 bg-amber-50/15 border border-amber-200/25 rounded-2xl relative group shadow-sm hover:shadow-md transition-all duration-300">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-amber-600 text-[18px]">sticky_note_2</span>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <p class="text-xs font-bold text-slate-800">GV: ${n.ten_giao_vien || '—'} → HV: ${n.ten_hoc_vien || '—'}</p>
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <p class="text-xs font-bold text-slate-800">GV: ${n.ten_giao_vien || '—'} <span class="text-slate-400 font-medium">→</span> HV: ${n.ten_hoc_vien || '—'}</p>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                  <p class="text-[9px] text-slate-400">${new Date(n.ngay_tao).toLocaleDateString('vi-VN')}</p>
+                  <p class="text-[9px] text-slate-400 font-medium">${new Date(n.ngay_tao).toLocaleDateString('vi-VN')}</p>
                   ${showActionBtns ? `
-                    <button class="btn-edit-note text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-0.5 rounded transition-all" data-id="${n.id}" title="Sửa ghi chú">
-                      <span class="material-symbols-outlined text-[13px] block">edit</span>
+                    <button class="btn-edit-note text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-0.5 rounded-full transition-all" data-id="${n.id}" title="Sửa ghi chú">
+                      <span class="material-symbols-outlined text-[14px] block">edit</span>
                     </button>
-                    <button class="btn-delete-note text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 rounded transition-all" data-id="${n.id}" title="Xóa ghi chú">
-                      <span class="material-symbols-outlined text-[13px] block">delete</span>
+                    <button class="btn-delete-note text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 rounded-full transition-all" data-id="${n.id}" title="Xóa ghi chú">
+                      <span class="material-symbols-outlined text-[14px] block">delete</span>
                     </button>
                   ` : ''}
                 </div>
               </div>
-              <p class="text-xs text-slate-700 leading-relaxed">${n.noi_dung}</p>
+              <p class="text-xs text-slate-650 leading-relaxed font-medium">${n.noi_dung}</p>
             </div>
           </div>`;
         }).join('');
@@ -155,50 +159,50 @@ export async function renderLessonDiary(container) {
 
       content.innerHTML = `
         <div class="space-y-4">
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-sm">
-            <span class="material-symbols-outlined text-[#0066cc]">filter_list</span>
-            <select id="notes-filter-student" class="border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all w-full sm:w-64">
+          <div class="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-sm">
+            <span class="material-symbols-outlined text-[#0071e3]">filter_list</span>
+            <select id="notes-filter-student" class="border border-slate-200 rounded-full px-4 py-2 text-xs focus:border-[#0071e3] outline-none transition-all w-full sm:w-64 font-bold text-slate-700 bg-white cursor-pointer">
               <option value="">Tất cả học viên</option>
               ${students.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
             </select>
             
             ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
-              <button id="btn-create-note" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px] sm:ml-2">
+              <button id="btn-create-note" class="flex items-center justify-center gap-1.5 px-4.5 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[34px] sm:ml-2">
                 <span class="material-symbols-outlined text-[16px]">add_comment</span>Thêm dặn dò
               </button>
             ` : ''}
             
-            <span class="text-[10px] text-slate-400 ml-auto" id="notes-count-badge">${notes.length} ghi chú</span>
+            <span class="text-[10px] text-slate-400 font-bold ml-auto" id="notes-count-badge">${notes.length} ghi chú</span>
           </div>
           <div id="notes-list" class="space-y-3">${renderNotes(notes)}</div>
         </div>
         
         <!-- Modal Thêm dặn dò mới -->
-        <div id="note-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-          <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-              <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tạo dặn dò / Ghi chú mới</h3>
+        <div id="note-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+          <div class="bg-white rounded-[28px] w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm tracking-wide">Tạo dặn dò / Ghi chú mới</h3>
               <button id="close-note-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-                <span class="material-symbols-outlined text-[18px]">close</span>
+                <span class="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             
-            <form id="create-note-form" class="p-5 space-y-4">
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Chọn học viên</label>
-                <select name="hoc_vien_id" id="modal-note-select-student" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+            <form id="create-note-form" class="p-6 space-y-4 text-xs overflow-y-auto">
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Chọn học viên</label>
+                <select name="hoc_vien_id" id="modal-note-select-student" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer">
                   <option value="">-- Chọn học viên --</option>
                   ${students.map(s => `<option value="${s.id}">${s.ho_ten} (${s.ma_ho_so})</option>`).join('')}
                 </select>
               </div>
 
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung dặn dò / Ghi chú</label>
-                <textarea name="noi_dung" required rows="4" placeholder="Nhập nội dung dặn dò hoặc lưu ý cho học viên..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Nội dung dặn dò / Ghi chú</label>
+                <textarea name="noi_dung" required rows="4" placeholder="Nhập nội dung dặn dò hoặc lưu ý cho học viên..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
               </div>
 
-              <div class="pt-2 shrink-0">
-                <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+              <div class="pt-3 shrink-0">
+                <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98]">
                   Lưu dặn dò
                 </button>
               </div>
@@ -207,24 +211,24 @@ export async function renderLessonDiary(container) {
         </div>
 
         <!-- Modal Chỉnh sửa dặn dò -->
-        <div id="edit-note-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-          <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-              <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Chỉnh sửa dặn dò / Ghi chú</h3>
+        <div id="edit-note-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+          <div class="bg-white rounded-[28px] w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm tracking-wide">Chỉnh sửa dặn dò / Ghi chú</h3>
               <button id="close-edit-note-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-                <span class="material-symbols-outlined text-[18px]">close</span>
+                <span class="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             
-            <form id="edit-note-form" class="p-5 space-y-4">
+            <form id="edit-note-form" class="p-6 space-y-4 text-xs overflow-y-auto">
               <input type="hidden" name="note_id" id="edit-note-id" />
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung dặn dò / Ghi chú</label>
-                <textarea name="noi_dung" id="edit-note-content" required rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Nội dung dặn dò / Ghi chú</label>
+                <textarea name="noi_dung" id="edit-note-content" required rows="4" class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
               </div>
 
-              <div class="pt-2 shrink-0">
-                <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+              <div class="pt-3 shrink-0">
+                <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98]">
                   Cập nhật dặn dò
                 </button>
               </div>
@@ -364,54 +368,57 @@ async function loadDiaryData(container, userRole, students, studentId) {
     const res = await fetch(`${API_BASE}/reports/student/${studentId}`);
     const result = await res.json();
     const diaries = result.data || [];
-
+ 
     // Lấy thông tin học viên được chọn để hiển thị tiêu đề
     const currentStudent = students.find(s => s.id === studentId);
     const studentName = currentStudent ? currentStudent.ho_ten : 'Học viên';
-
+ 
     // Tạo giao diện
     container.innerHTML = `
       <div class="space-y-6 animate-fadeIn">
         <!-- Header & Top Actions -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 class="font-bold text-apple-ink text-sm">Sổ liên lạc học tập</h3>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm tracking-tight">Sổ liên lạc học tập</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Theo dõi chi tiết nhật ký học tập và đánh giá sự tiến bộ của từng buổi học</p>
+          </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
             <!-- Nút Tải lại đồng bộ thiết kế -->
-            <button id="btn-refresh-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             
             ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
-              <button id="btn-create-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
+              <button id="btn-create-diary" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
                 <span class="material-symbols-outlined text-[16px]">rate_review</span>Viết nhận xét
               </button>
             ` : ''}
           </div>
         </div>
-
+ 
         <!-- Bộ chọn học viên (chỉ dành cho Admin, Lễ tân, Giáo viên) -->
         ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div class="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-apple-blue">person_search</span>
+              <span class="material-symbols-outlined text-[#0071e3]">person_search</span>
               <span class="text-xs font-bold text-slate-700">Tra cứu sổ liên lạc của học viên:</span>
             </div>
-            <select id="select-student-diary" class="border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all w-full sm:w-64">
+            <select id="select-student-diary" class="border border-slate-200 rounded-full px-4 py-2 text-xs focus:border-[#0071e3] outline-none transition-all w-full sm:w-64 font-bold text-slate-700 bg-white cursor-pointer">
               ${students.map(s => `
                 <option value="${s.id}" ${s.id === studentId ? 'selected' : ''}>${s.ho_ten} (${s.ma_ho_so})</option>
               `).join('')}
             </select>
           </div>
         ` : ''}
-
+ 
         <!-- Timeline Nhật ký / Sổ liên lạc -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-6 shadow-sm space-y-6">
-          <div class="border-b border-[#f3f3f5] pb-3 flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-sm">Lịch sử nhận xét của: <span class="text-apple-blue">${studentName}</span></h3>
-            <span class="text-[10px] bg-blue-50 text-apple-blue px-2 py-0.5 rounded-full font-bold">${diaries.length} Nhật ký</span>
+        <div class="bg-white border border-slate-150 rounded-2xl p-6 shadow-sm space-y-6">
+          <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm">Lịch sử nhận xét của: <span class="text-[#0071e3]">${studentName}</span></h3>
+            <span class="text-[10px] bg-blue-50 text-[#0071e3] px-2 py-0.5 rounded-full font-bold">${diaries.length} Nhật ký</span>
           </div>
-
-          <div class="relative pl-6 border-l-2 border-slate-100 space-y-8">
+ 
+          <div class="relative pl-6 border-l border-slate-100 space-y-8">
             ${diaries.map(item => {
       const createdDate = new Date(item.ngay_tao).toLocaleDateString('vi-VN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -421,12 +428,12 @@ async function loadDiaryData(container, userRole, students, studentId) {
                 <!-- Timeline Item -->
                 <div class="relative">
                   <!-- Bullet point on timeline -->
-                  <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-white border-4 border-apple-blue flex items-center justify-center"></div>
+                  <div class="absolute -left-[30px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#0071e3] ring-4 ring-blue-50"></div>
                   
-                  <div class="bg-[#fafafc] rounded-2xl p-5 border border-[#e2e2e4]/60 space-y-3 hover:shadow-sm transition-all duration-300">
+                  <div class="bg-slate-50/40 rounded-2xl p-5 border border-slate-150/40 space-y-3 hover:shadow-md transition-all duration-300">
                     <div class="flex justify-between items-start flex-wrap gap-2">
                       <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs select-none">
+                        <div class="w-8 h-8 rounded-full bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center font-bold text-xs select-none">
                           ${item.ten_giao_vien ? item.ten_giao_vien.charAt(0) : 'G'}
                         </div>
                         <div>
@@ -441,7 +448,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
                           ${item.so_phut_hoc} phút học
                         </span>
                         ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
-                          <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-all" data-id="${item.id}" title="Sửa nhận xét">
+                          <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded-full transition-all" data-id="${item.id}" title="Sửa nhận xét">
                             <span class="material-symbols-outlined text-[15px] block">edit</span>
                           </button>
                           <button class="btn-delete-diary text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all" data-id="${item.id}" title="Xóa nhận xét">
@@ -496,52 +503,52 @@ async function loadDiaryData(container, userRole, students, studentId) {
       </div>
 
       <!-- Modal Viết nhận xét sổ liên lạc mới -->
-      <div id="diary-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tạo Nhật ký & Sổ liên lạc mới</h3>
+      <div id="diary-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">Tạo Nhật ký & Sổ liên lạc mới</h3>
             <button id="close-diary-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-              <span class="material-symbols-outlined text-[18px]">close</span>
+              <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
           
-          <form id="create-diary-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
+          <form id="create-diary-form" class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
             <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Chọn học viên</label>
-                <select name="hoc_vien_id" id="modal-select-student" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Chọn học viên</label>
+                <select name="hoc_vien_id" id="modal-select-student" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer">
                   <option value="">-- Chọn học viên --</option>
                   ${students.map(s => `<option value="${s.id}" ${s.id === studentId ? 'selected' : ''}>${s.ho_ten}</option>`).join('')}
                 </select>
               </div>
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Số phút học</label>
-                <input type="number" name="so_phut_hoc" value="90" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Số phút học</label>
+                <input type="number" name="so_phut_hoc" value="90" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
               </div>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung bài học</label>
-              <textarea name="noi_dung_bai_hoc" required rows="2" placeholder="Ví dụ: Ôn tập ngữ pháp thì Hiện tại hoàn thành, luyện nói theo nhóm..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Nội dung bài học</label>
+              <textarea name="noi_dung_bai_hoc" required rows="2" placeholder="Ví dụ: Ôn tập ngữ pháp thì Hiện tại hoàn thành, luyện nói theo nhóm..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nhận xét buổi học</label>
-              <textarea name="nhan_xet_buoi_hoc" required rows="3" placeholder="Ví dụ: Học viên tiếp thu bài tốt, phản xạ nói lưu loát..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Nhận xét buổi học</label>
+              <textarea name="nhan_xet_buoi_hoc" required rows="3" placeholder="Ví dụ: Học viên tiếp thu bài tốt, phản xạ nói lưu loát..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Bài tập về nhà</label>
-              <textarea name="bai_tap_ve_nha" rows="2" placeholder="Ví dụ: Làm bài tập trang 45 sách giáo khoa..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Bài tập về nhà</label>
+              <textarea name="bai_tap_ve_nha" rows="2" placeholder="Ví dụ: Làm bài tập trang 45 sách giáo khoa..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dặn dò / Ghi chú thêm</label>
-              <input type="text" name="dan_do_giao_vien" placeholder="Ví dụ: Ôn lại từ vựng chuẩn bị kiểm tra 15p buổi tới" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Dặn dò / Ghi chú thêm</label>
+              <input type="text" name="dan_do_giao_vien" placeholder="Ví dụ: Ôn lại từ vựng chuẩn bị kiểm tra 15p buổi tới" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
             </div>
 
-            <div class="pt-2 shrink-0">
-              <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+            <div class="pt-3 shrink-0">
+              <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98]">
                 Lưu và gửi sổ liên lạc
               </button>
             </div>
@@ -550,44 +557,44 @@ async function loadDiaryData(container, userRole, students, studentId) {
       </div>
 
       <!-- Modal Chỉnh sửa nhận xét sổ liên lạc -->
-      <div id="edit-diary-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Chỉnh sửa Nhật ký & Sổ liên lạc</h3>
+      <div id="edit-diary-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">Chỉnh sửa Nhật ký & Sổ liên lạc</h3>
             <button id="close-edit-diary-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-              <span class="material-symbols-outlined text-[18px]">close</span>
+              <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
           
-          <form id="edit-diary-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
+          <form id="edit-diary-form" class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)] text-xs">
             <input type="hidden" name="diary_id" id="edit-diary-id" />
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Số phút học</label>
-              <input type="number" name="so_phut_hoc" id="edit-diary-so-phut-hoc" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Số phút học</label>
+              <input type="number" name="so_phut_hoc" id="edit-diary-so-phut-hoc" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nội dung bài học</label>
-              <textarea name="noi_dung_bai_hoc" id="edit-diary-noi-dung-bai-hoc" required rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Nội dung bài học</label>
+              <textarea name="noi_dung_bai_hoc" id="edit-diary-noi-dung-bai-hoc" required rows="2" class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Nhận xét buổi học</label>
-              <textarea name="nhan_xet_buoi_hoc" id="edit-diary-nhan-xet-buoi-hoc" required rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Nhận xét buổi học</label>
+              <textarea name="nhan_xet_buoi_hoc" id="edit-diary-nhan-xet-buoi-hoc" required rows="3" class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Bài tập về nhà</label>
-              <textarea name="bai_tap_ve_nha" id="edit-diary-bai-tap-ve-nha" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all resize-none"></textarea>
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Bài tập về nhà</label>
+              <textarea name="bai_tap_ve_nha" id="edit-diary-bai-tap-ve-nha" rows="2" class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Dặn dò / Ghi chú thêm</label>
-              <input type="text" name="dan_do_giao_vien" id="edit-diary-dan-do-giao-vien" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Dặn dò / Ghi chú thêm</label>
+              <input type="text" name="dan_do_giao_vien" id="edit-diary-dan-do-giao-vien" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
             </div>
 
-            <div class="pt-2 shrink-0">
-              <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+            <div class="pt-3 shrink-0">
+              <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98]">
                 Cập nhật sổ liên lạc
               </button>
             </div>

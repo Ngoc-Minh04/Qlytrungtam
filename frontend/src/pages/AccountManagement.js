@@ -24,16 +24,19 @@ function fmt(d) {
 
 export async function renderAccountManagement(container) {
   container.innerHTML = `
-    <div class="space-y-5">
+    <div class="space-y-6">
       <!-- Header row -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h3 class="font-bold text-apple-ink text-sm"></h3>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-xl font-bold text-slate-800 tracking-tight">Quản lý tài khoản</h3>
+          <p class="text-xs text-slate-400 mt-0.5 font-medium">Cấp phát và giám sát quyền truy cập hệ thống</p>
+        </div>
         <div class="flex items-center gap-2">
-          <button id="btn-refresh-accounts" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
-            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+          <button id="btn-refresh-accounts" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200/80 bg-white/60 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
+            <span class="material-symbols-outlined text-[16px] text-slate-500">refresh</span>Tải lại
           </button>
           <button id="btn-create-account"
-            class="flex items-center gap-2 bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md shadow-[#0066cc]/20 active:scale-[.98] h-[32px]">
+            class="flex items-center gap-2 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold px-4.5 py-2 rounded-full transition shadow-md shadow-[#0071e3]/10 active:scale-[.98] h-[34px]">
             <span class="material-symbols-outlined text-[16px]">person_add</span>
             Tạo tài khoản mới
           </button>
@@ -41,31 +44,34 @@ export async function renderAccountManagement(container) {
       </div>
 
       <!-- Stats row -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="acct-stats">
-        ${[1, 2, 3, 4].map(() => `<div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 animate-pulse h-20"></div>`).join('')}
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="acct-stats">
+        ${[1, 2, 3, 4].map(() => `<div class="bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-100 p-4 animate-pulse h-20 shadow-sm"></div>`).join('')}
       </div>
 
-      <!-- Filter tabs -->
-      <div class="flex gap-2 flex-wrap" id="acct-filter">
-        ${['Tất cả', 'hoc_vien', 'giao_vien', 'nhan_vien', 'admin'].map((r, i) => `
-          <button data-role="${r}"
-            class="acct-filter-btn ${i === 0 ? 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30' : 'bg-white text-slate-500 border border-[#e2e2e4]'} text-[10px] font-semibold px-3 py-1.5 rounded-full transition hover:border-[#0066cc]/50">
-            ${i === 0 ? 'Tất cả' : ROLE_LABEL[r]}
-          </button>`).join('')}
-      </div>
+      <!-- Filter & Search row -->
+      <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        <!-- Filter tabs -->
+        <div class="bg-slate-100/80 p-0.5 rounded-full inline-flex gap-0.5 w-full md:w-auto max-w-full overflow-x-auto no-scrollbar" id="acct-filter">
+          ${['Tất cả', 'hoc_vien', 'giao_vien', 'nhan_vien', 'admin'].map((r, i) => `
+            <button data-role="${r}"
+              class="acct-filter-btn flex-1 md:flex-initial text-center whitespace-nowrap text-[11px] font-semibold px-4 py-1.5 rounded-full transition-all duration-200 ${i === 0 ? 'bg-white text-[#0071e3] shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800'}">
+              ${i === 0 ? 'Tất cả' : ROLE_LABEL[r]}
+            </button>`).join('')}
+        </div>
 
-      <!-- Search -->
-      <div class="relative">
-        <span class="material-symbols-outlined absolute left-3 top-2.5 text-[17px] text-slate-400">search</span>
-        <input id="acct-search" type="text" placeholder="Tìm theo tên đăng nhập, họ tên, email..."
-          class="w-full pl-9 pr-4 py-2.5 bg-white border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+        <!-- Search -->
+        <div class="relative flex-1 md:max-w-xs">
+          <span class="material-symbols-outlined absolute left-3.5 top-2.5 text-[17px] text-slate-400">search</span>
+          <input id="acct-search" type="text" placeholder="Tìm tên đăng nhập, họ tên..."
+            class="w-full pl-9.5 pr-4 py-2 bg-white border border-slate-200/60 rounded-full text-xs font-medium focus:outline-none focus:border-[#0071e3] focus:ring-1 focus:ring-[#0071e3]/20 transition-all shadow-sm">
+        </div>
       </div>
 
       <!-- Table -->
-      <div class="bg-white rounded-2xl border border-[#e2e2e4] shadow-sm overflow-hidden">
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div id="acct-table-wrap" class="overflow-x-auto">
-          <div class="flex items-center justify-center p-10">
-            <div class="animate-spin rounded-full h-7 w-7 border-b-2 border-[#0066cc]"></div>
+          <div class="flex items-center justify-center p-14">
+            <div class="animate-spin rounded-full h-7 w-7 border-b-2 border-[#0071e3]"></div>
           </div>
         </div>
       </div>
@@ -73,47 +79,50 @@ export async function renderAccountManagement(container) {
 
     <!-- Modal tạo tài khoản -->
     <div id="modal-create" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('modal-create').classList.add('hidden')"></div>
-      <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-[#f0f0f2]">
-          <h3 class="text-sm font-bold text-[#1d1d1f]">Tạo tài khoản mới</h3>
+      <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onclick="document.getElementById('modal-create').classList.add('hidden')"></div>
+      <div class="relative bg-white/90 backdrop-blur-md rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100/50">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Tạo tài khoản mới</h3>
+            <p class="text-[10px] text-slate-400 mt-0.5">Liên kết hồ sơ cá nhân với tài khoản đăng nhập</p>
+          </div>
           <button onclick="document.getElementById('modal-create').classList.add('hidden')"
-            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+            class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
-        <form id="form-create" class="px-6 py-5 space-y-3">
+        <form id="form-create" class="px-6 py-5 space-y-4">
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Vai trò <span class="text-red-500">*</span></label>
-            <select id="c-role" required class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Vai trò <span class="text-red-500">*</span></label>
+            <select id="c-role" required class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
               <option value="">— Chọn vai trò —</option>
               <option value="nhan_vien">Nhân viên</option>
               <option value="admin">Admin / Quản lý</option>
             </select>
           </div>
           <div id="c-profile-wrap" class="hidden">
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Liên kết hồ sơ <span class="text-red-500">*</span></label>
-            <select id="c-profile" required class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Liên kết hồ sơ <span class="text-red-500">*</span></label>
+            <select id="c-profile" required class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
               <option value="">— Chọn hồ sơ liên kết —</option>
             </select>
-            <p class="text-[9px] text-slate-400 mt-1">Chỉ hiện hồ sơ chưa có tài khoản</p>
+            <p class="text-[9px] text-slate-400 mt-1 pl-1">Chỉ hiện hồ sơ chưa có tài khoản</p>
           </div>
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tên đăng nhập <span class="text-red-500">*</span></label>
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tên đăng nhập <span class="text-red-500">*</span></label>
             <input id="c-user" required type="text" placeholder="vd: hocvien01"
-              class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+              class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
           </div>
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mật khẩu <span class="text-red-500">*</span></label>
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mật khẩu <span class="text-red-500">*</span></label>
             <input id="c-pw" required type="password" placeholder="Ít nhất 6 ký tự" minlength="6"
-              class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+              class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
           </div>
-          <p id="c-err" class="text-[10px] text-red-500 hidden"></p>
-          <div class="flex gap-2 pt-1">
+          <p id="c-err" class="text-[10px] text-red-500 hidden bg-red-50 p-2.5 rounded-lg border border-red-100"></p>
+          <div class="flex gap-2.5 pt-2">
             <button type="button" onclick="document.getElementById('modal-create').classList.add('hidden')"
-              class="flex-1 text-xs font-semibold py-2.5 rounded-xl border border-[#e2e2e4] text-slate-500 hover:bg-slate-50 transition">Hủy</button>
+              class="flex-1 text-xs font-semibold py-2.5 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">Hủy</button>
             <button type="submit"
-              class="flex-1 bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-bold py-2.5 rounded-xl transition shadow-md shadow-[#0066cc]/20">Tạo tài khoản</button>
+              class="flex-1 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold py-2.5 rounded-full transition-all shadow-md shadow-[#0071e3]/10">Tạo tài khoản</button>
           </div>
         </form>
       </div>
@@ -121,20 +130,23 @@ export async function renderAccountManagement(container) {
 
     <!-- Modal sửa tài khoản -->
     <div id="modal-edit" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('modal-edit').classList.add('hidden')"></div>
-      <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-[#f0f0f2]">
-          <h3 class="text-sm font-bold text-[#1d1d1f]">Chỉnh sửa tài khoản</h3>
-            <button onclick="document.getElementById('modal-edit').classList.add('hidden')"
-            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+      <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onclick="document.getElementById('modal-edit').classList.add('hidden')"></div>
+      <div class="relative bg-white/90 backdrop-blur-md rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100/50">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Chỉnh sửa tài khoản</h3>
+            <p class="text-[10px] text-slate-400 mt-0.5">Cập nhật vai trò hoặc mật khẩu</p>
+          </div>
+          <button onclick="document.getElementById('modal-edit').classList.add('hidden')"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
-        <form id="form-edit-account" class="px-6 py-5 space-y-3">
+        <form id="form-edit-account" class="px-6 py-5 space-y-4">
           <input type="hidden" id="e-id">
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Vai trò <span class="text-red-500">*</span></label>
-            <select id="e-role" required class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Vai trò <span class="text-red-500">*</span></label>
+            <select id="e-role" required class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
               <option value="hoc_vien">Học viên</option>
               <option value="giao_vien">Giáo viên</option>
               <option value="nhan_vien">Nhân viên</option>
@@ -143,48 +155,51 @@ export async function renderAccountManagement(container) {
           </div>
           <input type="hidden" id="e-profile-id">
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tên đăng nhập <span class="text-red-500">*</span></label>
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tên đăng nhập <span class="text-red-500">*</span></label>
             <input id="e-user" required type="text" placeholder="vd: hocvien01"
-              class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+              class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
           </div>
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mật khẩu mới (Để trống nếu không đổi)</label>
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mật khẩu mới (Để trống nếu không đổi)</label>
             <input id="e-pw" type="password" placeholder="Nhập mật khẩu mới nếu muốn đổi" minlength="6"
-              class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+              class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
           </div>
           <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nhập lại mật khẩu mới</label>
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Nhập lại mật khẩu mới</label>
             <input id="e-pw-confirm" type="password" placeholder="Nhập lại mật khẩu mới" minlength="6"
-              class="mt-1 w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#e2e2e4] rounded-xl text-xs font-medium focus:outline-none focus:border-[#0066cc] transition">
+              class="mt-1.5 w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-medium focus:outline-none focus:border-[#0071e3] transition">
           </div>
-          <p id="e-err" class="text-[10px] text-red-500 hidden"></p>
-          <div class="flex gap-2 pt-1">
+          <p id="e-err" class="text-[10px] text-red-500 hidden bg-red-50 p-2.5 rounded-lg border border-red-100"></p>
+          <div class="flex gap-2.5 pt-2">
             <button type="button" onclick="document.getElementById('modal-edit').classList.add('hidden')"
-              class="flex-1 text-xs font-semibold py-2.5 rounded-xl border border-[#e2e2e4] text-slate-500 hover:bg-slate-50 transition">Hủy</button>
+              class="flex-1 text-xs font-semibold py-2.5 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">Hủy</button>
             <button type="submit"
-              class="flex-1 bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-bold py-2.5 rounded-xl transition shadow-md shadow-[#0066cc]/20">Lưu thay đổi</button>
+              class="flex-1 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold py-2.5 rounded-full transition-all shadow-md shadow-[#0071e3]/10">Lưu thay đổi</button>
           </div>
         </form>
       </div>
     </div>
- 
+
     <!-- Modal xem chi tiết tài khoản -->
     <div id="modal-view" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('modal-view').classList.add('hidden')"></div>
-      <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-[#f0f0f2]">
-          <h3 class="text-sm font-bold text-[#1d1d1f]">Chi tiết tài khoản</h3>
+      <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onclick="document.getElementById('modal-view').classList.add('hidden')"></div>
+      <div class="relative bg-white/90 backdrop-blur-md rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100/50">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Chi tiết tài khoản</h3>
+            <p class="text-[10px] text-slate-400 mt-0.5">Thông tin định danh và hồ sơ liên kết</p>
+          </div>
           <button onclick="document.getElementById('modal-view').classList.add('hidden')"
-            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+            class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
-        <div class="px-6 py-5 space-y-4 text-xs" id="view-account-details">
+        <div class="px-6 py-5 space-y-5 text-xs" id="view-account-details">
           <!-- Nội dung chi tiết load động ở đây -->
         </div>
-        <div class="px-6 py-4 bg-[#f9f9fb] border-t border-[#f0f0f2] flex justify-end">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
           <button onclick="document.getElementById('modal-view').classList.add('hidden')"
-            class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-5 py-2 rounded-xl transition">Đóng</button>
+            class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-5 py-2 rounded-full transition-all active:scale-95 shadow-sm">Đóng</button>
         </div>
       </div>
     </div>
@@ -213,22 +228,24 @@ export async function renderAccountManagement(container) {
     const hvs = allAccounts.filter(a => a.vai_tro === 'hoc_vien').length;
     const gvs = allAccounts.filter(a => a.vai_tro === 'giao_vien').length;
     document.getElementById('acct-stats').innerHTML = [
-      ['group', 'Tổng tài khoản', total, '#0066cc'],
-      ['check_circle', 'Đang hoạt động', active, '#22c55e'],
-      ['school', 'Học viên', hvs, '#f97316'],
-      ['badge', 'Giáo viên', gvs, '#059669'],
-    ].map(([icon, lbl, val, color]) => `
-      <div class="bg-white rounded-2xl border border-[#e2e2e4] p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-2">
-          <div class="w-7 h-7 rounded-xl flex items-center justify-center" style="background:${color}15">
-            <span class="material-symbols-outlined text-[15px]" style="color:${color}">${icon}</span>
+      ['group', 'Tổng tài khoản', total, 'text-[#0071e3]', 'bg-blue-50/50'],
+      ['check_circle', 'Đang hoạt động', active, 'text-emerald-600', 'bg-emerald-50/50'],
+      ['school', 'Học viên', hvs, 'text-orange-500', 'bg-orange-50/50'],
+      ['badge', 'Giáo viên', gvs, 'text-teal-600', 'bg-teal-50/50'],
+    ].map(([icon, lbl, val, textColor, bgColor]) => `
+      <div class="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-100/80 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center ${bgColor}">
+            <span class="material-symbols-outlined text-[16px] ${textColor}">${icon}</span>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium">${lbl}</p>
+          <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${lbl}</p>
+            <p class="text-lg font-bold text-slate-800 mt-0.5">${val}</p>
+          </div>
         </div>
-        <p class="text-xl font-bold text-[#1d1d1f]">${val}</p>
       </div>`).join('');
   }
- 
+
   function renderTable() {
     let rows = allAccounts;
     if (filterRole !== 'Tất cả') {
@@ -247,43 +264,44 @@ export async function renderAccountManagement(container) {
         a.email?.toLowerCase().includes(q)
       );
     }
- 
+
     const wrap = document.getElementById('acct-table-wrap');
     if (rows.length === 0) {
       wrap.innerHTML = `<div class="py-14 text-center"><span class="material-symbols-outlined text-4xl text-slate-200">manage_accounts</span><p class="text-xs text-slate-400 mt-2">Không tìm thấy tài khoản nào</p></div>`;
       return;
     }
- 
+
     wrap.innerHTML = `
       <table class="w-full text-xs">
         <thead>
-          <tr class="bg-[#fafafa] border-b border-[#f0f0f2]">
-            <th class="text-left px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Người sở hữu</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Thông tin đăng nhập</th>
-            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide hidden sm:table-cell">Đăng nhập cuối</th>
-            <th class="text-center px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trạng thái</th>
-            <th class="text-right px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Thao tác</th>
+          <tr class="bg-slate-50/50 border-b border-slate-100">
+            <th class="text-left px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Người sở hữu</th>
+            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thông tin đăng nhập</th>
+            <th class="text-left px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Đăng nhập cuối</th>
+            <th class="text-center px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trạng thái</th>
+            <th class="text-right px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thao tác</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-[#f5f5f7]">
+        <tbody class="divide-y divide-slate-100/70">
           ${rows.map(a => `
-            <tr class="hover:bg-slate-50/70 transition-colors cursor-pointer" data-id="${a.id}">
+            <tr class="hover:bg-slate-50/40 transition-colors cursor-pointer" data-id="${a.id}">
               <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
-                       style="background:${a.vai_tro === 'hoc_vien' ? '#f97316' : a.vai_tro === 'giao_vien' ? '#059669' : a.vai_tro === 'admin' ? '#7c3aed' : '#0066cc'}">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 shadow-sm"
+                       style="background:${a.vai_tro === 'hoc_vien' ? '#fff7ed' : a.vai_tro === 'giao_vien' ? '#ecfdf5' : a.vai_tro === 'admin' ? '#f5f3ff' : '#eff6ff'}; 
+                              color:${a.vai_tro === 'hoc_vien' ? '#ea580c' : a.vai_tro === 'giao_vien' ? '#059669' : a.vai_tro === 'admin' ? '#7c3aed' : '#0071e3'}">
                     ${(a.ho_ten || a.ten_dang_nhap || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p class="font-semibold text-[#1d1d1f]">${a.ho_ten || 'Tài khoản hệ thống'}</p>
+                    <p class="font-semibold text-slate-800">${a.ho_ten || 'Tài khoản hệ thống'}</p>
                     <div class="mt-1">
-                      <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${ROLE_CLS[a.vai_tro] || 'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro] || a.vai_tro}</span>
+                      <span class="text-[9px] font-bold px-2.5 py-0.5 rounded-full ${ROLE_CLS[a.vai_tro] || 'bg-slate-100 text-slate-500'}">${ROLE_LABEL[a.vai_tro] || a.vai_tro}</span>
                     </div>
                   </div>
                 </div>
               </td>
               <td class="px-4 py-3.5">
-                <p class="font-medium text-[#1d1d1f]">${a.ten_dang_nhap}</p>
+                <p class="font-medium text-slate-800">${a.ten_dang_nhap}</p>
                 ${a.email ? `<p class="text-[10px] text-slate-400 mt-0.5">${a.email}</p>` : ''}
               </td>
               <td class="px-4 py-3.5 hidden sm:table-cell">
@@ -291,32 +309,32 @@ export async function renderAccountManagement(container) {
               </td>
               <td class="px-4 py-3.5 text-center">
                 <button onclick="window._acctToggle(${a.id}, ${a.is_active}, this)"
-                  class="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full transition cursor-pointer
+                  class="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full transition-all duration-200 cursor-pointer
                     ${a.is_active
-        ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
-        : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50 hover:bg-emerald-100'
+                      : 'bg-rose-50 text-rose-600 border border-rose-100/50 hover:bg-rose-100'}">
                   <span class="material-symbols-outlined text-[11px]">${a.is_active ? 'check_circle' : 'block'}</span>
                   ${a.is_active ? 'Hoạt động' : 'Bị khóa'}
                 </button>
               </td>
               <td class="px-5 py-3.5 text-right">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-end gap-1.5">
                   <button onclick="window._acctView(${a.id})"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition" title="Xem chi tiết">
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 transition-all" title="Xem chi tiết">
                     <span class="material-symbols-outlined text-[15px]">visibility</span>
                   </button>
                   <button onclick="window._acctEdit(${a.id})"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center text-[#0066cc] hover:bg-[#0066cc]/5 transition" title="Sửa tài khoản">
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-[#0071e3] hover:bg-[#0071e3]/5 transition-all" title="Sửa tài khoản">
                     <span class="material-symbols-outlined text-[15px]">edit</span>
                   </button>
                   <button onclick="window._acctToggle(${a.id}, ${a.is_active}, this)"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center transition 
+                    class="w-7 h-7 rounded-full flex items-center justify-center transition-all 
                       ${a.is_active ? 'text-amber-500 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}" 
                     title="${a.is_active ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'}">
                     <span class="material-symbols-outlined text-[15px]">${a.is_active ? 'lock' : 'lock_open'}</span>
                   </button>
                   <button onclick="window._acctDelete(${a.id}, '${a.ten_dang_nhap}')"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 transition" title="Xóa tài khoản">
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-rose-400 hover:bg-rose-50 transition-all" title="Xóa tài khoản">
                     <span class="material-symbols-outlined text-[15px]">delete</span>
                   </button>
                 </div>
@@ -324,7 +342,7 @@ export async function renderAccountManagement(container) {
             </tr>`).join('')}
         </tbody>
       </table>`;
- 
+
     // Lắng nghe sự kiện click trên từng dòng để xem chi tiết (bỏ qua nếu click trúng button/thao tác)
     wrap.querySelectorAll('tbody tr').forEach(tr => {
       tr.addEventListener('click', e => {
@@ -333,15 +351,20 @@ export async function renderAccountManagement(container) {
       });
     });
   }
- 
+
   // Filter tabs
   document.getElementById('acct-filter')?.addEventListener('click', e => {
     const btn = e.target.closest('.acct-filter-btn');
     if (!btn) return;
     filterRole = btn.dataset.role;
     document.querySelectorAll('.acct-filter-btn').forEach(b => {
-      if (b === btn) { b.className = b.className.replace('bg-white text-slate-500 border border-[#e2e2e4]', 'bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30'); }
-      else { b.className = b.className.replace('bg-[#0066cc] text-white shadow-sm shadow-[#0066cc]/30', 'bg-white text-slate-500 border border-[#e2e2e4]'); }
+      if (b === btn) {
+        b.classList.add('bg-white', 'text-[#0071e3]', 'shadow-sm', 'font-bold');
+        b.classList.remove('text-slate-500', 'hover:text-slate-800');
+      } else {
+        b.classList.remove('bg-white', 'text-[#0071e3]', 'shadow-sm', 'font-bold');
+        b.classList.add('text-slate-500', 'hover:text-slate-800');
+      }
     });
     renderTable();
   });
@@ -493,7 +516,7 @@ export async function renderAccountManagement(container) {
   window._acctView = (id) => {
     const acct = allAccounts.find(a => a.id === id);
     if (!acct) return;
- 
+
     const detailsWrap = document.getElementById('view-account-details');
     let roleText = ROLE_LABEL[acct.vai_tro] || acct.vai_tro;
     
@@ -501,51 +524,51 @@ export async function renderAccountManagement(container) {
       <div class="space-y-4">
         <!-- Phần thông tin tài khoản -->
         <div>
-          <h4 class="font-bold text-[#0066cc] mb-2 text-[10px] uppercase tracking-wider">Thông tin tài khoản</h4>
-          <div class="grid grid-cols-2 gap-y-2 bg-[#f5f5f7] p-4 rounded-2xl border border-slate-100/50">
-            <span class="text-slate-400">ID tài khoản:</span>
-            <span class="font-bold text-slate-800">${acct.id}</span>
+          <h4 class="font-bold text-[#0071e3] mb-2 text-[10px] uppercase tracking-wider pl-1">Thông tin tài khoản</h4>
+          <div class="grid grid-cols-2 gap-y-3 bg-slate-50/70 p-4.5 rounded-2xl border border-slate-100/80">
+            <span class="text-slate-400 font-medium">ID tài khoản:</span>
+            <span class="font-bold text-slate-700">${acct.id}</span>
             
-            <span class="text-slate-400">Tên đăng nhập:</span>
+            <span class="text-slate-400 font-medium">Tên đăng nhập:</span>
             <span class="font-bold text-slate-800">${acct.ten_dang_nhap}</span>
             
-            <span class="text-slate-400">Vai trò:</span>
-            <span class="font-bold text-slate-800">${roleText}</span>
+            <span class="text-slate-400 font-medium">Vai trò:</span>
+            <span class="font-bold text-slate-700">${roleText}</span>
             
-            <span class="text-slate-400">Trạng thái:</span>
-            <span class="font-bold ${acct.trang_thai === 'hoat_dong' ? 'text-green-600' : 'text-red-500'}">
-              ${acct.trang_thai === 'hoat_dong' ? 'Hoạt động' : 'Bị khóa'}
+            <span class="text-slate-400 font-medium">Trạng thái:</span>
+            <span class="font-bold ${acct.is_active ? 'text-green-600' : 'text-rose-500'}">
+              ${acct.is_active ? 'Hoạt động' : 'Bị khóa'}
             </span>
             
-            <span class="text-slate-400">Ngày tạo:</span>
-            <span class="font-semibold text-slate-700">${fmt(acct.ngay_tao)}</span>
+            <span class="text-slate-400 font-medium">Ngày tạo:</span>
+            <span class="font-semibold text-slate-600">${fmt(acct.ngay_tao)}</span>
             
-            <span class="text-slate-400">Đăng nhập cuối:</span>
-            <span class="font-semibold text-slate-700">${acct.lan_dang_nhap_cuoi ? new Date(acct.lan_dang_nhap_cuoi).toLocaleString('vi-VN') : 'Chưa đăng nhập'}</span>
+            <span class="text-slate-400 font-medium">Đăng nhập cuối:</span>
+            <span class="font-semibold text-slate-600">${acct.lan_dang_nhap_cuoi ? new Date(acct.lan_dang_nhap_cuoi).toLocaleString('vi-VN') : 'Chưa đăng nhập'}</span>
           </div>
         </div>
  
         <!-- Phân hồ sơ liên kết -->
         <div>
-          <h4 class="font-bold text-[#0066cc] mb-2 text-[10px] uppercase tracking-wider">Hồ sơ cá nhân liên kết</h4>
+          <h4 class="font-bold text-[#0071e3] mb-2 text-[10px] uppercase tracking-wider pl-1">Hồ sơ cá nhân liên kết</h4>
           ${acct.ho_so_id ? `
-            <div class="grid grid-cols-2 gap-y-2 bg-blue-50/20 p-4 rounded-2xl border border-blue-100/20">
-              <span class="text-slate-400">ID hồ sơ:</span>
-              <span class="font-bold text-slate-800">${acct.ho_so_id}</span>
+            <div class="grid grid-cols-2 gap-y-3 bg-blue-50/20 p-4.5 rounded-2xl border border-blue-100/30">
+              <span class="text-slate-400 font-medium">ID hồ sơ:</span>
+              <span class="font-bold text-slate-700">${acct.ho_so_id}</span>
               
-              <span class="text-slate-400">Mã hồ sơ:</span>
+              <span class="text-slate-400 font-medium">Mã hồ sơ:</span>
               <span class="font-bold text-slate-800">${acct.ma_ho_so || '—'}</span>
               
-              <span class="text-slate-400">Họ và tên:</span>
+              <span class="text-slate-400 font-medium">Họ và tên:</span>
               <span class="font-bold text-slate-800">${acct.ho_ten || '—'}</span>
               
-              <span class="text-slate-400">Phân loại hồ sơ:</span>
+              <span class="text-slate-400 font-medium">Phân loại hồ sơ:</span>
               <span class="font-semibold text-slate-700">
                 ${acct.loai_ho_so === 'hoc_vien' ? 'Học viên' : acct.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân sự / Nhân viên'}
               </span>
             </div>
           ` : `
-            <div class="bg-slate-50 text-slate-400 p-4 text-center rounded-2xl border border-dashed border-slate-200">
+            <div class="bg-slate-50/50 text-slate-400 p-5 text-center rounded-2xl border border-dashed border-slate-200 text-xs">
               Tài khoản này chưa liên kết với hồ sơ cá nhân nào.
             </div>
           `}
