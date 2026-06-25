@@ -1199,6 +1199,25 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
     `;
     const bestSellerRes = await pool.query(bestSellerQuery, params);
 
+    // Thống kê thực tế phương thức thanh toán (Tiền mặt vs Chuyển khoản)
+    const paymentMethodStatsQuery = `
+      WITH combined_payments AS (
+        SELECT COALESCE(phuong_thuc_tt, 'chuyen_khoan') as phuong_thuc, (so_tien_da_thu - COALESCE(so_tien_hoan, 0)) as thuc_thu
+        FROM dang_ky_khoa_hoc
+        WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
+        UNION ALL
+        SELECT COALESCE(phuong_thuc_tt, 'chuyen_khoan') as phuong_thuc, (so_tien_da_thu - COALESCE(so_tien_hoan, 0)) as thuc_thu
+        FROM dang_ky_hoc_kem
+        WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
+      )
+      SELECT 
+        COALESCE(SUM(CASE WHEN LOWER(TRIM(phuong_thuc)) IN ('tien_mat', 'cash', 'tiền mặt') THEN thuc_thu ELSE 0 END), 0) as tien_mat_total,
+        COALESCE(SUM(CASE WHEN LOWER(TRIM(phuong_thuc)) NOT IN ('tien_mat', 'cash', 'tiền mặt') THEN thuc_thu ELSE 0 END), 0) as chuyen_khoan_total
+      FROM combined_payments
+    `;
+    const paymentMethodStatsRes = await pool.query(paymentMethodStatsQuery, params);
+    const pmStats = paymentMethodStatsRes.rows[0] || { tien_mat_total: 0, chuyen_khoan_total: 0 };
+
     // 5. Danh sách các giao dịch thanh toán cụ thể trong kỳ filter (lấy cả các gói đã hủy)
     const paymentsQuery = `
       SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.so_tien_hoan, d.trang_thai, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
@@ -1229,9 +1248,115 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
           tien_hoc_kem: parseFloat(r.tien_hoc_kem || 0)
         })),
         goi_pho_bien: bestSellerRes.rows,
-        giao_dich: paymentsRes.rows
+        giao_dich: paymentsRes.rows,
+        phuong_thuc_stats: {
+          tien_mat: parseFloat(pmStats.tien_mat_total || 0),
+          chuyen_khoan: parseFloat(pmStats.chuyen_khoan_total || 0)
+        }
       }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/reports/revenue/export: Xuất dữ liệu doanh thu chi tiết dạng CSV
+router.get('/reports/revenue/export', async (req, res) => {
+  const { start_date, end_date, filter, role } = req.query;
+  const userRole = role || req.headers['x-user-role'] || 'hoc_vien';
+
+  if (userRole !== 'admin' && userRole !== 'le_tan') {
+    return res.status(403).json({ 
+      success: false, 
+      error: 'Quyền truy cập bị từ chối. Hành động này yêu cầu quyền: admin, le_tan' 
+    });
+  }
+
+  let finalStartDate = start_date;
+  let finalEndDate = end_date;
+
+  if (filter) {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localToday = new Date(today.getTime() - tzOffset);
+    const todayStr = localToday.toISOString().split('T')[0];
+
+    if (filter === 'today') {
+      finalStartDate = todayStr;
+      finalEndDate = todayStr;
+    } else if (filter === 'yesterday') {
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000 - tzOffset);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      finalStartDate = yesterdayStr;
+      finalEndDate = yesterdayStr;
+    } else if (filter === 'week') {
+      const currentDay = localToday.getDay();
+      const distance = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(localToday.getTime() + distance * 24 * 60 * 60 * 1000);
+      finalStartDate = monday.toISOString().split('T')[0];
+      finalEndDate = todayStr;
+    } else if (filter === 'month') {
+      const year = localToday.getFullYear();
+      const month = String(localToday.getMonth() + 1).padStart(2, '0');
+      finalStartDate = `${year}-${month}-01`;
+      finalEndDate = todayStr;
+    }
+  }
+
+  if (!finalStartDate || !finalEndDate) {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localToday = new Date(today.getTime() - tzOffset);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000 - tzOffset);
+    finalStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+    finalEndDate = localToday.toISOString().split('T')[0];
+  }
+
+  const params = [finalStartDate, finalEndDate];
+
+  try {
+    // Truy vấn tất cả giao dịch trong kỳ (không dùng LIMIT)
+    const paymentsQuery = `
+      SELECT d.id, h.ho_ten, g.ten_goi as ten_khoa_hoc, d.so_tien_da_thu, d.so_tien_hoan, d.trang_thai, d.phuong_thuc_tt, d.ngay_tao, 'dai_tra' as loai_goi
+      FROM dang_ky_khoa_hoc d
+      JOIN ho_so h ON d.ho_so_id = h.id
+      JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
+      WHERE d.trang_thai != 'tam_dung' AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
+      UNION ALL
+      SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.so_tien_hoan, dk.trang_thai, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
+      FROM dang_ky_hoc_kem dk
+      JOIN ho_so h ON dk.hoc_vien_id = h.id
+      JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
+      WHERE dk.trang_thai != 'tam_dung' AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
+      ORDER BY ngay_tao DESC
+    `;
+    const paymentsRes = await pool.query(paymentsQuery, params);
+    const records = paymentsRes.rows;
+
+    // Định dạng CSV UTF-8 với BOM
+    let csvContent = '\uFEFF';
+    csvContent += 'Mã giao dịch,Khách hàng,Nội dung thanh toán,Phân loại,Phương thức,Ngày giao dịch,Số tiền đã thu (VNĐ),Số tiền hoàn (VNĐ),Thực thu (VNĐ),Trạng thái\n';
+
+    records.forEach(g => {
+      const typeLabel = g.loai_goi === 'hoc_kem' ? 'Kèm 1-1' : 'Đại trà';
+      const cleanMethod = g.phuong_thuc_tt || 'chuyen_khoan';
+      let methodLabel = 'Chuyển khoản';
+      if (cleanMethod.toLowerCase().includes('tien_mat') || cleanMethod.toLowerCase().includes('cash') || cleanMethod.toLowerCase().includes('tiền mặt')) {
+        methodLabel = 'Tiền mặt';
+      }
+      const isCancelled = g.trang_thai === 'huy';
+      const statusLabel = isCancelled ? 'Đã hủy' : 'Hoàn tất';
+      const netAmt = parseFloat(g.so_tien_da_thu || 0) - parseFloat(g.so_tien_hoan || 0);
+
+      // Định dạng ngày giờ
+      const dateStr = g.ngay_tao ? new Date(g.ngay_tao).toLocaleString('vi-VN') : 'N/A';
+
+      csvContent += `"${g.id}","${g.ho_ten}","${g.ten_khoa_hoc}","${typeLabel}","${methodLabel}","${dateStr}",${parseFloat(g.so_tien_da_thu || 0)},${parseFloat(g.so_tien_hoan || 0)},${netAmt},"${statusLabel}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=bao_cao_doanh_thu_${finalStartDate}_den_${finalEndDate}.csv`);
+    res.status(200).send(csvContent);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

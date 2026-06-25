@@ -2,6 +2,8 @@
 import { API_BASE, showToast } from './_shared.js';
 
 let revenueChart = null; // Biến giữ instance của Chart.js để tránh ghi đè
+let paymentPieChart = null; // Biến giữ instance của biểu đồ tròn
+
 
 export async function renderRevenueReport(container) {
   // Tạo danh sách option từ tháng 1 -> 12 của năm hiện tại
@@ -33,10 +35,15 @@ export async function renderRevenueReport(container) {
           </div>
         </div>
 
-        <!-- Nút Refresh đồng bộ kích thước -->
-        <button id="btn-refresh-revenue" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px] w-fit" type="button">
-          <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
-        </button>
+        <!-- Nút Refresh và Export đồng bộ kích thước -->
+        <div class="flex items-center gap-2">
+          <button id="btn-refresh-revenue" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px] w-fit" type="button">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
+          </button>
+          <button id="btn-export-revenue-csv" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px] w-fit" type="button">
+            <span class="material-symbols-outlined text-[16px]">download</span>Xuất Excel
+          </button>
+        </div>
       </div>
 
       <!-- Bento Grid: Metric Cards -->
@@ -53,14 +60,14 @@ export async function renderRevenueReport(container) {
               <canvas id="paymentPieChart"></canvas>
             </div>
           </div>
-          <div class="mt-4 space-y-2 text-xs">
+          <div class="mt-4 space-y-2 text-xs" id="payment-methods-legend">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-[#0066cc]"></div><span class="text-slate-600">Chuyển khoản</span></div>
-              <span class="font-bold">80%</span>
+              <span class="font-bold" id="legend-chuyen-khoan">--</span>
             </div>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-zinc-200"></div><span class="text-slate-600">Tiền mặt</span></div>
-              <span class="font-bold">20%</span>
+              <span class="font-bold" id="legend-tien-mat">--</span>
             </div>
           </div>
         </div>
@@ -135,7 +142,7 @@ export async function renderRevenueReport(container) {
         return;
       }
 
-      const { khoa_hoc, hoc_kem, lich_su_doanh_thu, goi_pho_bien, giao_dich } = result.data;
+      const { khoa_hoc, hoc_kem, lich_su_doanh_thu, goi_pho_bien, giao_dich, phuong_thuc_stats } = result.data;
       const tongThu = parseFloat(khoa_hoc?.total || 0) + parseFloat(hoc_kem?.total || 0);
 
       // 1. Render Metrics Card (Đảo vị trí Tổng cộng lên đầu góc trái)
@@ -321,6 +328,38 @@ export async function renderRevenueReport(container) {
         }
       });
 
+      // 4.1 Vẽ biểu đồ tròn hình thức thanh toán dựa trên số liệu thực tế từ Backend
+      const tmVal = phuong_thuc_stats?.tien_mat || 0;
+      const ckVal = phuong_thuc_stats?.chuyen_khoan || 0;
+      const totalPay = tmVal + ckVal;
+      const tmPercent = totalPay > 0 ? Math.round((tmVal / totalPay) * 100) : 0;
+      const ckPercent = totalPay > 0 ? (100 - tmPercent) : 0; // Hiển thị 0% nếu không có thanh toán nào
+
+      document.getElementById('legend-chuyen-khoan').textContent = `${ckPercent}%`;
+      document.getElementById('legend-tien-mat').textContent = `${tmPercent}%`;
+
+      if (paymentPieChart) paymentPieChart.destroy();
+      const pieCtx = document.getElementById('paymentPieChart').getContext('2d');
+      paymentPieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Chuyển khoản', 'Tiền mặt'],
+          datasets: [{
+            data: totalPay > 0 ? [ckPercent, tmPercent] : [0, 0],
+            backgroundColor: ['#0066cc', '#e2e2e4'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          cutout: '75%'
+        }
+      });
+
     } catch (err) {
       console.error('Lỗi khi load doanh thu:', err);
     }
@@ -329,28 +368,6 @@ export async function renderRevenueReport(container) {
   // Khởi chạy dữ liệu mặc định
   setTimeout(() => {
     loadRevenueData('today');
-
-    // Biểu đồ tròn hình thức thanh toán cố định 80% CK / 20% tiền mặt
-    const pieCtx = document.getElementById('paymentPieChart').getContext('2d');
-    new Chart(pieCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Chuyển khoản', 'Tiền mặt'],
-        datasets: [{
-          data: [80, 20],
-          backgroundColor: ['#0066cc', '#e2e2e4'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        cutout: '75%'
-      }
-    });
 
     // Bắt sự kiện click bộ lọc nhanh
     document.querySelectorAll('.filter-btn, [data-filter]').forEach(btn => {
@@ -408,6 +425,26 @@ export async function renderRevenueReport(container) {
 
     document.getElementById('btn-refresh-revenue')?.addEventListener('click', () => {
       renderRevenueReport(container);
+    });
+
+    // Bắt sự kiện xuất báo cáo doanh thu ra Excel (CSV)
+    document.getElementById('btn-export-revenue-csv')?.addEventListener('click', () => {
+      const userRole = localStorage.getItem('userRole') || 'admin';
+      let exportUrl = `${API_BASE}/reports/revenue/export?role=${userRole}`;
+
+      if (typeof currentFilter === 'string') {
+        // Nếu filter là dạng YYYY-MM (Tháng cụ thể được chọn trong dropdown)
+        if (currentFilter.includes('-')) {
+          const [year, month] = currentFilter.split('-');
+          const start_date = `${year}-${month}-01`;
+          const lastDay = new Date(year, parseInt(month), 0).getDate();
+          const end_date = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+          exportUrl += `&start_date=${start_date}&end_date=${end_date}`;
+        } else {
+          exportUrl += `&filter=${currentFilter}`;
+        }
+      }
+      window.location.href = exportUrl;
     });
   }, 100);
 }

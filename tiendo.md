@@ -1,3 +1,17 @@
+### [25/06/2026 09:56] — Sửa lỗi hiển thị fallback 100% hình thức thanh toán khi doanh thu bằng 0
+- **Loại**: Sửa lỗi giao diện (UI/UX)
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**: Sửa công thức tính phần trăm ở Frontend để hiển thị đúng `0%` cho cả Chuyển khoản và Tiền mặt khi tổng doanh thu trong kỳ lọc bằng 0. Tránh bị fallback hiển thị 100% Chuyển khoản sai lệch thực tế.
+- **Kết quả**: Thành công
+
+### [25/06/2026 09:48] — Bổ sung tính năng Xuất báo cáo Doanh thu Excel/CSV & Biểu đồ thanh toán thực tế
+- **Loại**: Thêm mới tính năng & Sửa logic hiển thị
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Backend**: Thêm API `/api/reports/revenue/export` cho phép xuất toàn bộ giao dịch thanh toán trong khoảng thời gian lọc ra file CSV (sử dụng UTF-8 BOM để Excel đọc đúng tiếng Việt). Bổ sung truy vấn tính tổng thực tế của Chuyển khoản vs Tiền mặt trả về trong `/api/reports/revenue`.
+  - **Frontend**: Thêm nút "Xuất Excel" màu xanh Apple-style. Đồng bộ Doughnut Chart vẽ tỉ lệ phương thức thanh toán thực tế thay vì hardcode 80%/20% như trước.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 09:20] — Thu gọn kích thước card gói học phí đại trà và gói học kèm
 - **Loại**: Chỉnh sửa giao diện (UI/UX)
 - **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
