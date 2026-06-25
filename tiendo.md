@@ -1,3 +1,96 @@
+### [25/06/2026 14:05] — Thu gọn kích thước card Phân bổ xếp hạng sao
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/TeacherFeedbacks.js`
+- **Mô tả**:
+  * Giới hạn chiều rộng tối đa của các thanh tiến trình phân bổ sao (`max-w-md`) để tránh card bị bè ngang quá dài gây mất cân đối trên màn hình lớn.
+  * Giảm padding và kích thước icon star của card thống kê tổng quan giúp bố cục phía trên gọn gàng và tinh tế hơn.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:03] — Tối ưu layout 60/40 và tích hợp thanh cuộn độc lập cho Đánh giá giáo viên
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/TeacherFeedbacks.js`
+- **Mô tả**:
+  * Đổi bố cục 2 card "Xếp hạng chất lượng giảng dạy" và "Tất cả nhận xét" sang dạng grid 2 cột song song (tỷ lệ 60/40) trên desktop để tận dụng tối đa chiều rộng màn hình.
+  * Giới hạn chiều cao cố định của cả hai card ở mức `h-[480px]` và kích hoạt thanh cuộn dọc (`overflow-y-auto`) riêng biệt cho phần dữ liệu bên trong để người dùng cuộn xem độc lập không ảnh hưởng đến chiều cao trang.
+  * Giảm padding của các ô dữ liệu trong bảng và các khung hội thoại nhận xét để tối ưu hóa không gian trống.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:55] — Chặn ca học tương lai, tự động tính số phút học thực tế và highlight báo lỗi modal nhận xét
+- **Loại**: Cải tiến logic nghiệp vụ (Backend & Frontend)
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **Backend**: Thêm điều kiện `ngay_hoc <= CURRENT_DATE` vào SQL của API `GET /api/reports/unreviewed-sessions/:studentId` để lọc bỏ các ca học trong tương lai (ví dụ ca 22/07).
+  - **Frontend**: 
+    - Thêm hàm `calculateSessionMinutes` tính toán thời lượng chênh lệch giữa giờ bắt đầu và giờ kết thúc. Tự động điền số phút học thực tế khi người dùng chọn ca học tương ứng.
+    - Tích hợp bôi đỏ viền (highlight) dropdown ca học và hiển thị cảnh báo lỗi bằng Toast khi submit form mà chưa chọn ca học.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:49] — Liên kết nhận xét Sổ liên lạc với Lịch học kèm/Lớp nhóm thực tế và tự động điền giáo viên
+- **Loại**: Cải tiến logic nghiệp vụ & Nâng cấp hệ thống (Backend & Frontend)
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - **Backend**:
+    - Thêm cột `lich_hoc_nhom_id` vào bảng `so_lien_lac` và thực hiện migration tự động.
+    - Định nghĩa API endpoint mới `GET /api/reports/unreviewed-sessions/:studentId` để lấy danh sách ca học chưa nhận xét.
+    - Cập nhật route `POST /api/reports` để kiểm tra trùng lặp và tự động cập nhật trạng thái lịch học thành `'da_hoc'` sau khi lưu thành công.
+  - **Frontend**:
+    - Thêm dropdown "Chọn ca học cần nhận xét" và input hiển thị tên "Giáo viên giảng dạy" trong biểu mẫu tạo nhận xét mới.
+    - Gọi API nạp danh sách ca học chưa nhận xét khi chọn học viên, tự động ánh xạ giáo viên thực tế đứng lớp và gửi ID ca học kèm/ca học nhóm lên backend.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:44] — Thiết lập thanh cuộn riêng biệt và gắn IntersectionObserver root cho card Sổ liên lạc
+- **Loại**: Cải tiến giao diện (UI/UX) & Tối ưu logic render
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Giới hạn chiều cao card Sổ liên lạc ở mức `max-h-[650px]` và tạo container cuộn riêng biệt `overflow-y-auto` cho danh sách lịch sử nhận xét.
+  - Cấu hình thuộc tính `root` của `IntersectionObserver` trỏ tới container cuộn này (`diary-timeline-container-scroll`) để kích hoạt tải thêm mượt mà khi cuộn bên trong card, thay vì phụ thuộc vào thanh cuộn của toàn trang.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:42] — Mở rộng w-full và nâng cấp thuật toán Cuộn vô hạn (Infinite Scroll) mượt mà
+- **Loại**: Cải tiến giao diện (UI/UX) & Tối ưu logic render
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Chuyển đổi khung ngoài Sổ liên lạc sang dạng rộng toàn màn hình (`w-full`) để lấp đầy khoảng trống thừa hai bên, điều chỉnh độ rộng Sidebar rộng `lg:w-[280px]` để cân đối trên màn hình lớn.
+  - Thiết kế lại cơ chế nạp của Sổ liên lạc: Thay thế cơ chế ghi đè toàn bộ `innerHTML` bằng cách nạp nối tiếp các phần tử mới bằng `insertAdjacentHTML('beforeend', ...)` giúp ngăn ngừa khựng/giật màn hình khi tải trang tiếp theo.
+  - Tăng khoảng cách tải trước `rootMargin` lên `200px` để kích hoạt cuộn liên tục mượt mà.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:30] — Cải tiến khung nền Sổ liên lạc và cập nhật nhãn Người nhận xét
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Đóng khung toàn bộ Sổ liên lạc vào thẻ card lớn mờ mịn (Glassmorphic Outer Card) với độ rộng tối ưu `max-w-5xl` giúp cân đối và sang trọng hơn trên màn hình rộng, tránh cảm giác trống trải hai bên.
+  - Thay đổi nhãn thông tin thanh bên từ "GV dạy gần nhất" thành "Người nhận xét gần nhất" để phản ánh chính xác dữ liệu từ cơ sở dữ liệu.
+- **Result**: Thành công
+
+### [25/06/2026 13:21] — Thiết kế Sidebar tóm tắt học tập tận dụng không gian trống Sổ liên lạc
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Tái thiết kế Sổ liên lạc học tập thành bố cục 2 cột chính-phụ: Cột trái chứa Timeline, cột phải (Sidebar) chứa thẻ Bento tóm tắt động (Tổng số phút học, số buổi nhận xét, Giáo viên dạy gần nhất) và thẻ trạng thái học tập tích cực, giúp tận dụng triệt để khoảng không gian trống hai bên trên màn hình lớn.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:19] — Giới hạn chiều ngang tối đa và căn giữa cho Sổ liên lạc học tập
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Giới hạn chiều ngang tối đa của Sổ liên lạc ở mức `max-w-4xl` và căn giữa trang `mx-auto`, giúp các card hiển thị cân đối trên màn hình lớn và tránh kéo giãn chữ quá mức gây khó đọc.
+- **Kết quả**: Thành công
+
+### [25/06/2026 13:17] — Tối ưu hóa layout card Sổ liên lạc sang Grid 2 cột và compact spacing
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Cấu trúc lại card nhật ký Sổ liên lạc: Chuyển đổi "Nội dung bài học" và "Nhận xét buổi học" sang dạng Grid 2 cột song song (trên máy tính) giúp tiết kiệm 40% chiều cao card, thu gọn khoảng cách padding card xuống `p-4` và box con xuống `p-2.5` để giảm không gian trống dư thừa, tạo cảm giác chuyên nghiệp như dashboard cao cấp.
+- **Kết quả**: Thành công
+
+### [25/06/2026 11:38] — Tích hợp tính năng cuộn vô hạn (Infinite Scroll) cho Sổ liên lạc học tập
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  - Tích hợp Intersection Observer và render theo chunk động (mỗi lần 5 nhật ký) cho danh sách lịch sử nhận xét học viên tại Sổ liên lạc điện tử, mang đến trải nghiệm cuộn vô hạn mượt mà giống trang học viên và tránh quá tải DOM khi dữ liệu lịch sử lớn.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 11:32] — Nâng cấp đồng bộ giao diện Nội quy trung tâm chuẩn Apple Premium
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/CenterRules.js`

@@ -369,13 +369,17 @@ async function loadDiaryData(container, userRole, students, studentId) {
     const result = await res.json();
     const diaries = result.data || [];
  
+    const totalMinutes = diaries.reduce((acc, curr) => acc + (parseInt(curr.so_phut_hoc) || 0), 0);
+    const totalSessions = diaries.length;
+    const latestTeacher = diaries[0] ? diaries[0].ten_giao_vien : 'Chưa có thông tin';
+
     // Lấy thông tin học viên được chọn để hiển thị tiêu đề
     const currentStudent = students.find(s => s.id === studentId);
     const studentName = currentStudent ? currentStudent.ho_ten : 'Học viên';
  
     // Tạo giao diện
     container.innerHTML = `
-      <div class="space-y-6 animate-fadeIn">
+      <div class="space-y-6 animate-fadeIn w-full bg-white/50 backdrop-blur-md border border-slate-200/40 rounded-[32px] p-6 md:p-8 shadow-sm">
         <!-- Header & Top Actions -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -398,7 +402,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
  
         <!-- Bộ chọn học viên (chỉ dành cho Admin, Lễ tân, Giáo viên) -->
         ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
-          <div class="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div class="bg-white/80 border border-slate-100 rounded-[24px] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-[#0071e3]">person_search</span>
               <span class="text-xs font-bold text-slate-700">Tra cứu sổ liên lạc của học viên:</span>
@@ -411,93 +415,68 @@ async function loadDiaryData(container, userRole, students, studentId) {
           </div>
         ` : ''}
  
-        <!-- Timeline Nhật ký / Sổ liên lạc -->
-        <div class="bg-white border border-slate-150 rounded-2xl p-6 shadow-sm space-y-6">
-          <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-sm">Lịch sử nhận xét của: <span class="text-[#0071e3]">${studentName}</span></h3>
-            <span class="text-[10px] bg-blue-50 text-[#0071e3] px-2 py-0.5 rounded-full font-bold">${diaries.length} Nhật ký</span>
+        <div class="flex flex-col lg:flex-row gap-5 items-start">
+          <!-- Cột bên trái: Timeline Nhật ký / Sổ liên lạc -->
+          <div class="flex-1 w-full bg-white/80 border border-slate-100 rounded-[24px] p-6 shadow-sm flex flex-col max-h-[650px] space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm">Lịch sử nhận xét của: <span class="text-[#0071e3]">${studentName}</span></h3>
+              <span class="text-[10px] bg-blue-50 text-[#0071e3] px-2.5 py-0.5 rounded-full font-bold">${diaries.length} Nhật ký</span>
+            </div>
+   
+            <div id="diary-timeline-container-scroll" class="flex-1 overflow-y-auto pr-2 relative pl-6 border-l border-slate-100 min-h-0 space-y-8">
+              <div class="space-y-8" id="diary-timeline-container">
+                <!-- Chunk render động ở đây -->
+              </div>
+              <div id="diary-sentinel" class="h-4 w-full shrink-0"></div>
+            </div>
           </div>
- 
-          <div class="relative pl-6 border-l border-slate-100 space-y-8">
-            ${diaries.map(item => {
-      const createdDate = new Date(item.ngay_tao).toLocaleDateString('vi-VN', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      });
-      const createdTime = new Date(item.ngay_tao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      return `
-                <!-- Timeline Item -->
-                <div class="relative">
-                  <!-- Bullet point on timeline -->
-                  <div class="absolute -left-[30px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#0071e3] ring-4 ring-blue-50"></div>
-                  
-                  <div class="bg-slate-50/40 rounded-2xl p-5 border border-slate-150/40 space-y-3 hover:shadow-md transition-all duration-300">
-                    <div class="flex justify-between items-start flex-wrap gap-2">
-                      <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center font-bold text-xs select-none">
-                          ${item.ten_giao_vien ? item.ten_giao_vien.charAt(0) : 'G'}
-                        </div>
-                        <div>
-                          <span class="font-bold text-slate-800 text-xs block">
-                            ${item.chuc_vu_nguoi_gui === 'Nhân viên' || item.chuc_vu_nguoi_gui === 'Lễ tân' ? 'NV' : (item.chuc_vu_nguoi_gui === 'Quản lý' || item.chuc_vu_nguoi_gui === 'Admin' || item.chuc_vu_nguoi_gui === 'Quản trị viên' ? 'QL' : 'GV')}: ${item.ten_giao_vien || 'Giáo viên trung tâm'}
-                          </span>
-                          <span class="text-[9px] text-slate-400 block">${createdTime} - ${createdDate}</span>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
-                          ${item.so_phut_hoc} phút học
-                        </span>
-                        ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
-                          <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded-full transition-all" data-id="${item.id}" title="Sửa nhận xét">
-                            <span class="material-symbols-outlined text-[15px] block">edit</span>
-                          </button>
-                          <button class="btn-delete-diary text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all" data-id="${item.id}" title="Xóa nhận xét">
-                            <span class="material-symbols-outlined text-[15px] block">delete</span>
-                          </button>
-                        ` : ''}
-                      </div>
-                    </div>
 
-                    <!-- Nội dung bài học -->
-                    <div class="space-y-1">
-                      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bài học / Nội dung đã dạy:</span>
-                      <p class="text-xs text-slate-700 font-medium leading-relaxed bg-white border border-slate-100 rounded-xl p-3">${item.noi_dung_bai_hoc || 'Không ghi nhận nội dung.'}</p>
-                    </div>
-
-                    <!-- Nhận xét học viên -->
-                    <div class="space-y-1">
-                      <span class="text-[10px] font-bold text-[#0066cc]/70 uppercase tracking-wider block">Nhận xét buổi học:</span>
-                      <p class="text-xs text-slate-700 leading-relaxed bg-[#f6faff] border border-blue-50 rounded-xl p-3 italic">"${item.nhan_xet_buoi_hoc || 'Học viên chú ý lắng nghe giảng bài và phát biểu xây dựng bài.'}"</p>
-                    </div>
-
-                    <!-- Bài tập về nhà -->
-                    ${item.bai_tap_ve_nha ? `
-                      <div class="space-y-1 bg-amber-50/30 border border-amber-100/50 rounded-xl p-3">
-                        <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
-                          <span class="material-symbols-outlined text-[13px]">assignment</span>Bài tập về nhà:
-                        </span>
-                        <p class="text-xs text-slate-600 leading-relaxed pl-4 font-medium">${item.bai_tap_ve_nha}</p>
-                      </div>
-                    ` : ''}
-
-                    <!-- Dặn dò thêm -->
-                    ${item.dan_do_giao_vien ? `
-                      <div class="text-[10px] text-slate-400 flex items-center gap-1.5 pt-1">
-                        <span class="material-symbols-outlined text-[14px]">info</span>
-                        <span>Dặn dò thêm: ${item.dan_do_giao_vien}</span>
-                      </div>
-                    ` : ''}
+          <!-- Cột bên phải: Tóm tắt học tập của Học viên (Sidebar) -->
+          <div class="w-full lg:w-[280px] shrink-0 space-y-4">
+            <!-- Card 1: Tổng quan kết quả học tập -->
+            <div class="bg-white/80 border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-4">
+              <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-0.5">Tóm tắt học tập</h4>
+              
+              <div class="space-y-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-blue-50/60 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[#0071e3] text-[16px]">schedule</span>
+                  </div>
+                  <div>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Tổng thời gian học</p>
+                    <p class="text-xs font-bold text-slate-800">${totalMinutes} phút</p>
                   </div>
                 </div>
-              `;
-    }).join('')}
 
-            ${diaries.length === 0 ? `
-              <div class="py-8 text-center text-slate-400 text-xs">
-                <span class="material-symbols-outlined text-[36px] text-slate-300 block mb-1">history</span>
-                Chưa có nhật ký học tập hoặc sổ liên lạc điện tử nào được ghi nhận cho học viên này.
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-50/60 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-emerald-600 text-[16px]">fact_check</span>
+                  </div>
+                  <div>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Số buổi đã nhận xét</p>
+                    <p class="text-xs font-bold text-slate-800">${totalSessions} buổi học</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-purple-50/60 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-purple-600 text-[16px]">rate_review</span>
+                  </div>
+                  <div>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Người nhận xét gần nhất</p>
+                    <p class="text-xs font-bold text-slate-700 truncate w-32" title="${latestTeacher}">${latestTeacher}</p>
+                  </div>
+                </div>
               </div>
-            ` : ''}
+            </div>
+
+            <!-- Card 2: Lớp học & Trạng thái -->
+            <div class="bg-gradient-to-br from-blue-50/50 to-indigo-50/30 border border-blue-100/20 rounded-[24px] p-5 shadow-sm space-y-2">
+              <h4 class="text-[10px] font-bold text-[#0071e3] uppercase tracking-wider flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">verified_user</span>Học tập tích cực
+              </h4>
+              <p class="text-[11px] text-slate-500 leading-relaxed font-semibold">Học viên đang duy trì tiến trình học tập ổn định tại Stellar Academy.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -522,8 +501,21 @@ async function loadDiaryData(container, userRole, students, studentId) {
                 </select>
               </div>
               <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Chọn ca học cần nhận xét</label>
+                <select id="modal-select-session" required disabled class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-100 cursor-not-allowed">
+                  <option value="">-- Chọn học viên trước --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
                 <label class="font-semibold text-slate-500 block">Số phút học</label>
-                <input type="number" name="so_phut_hoc" value="90" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
+                <input type="number" name="so_phut_hoc" id="modal-input-so-phut-hoc" value="90" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Giáo viên giảng dạy</label>
+                <input type="text" id="modal-display-teacher" readonly placeholder="Tên giáo viên" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 text-slate-500 cursor-not-allowed" />
               </div>
             </div>
 
@@ -603,7 +595,181 @@ async function loadDiaryData(container, userRole, students, studentId) {
       </div>
     `;
 
-    // Đăng ký các sự kiện
+    let displayCount = 5;
+    let renderedCount = 0;
+    let isDiaryLoading = false;
+
+    function renderDiaryChunk(isAppend = false) {
+      const startIndex = isAppend ? renderedCount : 0;
+      const chunk = diaries.slice(startIndex, displayCount);
+      const timelineContainer = document.getElementById('diary-timeline-container');
+      if (!timelineContainer) return;
+
+      const html = chunk.map(item => {
+        const createdDate = new Date(item.ngay_tao).toLocaleDateString('vi-VN', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const createdTime = new Date(item.ngay_tao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <!-- Timeline Item -->
+          <div class="relative">
+            <!-- Bullet point on timeline -->
+            <div class="absolute -left-[30px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#0071e3] ring-4 ring-blue-50"></div>
+            
+            <div class="bg-slate-50/40 rounded-2xl p-4 border border-slate-150/40 space-y-2.5 hover:shadow-md transition-all duration-300">
+              <div class="flex justify-between items-start flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center font-bold text-xs select-none">
+                    ${item.ten_giao_vien ? item.ten_giao_vien.charAt(0) : 'G'}
+                  </div>
+                  <div>
+                    <span class="font-bold text-slate-800 text-xs block">
+                      ${item.chuc_vu_nguoi_gui === 'Nhân viên' || item.chuc_vu_nguoi_gui === 'Lễ tân' ? 'NV' : (item.chuc_vu_nguoi_gui === 'Quản lý' || item.chuc_vu_nguoi_gui === 'Admin' || item.chuc_vu_nguoi_gui === 'Quản trị viên' ? 'QL' : 'GV')}: ${item.ten_giao_vien || 'Giáo viên trung tâm'}
+                    </span>
+                    <span class="text-[9px] text-slate-450 block">${createdTime} - ${createdDate}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
+                    ${item.so_phut_hoc} phút học
+                  </span>
+                  ${(userRole === 'admin' || userRole === 'giao_vien' || userRole === 'le_tan') ? `
+                    <button class="btn-edit-diary text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded-full transition-all" data-id="${item.id}" title="Sửa nhận xét">
+                      <span class="material-symbols-outlined text-[15px] block">edit</span>
+                    </button>
+                    <button class="btn-delete-diary text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all" data-id="${item.id}" title="Xóa nhận xét">
+                      <span class="material-symbols-outlined text-[15px] block">delete</span>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Grid chứa Bài học và Nhận xét -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <!-- Nội dung bài học -->
+                <div class="space-y-1">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block pl-0.5">Bài học / Nội dung đã dạy:</span>
+                  <p class="text-xs text-slate-700 font-medium leading-relaxed bg-white border border-slate-100 rounded-xl p-2.5">${item.noi_dung_bai_hoc || 'Không ghi nhận nội dung.'}</p>
+                </div>
+
+                <!-- Nhận xét học viên -->
+                <div class="space-y-1">
+                  <span class="text-[9px] font-bold text-[#0071e3]/70 uppercase tracking-wider block pl-0.5">Nhận xét buổi học:</span>
+                  <p class="text-xs text-slate-700 leading-relaxed bg-[#f6faff] border border-blue-50/70 rounded-xl p-2.5 italic">"${item.nhan_xet_buoi_hoc || 'Học viên chú ý lắng nghe giảng bài và phát biểu xây dựng bài.'}"</p>
+                </div>
+              </div>
+
+              <!-- Bài tập về nhà -->
+              ${item.bai_tap_ve_nha ? `
+                <div class="space-y-1 bg-amber-50/20 border border-amber-100/30 rounded-xl p-2.5">
+                  <span class="text-[9px] font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1 pl-0.5">
+                    <span class="material-symbols-outlined text-[13px]">assignment</span>Bài tập về nhà:
+                  </span>
+                  <p class="text-xs text-slate-650 leading-relaxed pl-4.5 font-semibold">${item.bai_tap_ve_nha}</p>
+                </div>
+              ` : ''}
+
+              <!-- Dặn dò thêm -->
+              ${item.dan_do_giao_vien ? `
+                <div class="text-[10px] text-slate-450 flex items-center gap-1.5 pt-1 font-medium pl-1">
+                  <span class="material-symbols-outlined text-[14px] text-slate-400">info</span>
+                  <span>Dặn dò thêm: ${item.dan_do_giao_vien}</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (isAppend) {
+        timelineContainer.insertAdjacentHTML('beforeend', html);
+      } else {
+        timelineContainer.innerHTML = html;
+      }
+      renderedCount = displayCount;
+
+      if (diaries.length === 0) {
+        timelineContainer.innerHTML = `
+          <div class="py-8 text-center text-slate-400 text-xs">
+            <span class="material-symbols-outlined text-[36px] text-slate-300 block mb-1">history</span>
+            Chưa có nhật ký học tập hoặc sổ liên lạc điện tử nào được ghi nhận cho học viên này.
+          </div>
+        `;
+      }
+
+      attachDiaryActionEvents();
+    }
+
+    function attachDiaryActionEvents() {
+      // Sự kiện Sửa nhận xét
+      container.querySelectorAll('.btn-edit-diary').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const id = parseInt(btn.dataset.id);
+          const item = diaries.find(d => d.id === id);
+          if (item) {
+            document.getElementById('edit-diary-id').value = item.id;
+            document.getElementById('edit-diary-so-phut-hoc').value = item.so_phut_hoc || 90;
+            document.getElementById('edit-diary-noi-dung-bai-hoc').value = item.noi_dung_bai_hoc || '';
+            document.getElementById('edit-diary-nhan-xet-buoi-hoc').value = item.nhan_xet_buoi_hoc || '';
+            document.getElementById('edit-diary-bai-tap-ve-nha').value = item.bai_tap_ve_nha || '';
+            document.getElementById('edit-diary-dan-do-giao-vien').value = item.dan_do_giao_vien || '';
+            document.getElementById('edit-diary-modal').classList.remove('hidden');
+          }
+        };
+      });
+
+      // Sự kiện Xóa nhận xét
+      container.querySelectorAll('.btn-delete-diary').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const id = parseInt(btn.dataset.id);
+          if (confirm('Bạn có chắc chắn muốn xóa nhận xét này không?')) {
+            try {
+              const res = await fetch(`${API_BASE}/reports/${id}`, {
+                method: 'DELETE'
+              });
+              const result = await res.json();
+              if (result.success) {
+                showToast('Xóa nhận xét thành công!');
+                loadDiaryData(container, userRole, students, studentId);
+              } else {
+                showToast(result.error || 'Lỗi khi xóa', 'error');
+              }
+            } catch (err) {
+              showToast('Lỗi máy chủ', 'error');
+            }
+          }
+        };
+      });
+    }
+
+    // Render chunk đầu tiên
+    renderDiaryChunk(false);
+
+    // Intersection Observer cho Sổ liên lạc
+    if (window.diaryObserver) {
+      window.diaryObserver.disconnect();
+    }
+    const diarySentinel = document.getElementById('diary-sentinel');
+    if (diarySentinel && diaries.length > 0) {
+      window.diaryObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && displayCount < diaries.length && !isDiaryLoading) {
+          isDiaryLoading = true;
+          setTimeout(() => {
+            displayCount = Math.min(displayCount + 5, diaries.length);
+            renderDiaryChunk(true);
+            isDiaryLoading = false;
+          }, 150);
+        }
+      }, { 
+        root: document.getElementById('diary-timeline-container-scroll'),
+        rootMargin: '100px' 
+      });
+      window.diaryObserver.observe(diarySentinel);
+    }
+
+    // Đăng ký các sự kiện ngoài
     document.getElementById('btn-refresh-diary')?.addEventListener('click', () => {
       loadDiaryData(container, userRole, students, studentId);
     });
@@ -616,10 +782,102 @@ async function loadDiaryData(container, userRole, students, studentId) {
     const modal = document.getElementById('diary-modal');
     document.getElementById('btn-create-diary')?.addEventListener('click', () => {
       modal.classList.remove('hidden');
+      // Kích hoạt load ca học nếu học viên đã được chọn sẵn
+      const stdSelect = document.getElementById('modal-select-student');
+      if (stdSelect && stdSelect.value) {
+        stdSelect.dispatchEvent(new Event('change'));
+      }
     });
 
     document.getElementById('close-diary-modal')?.addEventListener('click', () => {
       modal.classList.add('hidden');
+    });
+
+    // Hàm phụ trợ tính số phút học từ thời gian ca học
+    function calculateSessionMinutes(startStr, endStr) {
+      if (!startStr || !endStr) return 90;
+      try {
+        const [startH, startM] = startStr.split(':').map(Number);
+        const [endH, endM] = endStr.split(':').map(Number);
+        const diff = (endH * 60 + endM) - (startH * 60 + startM);
+        return diff > 0 ? diff : 90;
+      } catch (err) {
+        return 90;
+      }
+    }
+
+    // Lắng nghe sự kiện thay đổi học viên để load danh sách ca học chưa nhận xét
+    document.getElementById('modal-select-student')?.addEventListener('change', async (e) => {
+      const studentId = e.target.value;
+      const sessionSelect = document.getElementById('modal-select-session');
+      const teacherInput = document.getElementById('modal-display-teacher');
+      if (!sessionSelect) return;
+
+      sessionSelect.classList.remove('border-red-500'); // Xóa viền đỏ nếu có
+
+      if (!studentId) {
+        sessionSelect.innerHTML = '<option value="">-- Chọn học viên trước --</option>';
+        sessionSelect.disabled = true;
+        sessionSelect.className = 'w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-100 cursor-not-allowed';
+        teacherInput.value = '';
+        return;
+      }
+
+      try {
+        sessionSelect.innerHTML = '<option value="">Đang tải ca học...</option>';
+        const res = await fetch(`${API_BASE}/reports/unreviewed-sessions/${studentId}`);
+        const result = await res.json();
+        const sessions = result.data || [];
+
+        if (sessions.length === 0) {
+          sessionSelect.innerHTML = '<option value="">Học viên đã được nhận xét đầy đủ</option>';
+          sessionSelect.disabled = true;
+          sessionSelect.className = 'w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-100 cursor-not-allowed';
+          teacherInput.value = '';
+        } else {
+          window._modalSessionsList = sessions;
+          sessionSelect.innerHTML = '<option value="">-- Chọn ca học cần nhận xét --</option>' + 
+            sessions.map(s => {
+              const label = s.type === '1-1' ? 'Học kèm' : 'Học nhóm';
+              return `<option value="${s.type}-${s.session_id}">${label} - ${new Date(s.ngay_hoc).toLocaleDateString('vi-VN')} (${s.gio_bat_dau.slice(0, 5)} - ${s.gio_ket_thuc.slice(0, 5)}) - ${s.class_name}</option>`;
+            }).join('');
+          sessionSelect.disabled = false;
+          sessionSelect.className = 'w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer';
+          teacherInput.value = '';
+        }
+      } catch (err) {
+        sessionSelect.innerHTML = '<option value="">Lỗi khi tải ca học</option>';
+      }
+    });
+
+    // Lắng nghe chọn ca học để tự động điền Tên giáo viên và Tính toán số phút học thực tế
+    document.getElementById('modal-select-session')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      const teacherInput = document.getElementById('modal-display-teacher');
+      const minsInput = document.getElementById('modal-input-so-phut-hoc');
+      const sessionSelect = document.getElementById('modal-select-session');
+      
+      if (sessionSelect) {
+        sessionSelect.classList.remove('border-red-500'); // Xóa viền đỏ khi người dùng đã chọn
+      }
+
+      if (!val) {
+        teacherInput.value = '';
+        return;
+      }
+      const [type, id] = val.split('-');
+      const session = (window._modalSessionsList || []).find(s => s.type === type && String(s.session_id) === String(id));
+      if (session) {
+        teacherInput.value = session.ten_giao_vien || 'Chưa có giáo viên';
+        
+        // Tự động tính toán số phút học từ ca học thực tế
+        if (minsInput && session.gio_bat_dau && session.gio_ket_thuc) {
+          const actualMins = calculateSessionMinutes(session.gio_bat_dau, session.gio_ket_thuc);
+          minsInput.value = actualMins;
+        }
+      } else {
+        teacherInput.value = '';
+      }
     });
 
     // Tạo nhận xét mới
@@ -632,7 +890,35 @@ async function loadDiaryData(container, userRole, students, studentId) {
       const nhan_xet_buoi_hoc = formData.get('nhan_xet_buoi_hoc');
       const bai_tap_ve_nha = formData.get('bai_tap_ve_nha');
       const dan_do_giao_vien = formData.get('dan_do_giao_vien');
-      const gvId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('taiKhoanId')) || 2;
+      
+      const selectSession = document.getElementById('modal-select-session');
+      const sessionVal = selectSession ? selectSession.value : '';
+      let lich_hoc_id = null;
+      let lich_hoc_nhom_id = null;
+      let targetGvId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('taiKhoanId')) || 2;
+      const currentUserId = parseInt(localStorage.getItem('hoSoId')) || parseInt(localStorage.getItem('taiKhoanId')) || 2;
+
+      if (sessionVal) {
+        const [type, id] = sessionVal.split('-');
+        if (type === '1-1') {
+          lich_hoc_id = parseInt(id);
+        } else if (type === 'nhom') {
+          lich_hoc_nhom_id = parseInt(id);
+        }
+        
+        // Lấy thông tin giáo viên thực tế từ ca học
+        const session = (window._modalSessionsList || []).find(s => s.type === type && String(s.session_id) === String(id));
+        if (session && session.giao_vien_id) {
+          targetGvId = session.giao_vien_id;
+        }
+      } else {
+        if (selectSession) {
+          selectSession.classList.add('border-red-500');
+          selectSession.focus();
+        }
+        showToast('Vui lòng chọn ca học cần viết nhận xét!', 'error');
+        return;
+      }
 
       try {
         const res = await fetch(`${API_BASE}/reports`, {
@@ -640,15 +926,17 @@ async function loadDiaryData(container, userRole, students, studentId) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hoc_vien_id: targetHocVienId,
-            giao_vien_id: gvId,
-            nguoi_gui_id: gvId,
+            giao_vien_id: targetGvId,
+            nguoi_gui_id: currentUserId,
             vai_tro_gui: userRole,
             loai_nhat_ky: 'giao_vien_dan_do',
             nhan_xet_buoi_hoc,
             bai_tap_ve_nha,
             noi_dung_bai_hoc,
             so_phut_hoc,
-            dan_do_giao_vien
+            dan_do_giao_vien,
+            lich_hoc_id,
+            lich_hoc_nhom_id
           })
         });
 
@@ -664,23 +952,6 @@ async function loadDiaryData(container, userRole, students, studentId) {
       } catch (err) {
         showToast('Lỗi máy chủ', 'error');
       }
-    });
-
-    // Sự kiện Sửa nhận xét
-    container.querySelectorAll('.btn-edit-diary').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = parseInt(btn.dataset.id);
-        const item = diaries.find(d => d.id === id);
-        if (item) {
-          document.getElementById('edit-diary-id').value = item.id;
-          document.getElementById('edit-diary-so-phut-hoc').value = item.so_phut_hoc || 90;
-          document.getElementById('edit-diary-noi-dung-bai-hoc').value = item.noi_dung_bai_hoc || '';
-          document.getElementById('edit-diary-nhan-xet-buoi-hoc').value = item.nhan_xet_buoi_hoc || '';
-          document.getElementById('edit-diary-bai-tap-ve-nha').value = item.bai_tap_ve_nha || '';
-          document.getElementById('edit-diary-dan-do-giao-vien').value = item.dan_do_giao_vien || '';
-          document.getElementById('edit-diary-modal').classList.remove('hidden');
-        }
-      });
     });
 
     document.getElementById('close-edit-diary-modal')?.addEventListener('click', () => {
@@ -722,29 +993,6 @@ async function loadDiaryData(container, userRole, students, studentId) {
       } catch (err) {
         showToast('Lỗi kết nối máy chủ', 'error');
       }
-    });
-
-    // Sự kiện Xóa nhận xét
-    container.querySelectorAll('.btn-delete-diary').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = parseInt(btn.dataset.id);
-        if (confirm('Bạn có chắc chắn muốn xóa nhận xét này không?')) {
-          try {
-            const res = await fetch(`${API_BASE}/reports/${id}`, {
-              method: 'DELETE'
-            });
-            const result = await res.json();
-            if (result.success) {
-              showToast('Xóa nhận xét thành công!');
-              loadDiaryData(container, userRole, students, studentId);
-            } else {
-              showToast(result.error || 'Lỗi khi xóa', 'error');
-            }
-          } catch (err) {
-            showToast('Lỗi máy chủ', 'error');
-          }
-        }
-      });
     });
 
   } catch (err) {

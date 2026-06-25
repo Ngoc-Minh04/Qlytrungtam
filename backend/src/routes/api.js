@@ -4003,6 +4003,11 @@ router.get('/reports/student/:studentId', async (req, res) => {
         ngay_tao TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    
+    // Đảm bảo cột cần thiết có sẵn
+    await pool.query(`ALTER TABLE so_lien_lac ADD COLUMN IF NOT EXISTS lich_hoc_id INTEGER REFERENCES lich_hoc(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE so_lien_lac ADD COLUMN IF NOT EXISTS lich_hoc_nhom_id INTEGER REFERENCES lich_hoc_nhom(id) ON DELETE SET NULL`);
+
     const result = await pool.query(`
       SELECT s.*, hs_gv.ho_ten as ten_giao_vien, hs_gv.chuc_vu as chuc_vu_nguoi_gui
       FROM so_lien_lac s
@@ -4010,6 +4015,63 @@ router.get('/reports/student/:studentId', async (req, res) => {
       WHERE s.hoc_vien_id = $1
       ORDER BY s.ngay_tao DESC
     `, [studentId]);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/reports/unreviewed-sessions/:studentId: Lấy danh sách buổi học chưa được nhận xét của học viên
+router.get('/reports/unreviewed-sessions/:studentId', async (req, res) => {
+  const { studentId } = req.params;
+  if (!studentId || studentId === 'undefined' || studentId === 'null') {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin ID học viên' });
+  }
+  try {
+    const query = `
+      -- 1. Lịch học kèm (1-1) chưa nhận xét và đã hoặc đang diễn ra
+      SELECT 
+        '1-1'::text as type,
+        lh.id as session_id,
+        lh.ngay_hoc::text,
+        lh.gio_bat_dau::text,
+        lh.gio_ket_thuc::text,
+        'Học kèm 1-1'::text as class_name,
+        lh.giao_vien_id,
+        hs_gv.ho_ten as ten_giao_vien
+      FROM lich_hoc lh
+      LEFT JOIN ho_so hs_gv ON lh.giao_vien_id = hs_gv.id
+      WHERE lh.hoc_vien_id = $1 
+        AND lh.trang_thai != 'da_huy'
+        AND lh.ngay_hoc <= CURRENT_DATE
+        AND lh.id NOT IN (SELECT DISTINCT lich_hoc_id FROM so_lien_lac WHERE lich_hoc_id IS NOT NULL)
+
+      UNION ALL
+
+      -- 2. Lịch học nhóm chưa nhận xét và đã hoặc đang diễn ra
+      SELECT 
+        'nhom'::text as type,
+        lhn.id as session_id,
+        lhn.ngay_hoc::text,
+        lhn.gio_bat_dau::text,
+        lhn.gio_ket_thuc::text,
+        lh_lop.ten_lop::text as class_name,
+        lhn.giao_vien_id,
+        hs_gv.ho_ten as ten_giao_vien
+      FROM lich_hoc_nhom lhn
+      JOIN lop_hoc lh_lop ON lhn.lop_hoc_id = lh_lop.id
+      JOIN lop_hoc_hoc_vien lhhv ON lh_lop.id = lhhv.lop_hoc_id
+      LEFT JOIN ho_so hs_gv ON lhn.giao_vien_id = hs_gv.id
+      WHERE lhhv.hoc_vien_id = $1
+        AND lhn.trang_thai != 'da_huy'
+        AND lhn.ngay_hoc <= CURRENT_DATE
+        AND NOT EXISTS (
+          SELECT 1 FROM so_lien_lac sll 
+          WHERE sll.lich_hoc_nhom_id = lhn.id AND sll.hoc_vien_id = $1
+        )
+      ORDER BY ngay_hoc DESC;
+    `;
+    const result = await pool.query(query, [studentId]);
     res.json({ success: true, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -4028,11 +4090,31 @@ router.post('/reports', async (req, res) => {
     dan_do_giao_vien,
     nguoi_gui_id,
     vai_tro_gui,
-    loai_nhat_ky
+    loai_nhat_ky,
+    lich_hoc_id,
+    lich_hoc_nhom_id
   } = req.body;
 
   if (!hoc_vien_id) {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin học viên' });
+  }
+
+  // Xác thực ca học đã được nhận xét trước đó chưa
+  try {
+    if (lich_hoc_id) {
+      const checkDup = await pool.query("SELECT id FROM so_lien_lac WHERE lich_hoc_id = $1", [lich_hoc_id]);
+      if (checkDup.rows.length > 0) {
+        return res.status(400).json({ success: false, error: 'Buổi học kèm này đã được nhận xét trước đó rồi.' });
+      }
+    }
+    if (lich_hoc_nhom_id) {
+      const checkDup = await pool.query("SELECT id FROM so_lien_lac WHERE lich_hoc_nhom_id = $1 AND hoc_vien_id = $2", [lich_hoc_nhom_id, hoc_vien_id]);
+      if (checkDup.rows.length > 0) {
+        return res.status(400).json({ success: false, error: 'Học viên đã được nhận xét cho buổi học nhóm này rồi.' });
+      }
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Lỗi xác thực ca học: ' + err.message });
   }
 
   let verifiedGvId = giao_vien_id;
@@ -4068,10 +4150,14 @@ router.post('/reports', async (req, res) => {
       )
     `);
 
+    // Đảm bảo các cột cần thiết có sẵn
+    await pool.query(`ALTER TABLE so_lien_lac ADD COLUMN IF NOT EXISTS lich_hoc_id INTEGER REFERENCES lich_hoc(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE so_lien_lac ADD COLUMN IF NOT EXISTS lich_hoc_nhom_id INTEGER REFERENCES lich_hoc_nhom(id) ON DELETE SET NULL`);
+
     const result = await pool.query(
       `INSERT INTO so_lien_lac 
-        (hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc, dan_do_giao_vien, nguoi_gui_id, vai_tro_gui, loai_nhat_ky) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        (hoc_vien_id, giao_vien_id, noi_dung_bai_hoc, nhan_xet_buoi_hoc, bai_tap_ve_nha, so_phut_hoc, dan_do_giao_vien, nguoi_gui_id, vai_tro_gui, loai_nhat_ky, lich_hoc_id, lich_hoc_nhom_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         hoc_vien_id, 
         verifiedGvId, 
@@ -4082,9 +4168,19 @@ router.post('/reports', async (req, res) => {
         dan_do_giao_vien, 
         nguoi_gui_id || verifiedGvId, 
         vai_tro_gui || 'giao_vien', 
-        loai_nhat_ky || 'giao_vien_dan_do'
+        loai_nhat_ky || 'giao_vien_dan_do',
+        lich_hoc_id || null,
+        lich_hoc_nhom_id || null
       ]
     );
+
+    // Cập nhật trạng thái lịch học tương ứng thành 'da_hoc'
+    if (lich_hoc_id) {
+      await pool.query("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE id = $1", [lich_hoc_id]);
+    }
+    if (lich_hoc_nhom_id) {
+      await pool.query("UPDATE lich_hoc_nhom SET trang_thai = 'da_hoc' WHERE id = $1", [lich_hoc_nhom_id]);
+    }
 
     // Tạo thông báo cho học viên
     await createNotification(
