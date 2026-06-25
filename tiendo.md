@@ -1,3 +1,21 @@
+### [25/06/2026 09:20] — Thu gọn kích thước card gói học phí đại trà và gói học kèm
+- **Loại**: Chỉnh sửa giao diện (UI/UX)
+- **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**: Tinh chỉnh lại các class CSS Tailwind (giảm padding từ p-4/p-6 xuống p-3, giảm spacing từ space-y-2.5/space-y-4 xuống space-y-1.5, thu nhỏ kích thước chữ tiêu đề và giá tiền) để hiển thị card gói học nhỏ gọn và thanh thoát hơn. Đã xác thực biên dịch JavaScript thành công và không lỗi cú pháp.
+- **Kết quả**: Thành công
+
+### [25/06/2026 09:02] — Sửa lỗi mất padding card gói học (sửa p-4.5 thành p-5)
+- **Loại**: Sửa lỗi giao diện (UI/UX)
+- **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**: Thay thế class padding không tồn tại trong Tailwind (`p-4.5`) thành class hợp lệ (`p-5`) giúp card gói học hiển thị khoảng lề đệm cân xứng, viền bo tròn góc không bị tràn chữ ra ngoài.
+- **Kết quả**: Thành công
+
+### [25/06/2026 08:58] — Thu gọn kích thước card hiển thị gói học đại trà và gói học kèm
+- **Loại**: Chỉnh sửa giao diện (UI/UX)
+- **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**: Tiến hành tối ưu hóa giao diện hiển thị danh sách gói học phí. Giảm padding từ p-6 xuống p-4.5, đổi bo tròn góc từ rounded-3xl thành rounded-2xl, thu nhỏ cỡ chữ của tiêu đề gói học từ text-base xuống text-sm và mức giá từ text-xl xuống text-base để tổng thể card gói học gọn gàng, thanh thoát hơn theo phản hồi từ người dùng. Giữ nguyên 100% logic JavaScript xử lý CRUD.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 08:40] — Sửa lỗi xuất báo cáo chấm công tháng (CSV) bị lỗi quyền truy cập 403
 - **Loại**: Sửa bug
 - **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`

@@ -16,37 +16,37 @@ export async function renderTutoringPackages(container) {
 
     // Tạo HTML các cột so sánh ngang premium
     const comparisonsHtml = packages.map(p => `
-      <div class="bg-white rounded-3xl p-6 border border-apple-divider/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1">
-        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-[#10b981]"></div>
-        <div class="space-y-4">
+      <div class="bg-white rounded-xl p-3 border border-apple-divider/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-[#10b981]"></div>
+        <div class="space-y-1.5">
           <div class="flex justify-between items-start">
-            <h4 class="font-bold text-apple-ink text-base tracking-tight">${p.ten_goi}</h4>
-            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-600 uppercase">Học kèm</span>
+            <h4 class="font-bold text-apple-ink text-xs tracking-tight">${p.ten_goi}</h4>
+            <span class="px-1.5 py-0.5 rounded-full text-[8px] font-extrabold bg-emerald-50 text-emerald-600 uppercase">Học kèm</span>
           </div>
-          <p class="text-xs text-slate-500 leading-relaxed min-h-[48px]">${p.mo_ta || 'Chưa cập nhật mô tả.'}</p>
-          <div class="border-t border-slate-100 pt-3 flex justify-between">
+          <p class="text-[10px] text-slate-500 leading-normal min-h-[30px]">${p.mo_ta || 'Chưa cập nhật mô tả.'}</p>
+          <div class="border-t border-slate-100 pt-1.5 flex justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Số buổi</div>
-              <div class="text-sm font-extrabold text-apple-ink mt-0.5">${p.so_buoi} buổi</div>
+              <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Số buổi</div>
+              <div class="text-[11px] font-extrabold text-apple-ink mt-0.5">${p.so_buoi} buổi</div>
             </div>
             <div>
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Thời hạn</div>
-              <div class="text-sm font-extrabold text-apple-ink mt-0.5">${p.so_thang !== null && p.so_thang !== undefined ? p.so_thang + ' tháng' : 'Không giới hạn'}</div>
+              <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Thời hạn</div>
+              <div class="text-[11px] font-extrabold text-apple-ink mt-0.5">${p.so_thang !== null && p.so_thang !== undefined ? p.so_thang + ' tháng' : 'Không giới hạn'}</div>
             </div>
           </div>
         </div>
-        <div class="pt-6 mt-6 border-t border-slate-100 flex flex-col gap-4">
+        <div class="pt-2 mt-2 border-t border-slate-100 flex flex-col gap-2">
           <div class="flex flex-col">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Học phí trọn gói</span>
-            <span class="text-xl font-extrabold text-emerald-600 mt-0.5">${p.gia.toLocaleString('vi-VN')} VNĐ</span>
+            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Học phí trọn gói</span>
+            <span class="text-sm font-extrabold text-emerald-600 mt-0.5">${p.gia.toLocaleString('vi-VN')} VNĐ</span>
           </div>
           ${role === 'admin' || role === 'le_tan' ? `
-            <div class="flex gap-2">
-              <button class="btn-edit-tutor-pkg flex-1 py-1.5 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1" data-id="${p.id}">
-                <span class="material-symbols-outlined text-[14px]">edit</span>Sửa
+            <div class="flex gap-1.5">
+              <button class="btn-edit-tutor-pkg flex-1 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-[11px] transition active:scale-95 flex items-center justify-center gap-0.5" data-id="${p.id}">
+                <span class="material-symbols-outlined text-[13px]">edit</span>Sửa
               </button>
-              <button class="btn-delete-tutor-pkg py-1.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition active:scale-95 flex items-center justify-center" data-id="${p.id}">
-                <span class="material-symbols-outlined text-[14px]">delete</span>
+              <button class="btn-delete-tutor-pkg py-1 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-[11px] transition active:scale-95 flex items-center justify-center" data-id="${p.id}">
+                <span class="material-symbols-outlined text-[13px]">delete</span>
               </button>
             </div>
           ` : ''}
@@ -72,7 +72,7 @@ export async function renderTutoringPackages(container) {
         </div>
 
         <!-- Bảng so sánh ngang Gói học -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           ${comparisonsHtml}
           ${packages.length === 0 ? `
             <div class="col-span-full bg-white rounded-2xl border border-apple-divider p-12 text-center text-slate-400 text-xs">
