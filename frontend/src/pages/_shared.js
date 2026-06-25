@@ -144,10 +144,10 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
   let popover = containerEl.querySelector('.custom-date-picker-popover');
   if (!popover) {
     popover = document.createElement('div');
-    // Bỏ max-h và overflow để hiển thị trọn vẹn lịch biểu không cần cuộn
-    popover.className = 'custom-date-picker-popover hidden absolute left-0 mt-1 bg-white border border-[#e2e2e4] rounded-2xl shadow-xl z-[9999] p-4 animate-in fade-in slide-in-from-top-1 duration-150 text-xs w-[280px]';
+    // Chuyển sang fixed để bypass hoàn toàn overflow:hidden của container cha
+    popover.className = 'custom-date-picker-popover hidden fixed bg-white border border-[#e2e2e4] rounded-2xl shadow-xl z-[99999] p-4 animate-in fade-in slide-in-from-top-1 duration-150 text-xs w-[280px]';
     containerEl.classList.add('relative');
-    containerEl.appendChild(popover);
+    document.body.appendChild(popover); // Append thẳng vào body để z-index và overflow hoạt động tuyệt đối
   }
 
   let viewMode = 'day'; // 'day', 'month', 'year'
@@ -352,6 +352,29 @@ export function setupCustomDatePicker(pickerInput, containerEl, options = {}) {
       activeYear = selectedDate.getFullYear();
       activeMonth = selectedDate.getMonth();
       renderPicker();
+
+      // Định vị trí động (fixed positioning) dựa trên vị trí của nút bấm
+      const rect = dateBtn.getBoundingClientRect();
+      const popoverWidth = 280;
+      const popoverHeight = 310; // Chiều cao ước lượng của popover lịch
+      
+      let top = rect.bottom + window.scrollY;
+      let left = rect.left + window.scrollX;
+
+      // Nếu tràn mép dưới màn hình, hiển thị popover lên phía trên nút bấm
+      if (rect.bottom + popoverHeight > window.innerHeight) {
+        top = rect.top - popoverHeight - 4;
+      } else {
+        top = rect.bottom + 4;
+      }
+
+      // Đảm bảo không tràn mép phải màn hình
+      if (left + popoverWidth > window.innerWidth) {
+        left = window.innerWidth - popoverWidth - 12;
+      }
+
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
     }
   });
 

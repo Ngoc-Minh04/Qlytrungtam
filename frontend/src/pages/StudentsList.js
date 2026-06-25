@@ -195,7 +195,7 @@ export async function renderStudentsList(container, role) {
             </button>
           </div>
           <form id="add-student-modal-form" class="space-y-4 text-xs">
-            <div class="flex flex-col sm:flex-row gap-4 items-start">
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
               <!-- Avatar vuông góc trái trên cùng -->
               <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
                 <span class="block font-semibold text-slate-600 self-start sm:self-center">Ảnh đại diện</span>
@@ -207,20 +207,20 @@ export async function renderStudentsList(container, role) {
                 <button type="button" id="btn-trigger-avatar-upload" class="px-2.5 py-1 bg-white border border-[#e2e2e4] text-[10px] font-bold rounded-lg hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
               </div>
 
-              <!-- Cột thông tin cơ bản bên phải avatar -->
-              <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                <div class="md:col-span-2">
-                  <label class="block font-semibold text-slate-600 mb-1">Họ và tên học viên <span class="text-rose-500 font-bold">*</span></label>
+             <!-- Cột thông tin cơ bản bên phải avatar -->
+              <div class="flex-grow grid grid-cols-2 gap-3 w-full">
+                <div class="col-span-2">
+                  <label class="block font-semibold text-slate-600 mb-0.5">Họ và tên học viên <span class="text-rose-500 font-bold">*</span></label>
                   <input type="text" id="modal-add-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
                 </div>
                 <div>
-                  <label class="block font-semibold text-slate-600 mb-1">Ngày sinh</label>
+                  <label class="block font-semibold text-slate-600 mb-0.5">Ngày sinh</label>
                   <div id="modal-add-dob-container" class="relative">
                     <input type="date" id="modal-add-dob" max="${new Date().toISOString().split('T')[0]}">
                   </div>
                 </div>
                 <div>
-                  <label class="block font-semibold text-slate-600 mb-1">Giới tính <span class="text-rose-500 font-bold">*</span></label>
+                  <label class="block font-semibold text-slate-600 mb-0.5">Giới tính <span class="text-rose-500 font-bold">*</span></label>
                   <select id="modal-add-gender" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
@@ -230,24 +230,14 @@ export async function renderStudentsList(container, role) {
               </div>
             </div>
 
-            <!-- Các hàng thông tin khác phía dưới -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div class="md:col-span-2">
-                <label class="block font-semibold text-slate-600 mb-1">Họ tên phụ huynh</label>
-                <input type="text" id="modal-add-parentName" placeholder="Tên cha mẹ hoặc người giám hộ (không bắt buộc)..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+            <!-- Các hàng thông tin khác phía dưới dạng Grid 2 cột đều đặn -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-semibold text-slate-600 mb-0.5">Họ tên phụ huynh</label>
+                <input type="text" id="modal-add-parentName" placeholder="Họ tên phụ huynh (không bắt buộc)..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-add-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Địa chỉ Email</label>
-                <input type="email" id="modal-add-email" placeholder="parent@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com</p>
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Trình độ đầu vào <span class="text-rose-500 font-bold">*</span></label>
+                <label class="block font-semibold text-slate-600 mb-0.5">Trình độ đầu vào <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-add-entryLevel" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Cơ bản A1">A1 Beginner</option>
                   <option value="Cơ bản A2">A2 Elementary</option>
@@ -257,8 +247,18 @@ export async function renderStudentsList(container, role) {
                   <option value="Cao cấp C2">C2 Proficiency</option>
                 </select>
               </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-0.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-add-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <p class="text-[9px] text-slate-400 mt-0.5">Ví dụ: 0912345678</p>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-0.5">Địa chỉ Email</label>
+                <input type="email" id="modal-add-email" placeholder="parent@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-1.5 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <p class="text-[9px] text-slate-400 mt-0.5">Ví dụ: abc@gmail.com</p>
+              </div>
               <div class="hidden">
-                <label class="block font-semibold text-slate-600 mb-1">Chi nhánh tiếp nhận <span class="text-rose-500 font-bold">*</span></label>
+                <label class="block font-semibold text-slate-600 mb-0.5">Chi nhánh tiếp nhận <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-add-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Trung tam chính" selected>Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
@@ -266,26 +266,26 @@ export async function renderStudentsList(container, role) {
               </div>
 
               <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
-              <div class="md:col-span-2 space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+              <div class="col-span-2 space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/80">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="modal-add-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
                   <label for="modal-add-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
+                <div class="grid grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập</label>
-                    <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
+                    <label class="block font-semibold text-slate-500 mb-0.5">Tên đăng nhập</label>
+                    <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-1.5 outline-none bg-slate-100 cursor-not-allowed text-xs">
                   </div>
                   <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
-                    <input type="text" id="modal-add-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
+                    <label class="block font-semibold text-slate-500 mb-0.5">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-add-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-1.5 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
                   </div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
-              <button type="button" id="btn-cancel-add" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-xl bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">Lưu hồ sơ mới</button>
+            <div class="flex justify-end gap-2 pt-3 border-t border-[#f3f3f5]">
+              <button type="button" id="btn-cancel-add" class="px-5 py-2 rounded-full border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-6 py-2 rounded-full bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">Lưu hồ sơ mới</button>
             </div>
           </form>
         </div>

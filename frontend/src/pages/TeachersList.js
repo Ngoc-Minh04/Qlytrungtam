@@ -161,7 +161,7 @@ export async function renderTeachersList(container, role) {
             </button>
           </div>
           <form id="add-teacher-modal-form" class="space-y-4 text-xs">
-            <div class="flex flex-col sm:flex-row gap-4 items-start">
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
               <!-- Avatar vuông góc trái trên cùng -->
               <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
                 <span class="block font-semibold text-slate-500 self-start sm:self-center">Ảnh đại diện</span>
@@ -174,32 +174,32 @@ export async function renderTeachersList(container, role) {
               </div>
 
               <!-- Cột thông tin cơ bản bên phải avatar -->
-              <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <div class="sm:col-span-2 space-y-1.5">
-                  <label class="block font-semibold text-slate-500">Họ và tên giáo viên <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+              <div class="flex-grow grid grid-cols-2 gap-3 w-full">
+                <div>
+                  <label class="block font-semibold text-slate-500 mb-0.5">Họ và tên giáo viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
                 </div>
-                <div class="space-y-1.5">
-                  <label class="block font-semibold text-slate-500">Kinh nghiệm (năm) <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="number" id="modal-teacher-exp" min="0" value="1" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <div>
+                  <label class="block font-semibold text-slate-500 mb-0.5">Kinh nghiệm (năm) <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="number" id="modal-teacher-exp" min="0" value="1" class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
                 </div>
               </div>
             </div>
 
             <!-- Các hàng thông tin khác phía dưới -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1.5">
-                <label class="block font-semibold text-slate-500">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-teacher-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
-                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-semibold text-slate-500 mb-0.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-teacher-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[9px] text-slate-400 mt-0.5 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
-              <div class="space-y-1.5">
-                <label class="block font-semibold text-slate-500">Địa chỉ Email</label>
-                <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
-                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
+              <div>
+                <label class="block font-semibold text-slate-500 mb-0.5">Địa chỉ Email</label>
+                <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[9px] text-slate-400 mt-0.5 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
-              <div class="sm:col-span-2 hidden space-y-1.5">
-                <label class="block font-semibold text-slate-500">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+              <div class="hidden">
+                <label class="block font-semibold text-slate-500 mb-0.5">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-teacher-expertise" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Dạy tiếng Anh" selected>Dạy tiếng Anh</option>
                   <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
@@ -209,29 +209,30 @@ export async function renderTeachersList(container, role) {
               </div>
 
               <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
-              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50/55 rounded-[20px] border border-slate-100">
+              <div class="col-span-2 space-y-2 p-3 bg-slate-50/55 rounded-[20px] border border-slate-100">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="modal-teacher-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
                   <label for="modal-teacher-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
-                  <div class="space-y-1.5">
-                    <label class="block font-semibold text-slate-500">Tên đăng nhập</label>
-                    <input type="text" id="modal-teacher-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 cursor-not-allowed">
+                <div class="grid grid-cols-2 gap-3" id="modal-account-fields">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-0.5">Tên đăng nhập</label>
+                    <input type="text" id="modal-teacher-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none bg-slate-100 cursor-not-allowed">
                   </div>
-                  <div class="space-y-1.5">
-                    <label class="block font-semibold text-slate-500">Mật khẩu đăng nhập</label>
-                    <input type="text" id="modal-teacher-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-white">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-0.5">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-teacher-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-white">
                   </div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-slate-50">
-              <button type="button" id="btn-cancel-teacher-add" class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu giáo viên</button>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-50">
+              <button type="button" id="btn-cancel-teacher-add" class="px-5 py-2 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-6 py-2 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu giáo viên</button>
             </div>
           </form>
         </div>
+      </div>
     `;
 
     const tableBody = document.getElementById('teachers-table-body');

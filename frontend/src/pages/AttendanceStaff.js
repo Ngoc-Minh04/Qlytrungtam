@@ -691,7 +691,7 @@ export async function renderAttendanceStaff(container) {
             <tr class="hover:bg-slate-50 transition-colors">
               <td class="p-3 border-b border-r border-slate-100 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
                 <div class="font-bold text-slate-800">${person.ho_ten}</div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">${person.ma_ho_so} — ${person.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân viên'}</div>
+                <div class="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">${person.ma_ho_so} — ${person.chuc_vu || (person.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân viên')}</div>
               </td>
               ${daysHtml}
               <td class="p-3 border-b border-slate-100 text-center font-extrabold text-[#0071e3] bg-blue-50/20 whitespace-nowrap text-xs">

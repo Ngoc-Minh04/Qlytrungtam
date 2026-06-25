@@ -1,5 +1,5 @@
 // StaffList.js - Danh sách Nhân viên (Infinity Scroll, dùng chuc_vu thay vai_tro)
-import { API_BASE, showToast } from './_shared.js';
+import { API_BASE, showToast, formatCurrencyInput, parseCurrencyInput } from './_shared.js';
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -141,7 +141,7 @@ export async function renderStaffList(container, role) {
             </button>
           </div>
           <form id="add-staff-modal-form" class="space-y-4 text-xs">
-            <div class="flex flex-col sm:flex-row gap-4 items-start">
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
               <!-- Avatar vuông góc trái trên cùng -->
               <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
                 <span class="block font-semibold text-slate-500 self-start sm:self-center">Ảnh đại diện</span>
@@ -154,35 +154,35 @@ export async function renderStaffList(container, role) {
               </div>
 
               <!-- Cột thông tin cơ bản bên phải avatar -->
-              <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <div class="sm:col-span-2 space-y-1.5">
-                  <label class="block font-semibold text-slate-500">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+              <div class="flex-grow grid grid-cols-2 gap-3 w-full">
+                <div>
+                  <label class="block font-semibold text-slate-500 mb-0.5">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên..." class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-500 mb-0.5">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
+                  <select id="modal-staff-role" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+                    <option value="Nhân viên">Nhân viên</option>
+                    <option value="Quản lý">Quản lý</option>
+                  </select>
                 </div>
               </div>
             </div>
 
             <!-- Các hàng thông tin khác phía dưới -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1.5">
-                <label class="block font-semibold text-slate-500">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
-                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-semibold text-slate-500 mb-0.5">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[9px] text-slate-400 mt-0.5 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
-              <div class="space-y-1.5">
-                <label class="block font-semibold text-slate-500">Địa chỉ Email</label>
-                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
-                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
+              <div>
+                <label class="block font-semibold text-slate-500 mb-0.5">Địa chỉ Email</label>
+                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[9px] text-slate-400 mt-0.5 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
-              <div class="space-y-1.5">
-                <label class="block font-semibold text-slate-500">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-staff-role" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
-                  <option value="Nhân viên">Nhân viên</option>
-                  <option value="Quản lý">Quản lý</option>
-                </select>
-              </div>
-              <div class="hidden space-y-1.5">
-                <label class="block font-semibold text-slate-500">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
+              <div class="hidden">
+                <label class="block font-semibold text-slate-500 mb-0.5">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
                 <select id="modal-staff-branch" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Trung tam chính" selected>Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
@@ -190,29 +190,30 @@ export async function renderStaffList(container, role) {
               </div>
 
               <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
-              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50/55 rounded-[20px] border border-slate-100">
+              <div class="col-span-2 space-y-2 p-3 bg-slate-50/55 rounded-[20px] border border-slate-100">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="modal-staff-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
                   <label for="modal-staff-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
-                  <div class="space-y-1.5">
-                    <label class="block font-semibold text-slate-500">Tên đăng nhập </label>
-                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 cursor-not-allowed">
+                <div class="grid grid-cols-2 gap-3" id="modal-account-fields">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-0.5">Tên đăng nhập </label>
+                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-1.5 outline-none bg-slate-100 cursor-not-allowed">
                   </div>
-                  <div class="space-y-1.5">
-                    <label class="block font-semibold text-slate-500">Mật khẩu đăng nhập</label>
-                    <input type="text" id="modal-staff-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-white">
+                  <div>
+                    <label class="block font-semibold text-slate-500 mb-0.5">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-staff-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-1.5 outline-none focus:border-apple-blue transition bg-white">
                   </div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-slate-50">
-              <button type="button" id="btn-cancel-staff-add" class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu nhân viên</button>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-50">
+              <button type="button" id="btn-cancel-staff-add" class="px-5 py-2 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-6 py-2 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu nhân viên</button>
             </div>
           </form>
         </div>
+      </div>
     `;
 
     const tableBody = document.getElementById('staff-table-body');
@@ -545,14 +546,23 @@ function showStaffDetailModal(nv, container, role) {
           <h4 class="font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 text-slate-400">
             <span class="material-symbols-outlined text-[16px]">info</span> Thông tin chi tiết hồ sơ
           </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-3">
 
             <!-- Họ tên -->
-            <div class="sm:col-span-2 space-y-1">
+            <div class="space-y-1">
               <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
                 <span class="material-symbols-outlined text-[14px]">person</span> Họ và tên
               </label>
               <input type="text" id="s-edit-name" value="${nv.ho_ten || ''}" required
+                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
+            </div>
+
+            <!-- Cấu hình lương ngày công (Cải tiến 2) -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+                <span class="material-symbols-outlined text-[14px]">payments</span> Lương theo ngày công (đ/ngày công)
+              </label>
+              <input type="text" id="s-edit-wage-day" value="${nv.luong_cung_ngay !== undefined ? new Intl.NumberFormat('vi-VN').format(nv.luong_cung_ngay) : '300.000'}"
                 class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
             </div>
 
@@ -578,7 +588,7 @@ function showStaffDetailModal(nv, container, role) {
             </div>
 
             <!-- Email -->
-            <div class="space-y-1 sm:col-span-2">
+            <div class="space-y-1 col-span-2">
               <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
                 <span class="material-symbols-outlined text-[14px]">mail</span> Địa chỉ Email
               </label>
@@ -587,7 +597,7 @@ function showStaffDetailModal(nv, container, role) {
             </div>
 
             <!-- Chi nhánh -->
-            <div class="space-y-1 sm:col-span-2 hidden">
+            <div class="space-y-1 col-span-2 hidden">
               <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
                 <span class="material-symbols-outlined text-[14px]">location_on</span> Chi nhánh công tác
               </label>
@@ -596,15 +606,6 @@ function showStaffDetailModal(nv, container, role) {
                 <option value="Trung tam chính" selected>Trung tâm chính</option>
                 <option value="Downtown Campus">Downtown Campus</option>
               </select>
-            </div>
-
-            <!-- Cấu hình lương ngày công (Cải tiến 2) -->
-            <div class="space-y-1 sm:col-span-2">
-              <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
-                <span class="material-symbols-outlined text-[14px]">payments</span> Lương theo ngày công (đ/ngày công)
-              </label>
-              <input type="number" id="s-edit-wage-day" value="${nv.luong_cung_ngay !== undefined ? nv.luong_cung_ngay : 300000}" min="0" step="5000"
-                class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-apple-ink outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/10 transition bg-[#fafafa]">
             </div>
 
           </div>
@@ -721,6 +722,11 @@ function showStaffDetailModal(nv, container, role) {
     }
   });
 
+  // Tự động định dạng tiền tệ lương theo ngày công khi gõ
+  modal.querySelector('#s-edit-wage-day')?.addEventListener('input', (e) => {
+    e.target.value = formatCurrencyInput(e.target.value);
+  });
+
   // Submit form cập nhật
   modal.querySelector('#staff-edit-inplace-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -738,6 +744,8 @@ function showStaffDetailModal(nv, container, role) {
       return;
     }
 
+    const rawWage = modal.querySelector('#s-edit-wage-day').value;
+
     const payload = {
       ho_ten: nameVal,
       so_dien_thoai: phoneVal,
@@ -745,7 +753,7 @@ function showStaffDetailModal(nv, container, role) {
       chuc_vu: modal.querySelector('#s-edit-role').value,
       chi_nhanh: modal.querySelector('#s-edit-branch').value,
       avatar_url: base64AvatarData || nv.avatar_url,
-      luong_cung_ngay: parseFloat(modal.querySelector('#s-edit-wage-day').value) || 300000
+      luong_cung_ngay: parseCurrencyInput(rawWage)
     };
 
     try {

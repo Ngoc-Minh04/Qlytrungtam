@@ -1134,11 +1134,11 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
 
   try {
     // 1. Tổng tiền các gói đại trà (trừ tiền hoàn của các gói đã hủy)
-    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai != 'tam_dung' ${regDateCondition}`;
+    const khQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_khoa_hoc WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0) ${regDateCondition}`;
     const khRes = await pool.query(khQuery, params);
 
     // 2. Tổng tiền các gói kèm 1-1 (trừ tiền hoàn của các gói đã hủy)
-    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai != 'tam_dung' ${regDateCondition}`;
+    const hkQuery = `SELECT COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as total FROM dang_ky_hoc_kem WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0) ${regDateCondition}`;
     const hkRes = await pool.query(hkQuery, params);
 
     // 3. Biểu đồ doanh thu tích lũy hàng ngày trong kỳ filter tính toán real-time
@@ -1150,16 +1150,16 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
         SELECT ngay_tao::date as ngay, 
                COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as tien_khoa_hoc,
                COUNT(id) as don_khoa_hoc
-        FROM dang_ky_khoa_hoc
-        WHERE trang_thai != 'tam_dung'
+         FROM dang_ky_khoa_hoc
+        WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0)
         GROUP BY ngay_tao::date
       ),
       hk_daily AS (
         SELECT ngay_tao::date as ngay, 
                COALESCE(SUM(so_tien_da_thu - COALESCE(so_tien_hoan, 0)), 0) as tien_hoc_kem,
                COUNT(id) as don_hoc_kem
-        FROM dang_ky_hoc_kem
-        WHERE trang_thai != 'tam_dung'
+         FROM dang_ky_hoc_kem
+        WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0)
         GROUP BY ngay_tao::date
       )
       SELECT 
@@ -1192,7 +1192,7 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       SELECT n.ten_goi, COUNT(r.goi_id) as so_luong, SUM(r.so_tien_da_thu) as tong_doanh_thu
       FROM all_regs r
       JOIN all_names n ON r.goi_id = n.id AND r.loai_goi = n.loai_goi
-      WHERE r.trang_thai NOT IN ('tam_dung', 'huy') ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
+      WHERE r.trang_thai != 'tam_dung' AND NOT (r.trang_thai = 'huy' AND r.so_tien_da_thu = 0) ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
       GROUP BY n.ten_goi
       ORDER BY so_luong DESC
       LIMIT 3
@@ -1204,11 +1204,11 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       WITH combined_payments AS (
         SELECT COALESCE(phuong_thuc_tt, 'chuyen_khoan') as phuong_thuc, (so_tien_da_thu - COALESCE(so_tien_hoan, 0)) as thuc_thu
         FROM dang_ky_khoa_hoc
-        WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
+        WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0) AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
         UNION ALL
         SELECT COALESCE(phuong_thuc_tt, 'chuyen_khoan') as phuong_thuc, (so_tien_da_thu - COALESCE(so_tien_hoan, 0)) as thuc_thu
         FROM dang_ky_hoc_kem
-        WHERE trang_thai != 'tam_dung' AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
+        WHERE trang_thai != 'tam_dung' AND NOT (trang_thai = 'huy' AND so_tien_da_thu = 0) AND ngay_tao::date >= $1 AND ngay_tao::date <= $2
       )
       SELECT 
         COALESCE(SUM(CASE WHEN LOWER(TRIM(phuong_thuc)) IN ('tien_mat', 'cash', 'tiền mặt') THEN thuc_thu ELSE 0 END), 0) as tien_mat_total,
@@ -1224,13 +1224,13 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       FROM dang_ky_khoa_hoc d
       JOIN ho_so h ON d.ho_so_id = h.id
       JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-      WHERE d.trang_thai != 'tam_dung' AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
+      WHERE d.trang_thai != 'tam_dung' AND NOT (d.trang_thai = 'huy' AND d.so_tien_da_thu = 0) AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
       UNION ALL
       SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.so_tien_hoan, dk.trang_thai, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
       FROM dang_ky_hoc_kem dk
       JOIN ho_so h ON dk.hoc_vien_id = h.id
       JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-      WHERE dk.trang_thai != 'tam_dung' AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
+      WHERE dk.trang_thai != 'tam_dung' AND NOT (dk.trang_thai = 'huy' AND dk.so_tien_da_thu = 0) AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
       ORDER BY ngay_tao DESC
       LIMIT 30
     `;
@@ -1321,13 +1321,13 @@ router.get('/reports/revenue/export', async (req, res) => {
       FROM dang_ky_khoa_hoc d
       JOIN ho_so h ON d.ho_so_id = h.id
       JOIN goi_hoc_phi g ON d.goi_hoc_phi_id = g.id
-      WHERE d.trang_thai != 'tam_dung' AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
+      WHERE d.trang_thai != 'tam_dung' AND NOT (d.trang_thai = 'huy' AND d.so_tien_da_thu = 0) AND d.ngay_tao::date >= $1 AND d.ngay_tao::date <= $2
       UNION ALL
       SELECT dk.id, h.ho_ten, gk.ten_goi as ten_khoa_hoc, dk.so_tien_da_thu, dk.so_tien_hoan, dk.trang_thai, dk.phuong_thuc_tt, dk.ngay_tao, 'hoc_kem' as loai_goi
       FROM dang_ky_hoc_kem dk
       JOIN ho_so h ON dk.hoc_vien_id = h.id
       JOIN goi_hoc_kem gk ON dk.goi_hoc_kem_id = gk.id
-      WHERE dk.trang_thai != 'tam_dung' AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
+      WHERE dk.trang_thai != 'tam_dung' AND NOT (dk.trang_thai = 'huy' AND dk.so_tien_da_thu = 0) AND dk.ngay_tao::date >= $1 AND dk.ngay_tao::date <= $2
       ORDER BY ngay_tao DESC
     `;
     const paymentsRes = await pool.query(paymentsQuery, params);
@@ -5182,7 +5182,7 @@ router.get('/attendance/summary', async (req, res) => {
   try {
     // 1. Lấy danh sách tất cả nhân sự và giáo viên đang hoạt động
     const peopleRes = await pool.query(
-      "SELECT id, ma_ho_so, ho_ten, loai_ho_so FROM ho_so WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 ORDER BY loai_ho_so DESC, ho_ten ASC"
+      "SELECT id, ma_ho_so, ho_ten, loai_ho_so, chuc_vu FROM ho_so WHERE loai_ho_so IN ('giao_vien', 'nhan_vien') AND is_deleted = 0 ORDER BY loai_ho_so DESC, ho_ten ASC"
     );
     const people = peopleRes.rows;
 
@@ -5211,6 +5211,7 @@ router.get('/attendance/summary', async (req, res) => {
         ma_ho_so: person.ma_ho_so,
         ho_ten: person.ho_ten,
         loai_ho_so: person.loai_ho_so,
+        chuc_vu: person.chuc_vu,
         work_days: dates
       };
     });

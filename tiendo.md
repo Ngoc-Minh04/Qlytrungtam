@@ -1,3 +1,58 @@
+### [25/06/2026 16:24] — Loại bỏ giao dịch nháp chưa thanh toán khỏi báo cáo doanh thu (api.js)
+- **Loại**: Sửa lỗi logic (Bug Fix)
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Thay đổi các câu truy vấn SQL lấy báo cáo doanh thu (`/reports/revenue` và `/reports/revenue/export`) để loại trừ các bản ghi nháp có trạng thái là `'huy'` mà chưa đóng tiền (`so_tien_da_thu = 0`). Đồng thời vẫn giữ lại các giao dịch đã đóng tiền thành công nhưng sau đó bị hủy và hoàn tiền (`trang_thai = 'huy'` và `so_tien_da_thu > 0`) để phục vụ đối soát kế toán.
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:13] — Đồng bộ chức vụ thực tế của quản lý trên Bảng chấm công (AttendanceStaff.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**: Cập nhật nhãn thông tin dưới tên nhân sự tại Bảng chấm công từ tĩnh (`loai_ho_so`) sang động sử dụng `chuc_vu` từ cơ sở dữ liệu. Nhờ vậy, tài khoản quản lý Nguyễn Ngọc Minh (AD001) hiển thị đúng nhãn chức danh nội bộ là "Quản lý" thay vì nhãn mặc định "Nhân viên".
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:04] — Thêm định dạng tiền tệ có dấu chấm cho lương ngày công nhân viên (StaffList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StaffList.js`
+- **Mô tả**: Chuyển đổi ô nhập lương ngày công của nhân viên từ `type="number"` sang `type="text"`. Tích hợp helper `formatCurrencyInput` để tự động thêm dấu chấm ngăn cách hàng nghìn khi người dùng nhập số, và sử dụng `parseCurrencyInput` để giải mã ngược lại thành số thực khi gửi lên server.
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:03] — Đồng bộ grid 2 cột cân xứng cho modal Chi tiết nhân viên (StaffList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StaffList.js`
+- **Mô tả**: Thay đổi bố cục modal "Hồ sơ Nhân sự & Nhân viên" (`#staff-detail-modal`) sang Grid 2 cột đối xứng: Họ tên xếp song song với Lương ngày công, Chức vụ xếp song song với Số điện thoại, và Email hiển thị trọn dòng dưới. Loại bỏ sự không cân xứng khi các trường Họ tên, Lương ngày công bị kéo dài lẻ loi gây trống trải.
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:00] — Đồng bộ grid 2 cột cân xứng và items-center cho modal Thêm giáo viên mới (TeachersList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/TeachersList.js`
+- **Mô tả**: Thay đổi bố cục modal "Thêm giáo viên / Trợ giảng mới" (`#add-teacher-modal`) từ lệch dòng sang Grid 2 cột đều đặn: Họ tên & Kinh nghiệm đứng song song, SĐT & Email song song, Tên đăng nhập & Mật khẩu song song. Đồng thời đổi căn lề dọc container avatar sang `items-center` để tránh khoảng trống thừa và mang lại sự cân bằng, đối xứng hoàn hảo trong 1 khung hình.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:50] — Khắc phục khoảng trống lệch hàng dọc ở đầu modal Tiếp nhận & Thêm nhân viên (StaffList.js, StudentsList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StaffList.js`, `frontend/src/pages/StudentsList.js`
+- **Mô tả**: Thay đổi cơ chế căn lề các phần tử ở hàng đầu tiên (chứa ảnh đại diện bên trái và 2 trường input bên phải) từ căn đỉnh (`items-start`) sang căn giữa theo chiều dọc (`items-center`). Giúp loại bỏ khoảng trống thừa lệch mắt phía dưới các ô input khi tên học viên/nhân viên ngắn, mang lại sự cân bằng thị giác hoàn hảo.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:41] — Cân đối hoàn hảo Grid 2 cột đều đặn cho modal Giáo viên (TeachersList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/TeachersList.js`
+- **Mô tả**:
+  * Tái cấu trúc lại lưới thông tin giáo viên: Chuyển trường **Họ và tên** (trước đó chiếm trọn 2 cột) thành 1 cột và đặt song song với trường **Kinh nghiệm (năm)**.
+  * Sắp xếp các cặp trường tiếp theo đối xứng 2 bên: **Số điện thoại** & **Email**, **Lương ca nhóm** & **Lương ca kèm 1-1**.
+  * Loại bỏ hoàn toàn sự không cân đối (không còn trường nào 1 cột kéo dài hoặc bị lệch lẻ), giúp giao diện đạt sự đối xứng và cân bằng hoàn hảo trong một khung hình duy nhất.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:29] — Tối ưu layout grid modal Tiếp nhận học viên mới (StudentsList.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  * Tái thiết kế toàn bộ form đăng ký trong modal từ bố cục lộn xộn (dòng 1 cột, dòng 2 cột) sang dạng Grid 2 cột đều đặn và cân đối.
+  * Đặt song song các cặp trường: *Ngày sinh* & *Giới tính*, *Họ tên phụ huynh* & *Trình độ đầu vào*, *Số điện thoại* & *Email*, *Tên đăng nhập* & *Mật khẩu*.
+  * Tinh chỉnh lại padding, font-size và khoảng cách của form để vừa khít 1 khung hình duy nhất trên hầu hết các màn hình, không cần cuộn khi thao tác.
+  * Đồng bộ các nút "Hủy bỏ" và "Lưu hồ sơ mới" sang dạng `rounded-full`.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 15:20] — Tái cấu trúc phân tách rõ ràng danh mục Học viên & Nhân sự (TeachersList.js, StaffList.js, StudentsList.js)
 - **Loại**: Cải tiến cấu trúc & giao diện (UI/UX)
 - **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
