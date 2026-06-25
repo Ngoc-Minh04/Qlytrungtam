@@ -1,3 +1,44 @@
+### [25/06/2026 14:38] — Khắc phục triệt để lỗi Sidebar đè lên modal nhận xét (Stacking Context)
+- **Loại**: Sửa lỗi giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  * Tích hợp cơ chế di chuyển động phần tử DOM: Khi người dùng bấm nút "Viết nhận xét", Javascript sẽ tự động chuyển (`document.body.appendChild`) thẻ modal `#diary-modal` ra ngoài cùng thẻ `body` để phá vỡ giới hạn Stacking Context của container nội dung bên phải.
+  * Giúp lớp phủ mờ che phủ hoàn toàn 100% màn hình, kể cả phần logo và tiêu đề ở góc trên bên trái của Sidebar.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:37] — Tối ưu hóa z-index modal che hoàn toàn header sidebar
+- **Loại**: Sửa lỗi giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  * Tăng `z-index` của modal nhận xét từ `z-[9999]` lên `z-[99999]` để che mờ hoàn toàn logo và chữ Stellar Academy ở header của sidebar bên trái.
+  * Tăng độ đậm lớp phủ tối mờ lên `bg-slate-900/60` để mang lại trải nghiệm tương phản chiều sâu chất lượng cao.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:35] — Khắc phục lỗi hiển thị lớp phủ mờ (z-index) và validation mặc định của Modal nhận xét
+- **Loại**: Sửa lỗi giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  * Tăng độ ưu tiên hiển thị (`z-index`) của modal nhận xét (`#diary-modal`) lên `z-[9999]` để đảm bảo lớp nền phủ mờ che phủ hoàn toàn 100% màn hình (bao gồm cả thanh Sidebar bên trái).
+  * Thêm thuộc tính `novalidate` cho thẻ `<form id="create-diary-form">` để tắt hoàn toàn thông báo tooltip mặc định của trình duyệt, cho phép nhãn báo lỗi màu đỏ tự thiết kế và hiệu ứng rung lắc hoạt động hoàn hảo.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:33] — Cải tiến giao diện validation báo lỗi khi chưa chọn ca học (Sổ liên lạc)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  * Thiết kế lại cơ chế validation biểu mẫu viết nhận xét mới: Khi chưa chọn ca học mà nhấn nút Submit, Dropdown sẽ được highlight viền đỏ dày `border-red-500 ring-2 ring-red-100` đồng thời xuất hiện một nhãn báo lỗi màu đỏ kèm icon warning đẹp mắt ngay phía dưới.
+  * Tích hợp hiệu ứng rung lắc (CSS Shake Animation) tác động lên toàn bộ Modal viết nhận xét để cảnh báo lỗi trực quan và chuẩn giao diện cao cấp.
+  * Tự động ẩn nhãn báo lỗi và khôi phục viền ngay khi người dùng thực hiện chọn ca học.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:28] — Thêm thanh cuộn dọc tối đa (max-height) cho Yêu cầu đặt lịch học
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentRequests.js`
+- **Mô tả**:
+  * Tích hợp thanh cuộn dọc nội bộ (`max-h-[500px]`, `overflow-y-auto`) cho bảng danh sách "Tất cả yêu cầu đặt lịch học" tại mục Đặt lịch học của tab Yêu cầu.
+  * Cố định dòng tiêu đề bảng `thead` thành `sticky top-0 bg-white z-10` kèm lớp phủ mờ `backdrop-blur-sm` của iOS để giữ nguyên dòng tiêu đề cột khi người dùng thực hiện cuộn dữ liệu.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 14:27] — Loại bỏ tính năng phân trang vuốt ngang cho Hủy khóa học
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/StudentRequests.js`

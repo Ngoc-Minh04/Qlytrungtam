@@ -443,9 +443,9 @@ async function loadBookingTab(container) {
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden shadow-sm">
-          <div class="px-5 py-4 border-b border-[#f3f3f5] flex items-center justify-between flex-wrap gap-2">
+        <!-- Table (Scrollable Card) -->
+        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden shadow-sm flex flex-col max-h-[500px]">
+          <div class="px-5 py-4 border-b border-[#f3f3f5] flex items-center justify-between flex-wrap gap-2 shrink-0">
             <h3 class="font-bold text-apple-ink text-sm flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[18px]">calendar_add_on</span>
               Tất cả yêu cầu đặt lịch học
@@ -457,10 +457,10 @@ async function loadBookingTab(container) {
               <span class="text-[10px] text-slate-400 bg-[#f3f3f5] px-3 py-1.5 rounded-full font-bold">${bookings.length} yêu cầu</span>
             </div>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-y-auto flex-1 overflow-x-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr class="bg-[#f3f3f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-[#e2e2e4]">
+              <thead class="sticky top-0 bg-white z-10">
+                <tr class="bg-[#f3f3f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-[#e2e2e4] backdrop-blur-sm">
                   <th class="px-5 py-3">HỌC VIÊN</th>
                   <th class="px-5 py-3">GIÁO VIÊN</th>
                   <th class="px-5 py-3">NGÀY MONG MUỐN</th>

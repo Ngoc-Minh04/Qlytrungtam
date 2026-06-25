@@ -482,7 +482,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
       </div>
 
       <!-- Modal Viết nhận xét sổ liên lạc mới -->
-      <div id="diary-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+      <div id="diary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[99999] animate-fadeIn">
         <div class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
           <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
             <h3 class="font-bold text-slate-800 text-sm tracking-wide">Tạo Nhật ký & Sổ liên lạc mới</h3>
@@ -491,7 +491,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
             </button>
           </div>
           
-          <form id="create-diary-form" class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
+          <form id="create-diary-form" novalidate class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
                 <label class="font-semibold text-slate-500 block">Chọn học viên</label>
@@ -505,6 +505,9 @@ async function loadDiaryData(container, userRole, students, studentId) {
                 <select id="modal-select-session" required disabled class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-100 cursor-not-allowed">
                   <option value="">-- Chọn học viên trước --</option>
                 </select>
+                <p id="modal-select-session-error" class="text-[10px] text-red-500 font-bold mt-1 pl-2 hidden flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[12px] font-bold">warning</span> Vui lòng chọn ca học thực tế
+                </p>
               </div>
             </div>
 
@@ -547,6 +550,17 @@ async function loadDiaryData(container, userRole, students, studentId) {
           </form>
         </div>
       </div>
+      
+      <style>
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-6px); }
+          40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+          animation: shake 0.4s ease-in-out;
+        }
+      </style>
 
       <!-- Modal Chỉnh sửa nhận xét sổ liên lạc -->
       <div id="edit-diary-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
@@ -781,7 +795,10 @@ async function loadDiaryData(container, userRole, students, studentId) {
 
     const modal = document.getElementById('diary-modal');
     document.getElementById('btn-create-diary')?.addEventListener('click', () => {
-      modal.classList.remove('hidden');
+      if (modal) {
+        document.body.appendChild(modal); // Di chuyển modal ra body ngoài cùng
+        modal.classList.remove('hidden');
+      }
       // Kích hoạt load ca học nếu học viên đã được chọn sẵn
       const stdSelect = document.getElementById('modal-select-student');
       if (stdSelect && stdSelect.value) {
@@ -790,7 +807,9 @@ async function loadDiaryData(container, userRole, students, studentId) {
     });
 
     document.getElementById('close-diary-modal')?.addEventListener('click', () => {
-      modal.classList.add('hidden');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
     });
 
     // Hàm phụ trợ tính số phút học từ thời gian ca học
@@ -858,7 +877,11 @@ async function loadDiaryData(container, userRole, students, studentId) {
       const sessionSelect = document.getElementById('modal-select-session');
       
       if (sessionSelect) {
-        sessionSelect.classList.remove('border-red-500'); // Xóa viền đỏ khi người dùng đã chọn
+        sessionSelect.classList.remove('border-red-500', 'ring-2', 'ring-red-100'); // Xóa viền đỏ khi người dùng đã chọn
+        const errorText = document.getElementById('modal-select-session-error');
+        if (errorText) {
+          errorText.classList.add('hidden');
+        }
       }
 
       if (!val) {
@@ -913,10 +936,22 @@ async function loadDiaryData(container, userRole, students, studentId) {
         }
       } else {
         if (selectSession) {
-          selectSession.classList.add('border-red-500');
+          selectSession.classList.add('border-red-500', 'ring-2', 'ring-red-100');
           selectSession.focus();
         }
-        showToast('Vui lòng chọn ca học cần viết nhận xét!', 'error');
+        const errorText = document.getElementById('modal-select-session-error');
+        if (errorText) {
+          errorText.classList.remove('hidden');
+        }
+        
+        // Tạo hiệu ứng rung lắc cho modal
+        const modalDialog = document.querySelector('#diary-modal > div');
+        if (modalDialog) {
+          modalDialog.classList.add('animate-shake');
+          setTimeout(() => {
+            modalDialog.classList.remove('animate-shake');
+          }, 500);
+        }
         return;
       }
 
