@@ -1,3 +1,11 @@
+### [25/06/2026 10:41] — Thiết kế lại giao diện Báo cáo Doanh thu chuẩn Apple-style Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/RevenueReport.js`
+- **Mô tả**:
+  - **Metric Cards**: Thiết kế lại 3 card thông số (Tổng, Đại trà, Học kèm) thành giao diện bento với hiệu ứng gradient mờ nhẹ (glassmorphic), bổ sung các icon chuyên nghiệp tương ứng của hệ thống Apple.
+  - **Lịch sử giao dịch**: Định dạng lại phương thức thanh toán có icon trực quan (atm cho Chuyển khoản, hóa đơn cho Tiền mặt). Cải tiến dòng giao dịch bị hủy: gạch ngang tên/tiền, nền đỏ dịu (`bg-red-50/10`) để phân biệt trực quan và làm dịu mắt người dùng.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 10:37] — Tối ưu hóa UI Chatbot: Tự động ẩn nút FAB khi mở khung chat
 - **Loại**: Cải tiến trải nghiệm người dùng (UX/UI)
 - **File**: `frontend/src/pages/Chatbot.js`

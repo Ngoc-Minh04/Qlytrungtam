@@ -145,38 +145,45 @@ export async function renderRevenueReport(container) {
       const { khoa_hoc, hoc_kem, lich_su_doanh_thu, goi_pho_bien, giao_dich, phuong_thuc_stats } = result.data;
       const tongThu = parseFloat(khoa_hoc?.total || 0) + parseFloat(hoc_kem?.total || 0);
 
-      // 1. Render Metrics Card (Đảo vị trí Tổng cộng lên đầu góc trái)
+      // 1. Render Metrics Card (Giao diện Bento Glassmorphic Premium)
       metricsContainer.innerHTML = `
-        <div class="bg-white rounded-2xl p-5 border-l-4 border-apple-blue flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
-          <div class="flex justify-between items-start mb-2">
-            <div class="w-8 h-8 rounded-full bg-apple-pearl flex items-center justify-center text-apple-blue font-bold text-xs">∑</div>
-            <span class="text-[9px] text-apple-blue font-bold bg-blue-50 px-2 py-0.5 rounded-full">Tổng cộng</span>
+        <div class="relative overflow-hidden bg-gradient-to-br from-[#0066cc]/10 to-indigo-50/5 rounded-3xl p-6 border border-apple-blue/20 flex flex-col justify-between min-h-[140px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-apple-blue/5 blur-xl pointer-events-none"></div>
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-10 h-10 rounded-2xl bg-[#0066cc]/15 flex items-center justify-center text-apple-blue text-lg">
+              <span class="material-symbols-outlined text-[20px] font-bold">payments</span>
+            </div>
+            <span class="text-[9px] text-apple-blue font-extrabold bg-blue-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Tổng cộng</span>
           </div>
           <div>
-            <p class="text-slate-400 text-[9px] uppercase font-bold tracking-wider mb-0.5">Doanh thu</p>
-            <h3 class="text-xl font-extrabold text-apple-ink">${tongThu.toLocaleString('vi-VN')} VNĐ</h3>
+            <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Doanh thu thực tế</p>
+            <h3 class="text-2xl font-black text-apple-ink">${tongThu.toLocaleString('vi-VN')} <span class="text-xs font-semibold text-slate-500">VNĐ</span></h3>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
-          <div class="flex justify-between items-start mb-2">
-            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-apple-blue font-bold text-xs">KH</div>
-            <span class="text-[9px] text-apple-blue font-bold bg-blue-50 px-2 py-0.5 rounded-full">Đại trà</span>
+        <div class="relative overflow-hidden bg-white rounded-3xl p-6 border border-apple-divider/40 flex flex-col justify-between min-h-[140px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-pearl">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-apple-blue text-lg">
+              <span class="material-symbols-outlined text-[20px]">school</span>
+            </div>
+            <span class="text-[9px] text-apple-blue font-extrabold bg-blue-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Đại trà</span>
           </div>
           <div>
-            <p class="text-slate-400 text-[9px] uppercase font-bold tracking-wider mb-0.5">Khóa học đại trà</p>
-            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(khoa_hoc?.total || 0).toLocaleString('vi-VN')} VNĐ</h3>
+            <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Khóa học đại trà</p>
+            <h3 class="text-xl font-extrabold text-apple-ink">${parseFloat(khoa_hoc?.total || 0).toLocaleString('vi-VN')} <span class="text-xs font-semibold text-slate-500">VNĐ</span></h3>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-5 border border-apple-divider flex flex-col justify-between min-h-[120px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-parchment">
-          <div class="flex justify-between items-start mb-2">
-            <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-xs">1-1</div>
-            <span class="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">Học kèm</span>
+        <div class="relative overflow-hidden bg-white rounded-3xl p-6 border border-apple-divider/40 flex flex-col justify-between min-h-[140px] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-apple-pearl">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-lg">
+              <span class="material-symbols-outlined text-[20px]">person</span>
+            </div>
+            <span class="text-[9px] text-emerald-600 font-extrabold bg-emerald-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Kèm 1-1</span>
           </div>
           <div>
-            <p class="text-slate-400 text-[9px] uppercase font-bold tracking-wider mb-0.5">Dạy kèm 1-1</p>
-            <h3 class="text-lg font-bold text-apple-ink">${parseFloat(hoc_kem?.total || 0).toLocaleString('vi-VN')} VNĐ</h3>
+            <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Dạy kèm 1-1</p>
+            <h3 class="text-xl font-extrabold text-apple-ink">${parseFloat(hoc_kem?.total || 0).toLocaleString('vi-VN')} <span class="text-xs font-semibold text-slate-500">VNĐ</span></h3>
           </div>
         </div>
       `;
@@ -192,14 +199,14 @@ export async function renderRevenueReport(container) {
         </div>
       `).join('') + (goi_pho_bien.length === 0 ? '<p class="col-span-3 text-slate-400 italic py-2 text-center text-xs">Chưa có thống kê gói học.</p>' : '');
 
-      // Helper format phương thức thanh toán sang tiếng Việt chuẩn
+      // Helper format phương thức thanh toán sang badge/icon tiếng Việt chuẩn
       const formatMethod = (method) => {
-        if (!method) return 'Chuyển khoản';
+        if (!method) return '<div class="flex items-center gap-1.5 text-slate-600"><span class="material-symbols-outlined text-[15px] text-blue-500">account_balance</span>Chuyển khoản</div>';
         const m = method.toLowerCase().trim();
         if (m.includes('tien_mat') || m.includes('cash') || m.includes('tiền mặt')) {
-          return 'Tiền mặt';
+          return '<div class="flex items-center gap-1.5 text-slate-600"><span class="material-symbols-outlined text-[15px] text-emerald-500">payments</span>Tiền mặt</div>';
         }
-        return 'Chuyển khoản';
+        return '<div class="flex items-center gap-1.5 text-slate-600"><span class="material-symbols-outlined text-[15px] text-blue-500">account_balance</span>Chuyển khoản</div>';
       };
 
       // Helper format ngày giờ chi tiết
@@ -222,25 +229,29 @@ export async function renderRevenueReport(container) {
         const netAmt = parseFloat(g.so_tien_da_thu || 0) - parseFloat(g.so_tien_hoan || 0);
         
         const nameDisplay = isCancelled
-          ? `<span class="font-bold text-slate-500">${g.ho_ten}</span> <span class="ml-1.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-red-50 text-red-500 border border-red-200 inline-block align-middle">Đã hủy (Hoàn: ${parseFloat(g.so_tien_hoan || 0).toLocaleString('vi-VN')}đ)</span>`
-          : `<span class="font-bold text-apple-ink">${g.ho_ten}</span>`;
+          ? `<span class="font-semibold text-slate-400 line-through">${g.ho_ten}</span>`
+          : `<span class="font-semibold text-apple-ink">${g.ho_ten}</span>`;
 
         const amountDisplay = isCancelled
-          ? `<span class="font-bold text-red-500">${netAmt > 0 ? '+' : ''}${netAmt.toLocaleString('vi-VN')} đ</span>`
+          ? `<div class="text-right"><span class="font-bold text-red-500 line-through">${parseFloat(g.so_tien_da_thu).toLocaleString('vi-VN')} đ</span><div class="text-[8px] text-red-400 font-medium">Đã hoàn ${parseFloat(g.so_tien_hoan || 0).toLocaleString('vi-VN')}đ</div></div>`
           : `<span class="font-bold text-emerald-600">+${parseFloat(g.so_tien_da_thu).toLocaleString('vi-VN')} đ</span>`;
 
+        const statusBadge = isCancelled
+          ? `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-red-50 text-red-500 border border-red-200">Đã hủy</span>`
+          : `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-[#0066cc] border border-blue-200">Hoàn tất</span>`;
+
         const rowClass = isCancelled 
-          ? 'bg-slate-50/75 opacity-65 hover:opacity-100 hover:bg-slate-100/90 border-b border-apple-divider/40 transition-all text-xs duration-200' 
+          ? 'bg-red-50/10 opacity-70 hover:opacity-100 hover:bg-red-50/20 border-b border-apple-divider/40 transition-all text-xs duration-200' 
           : 'hover:bg-apple-parchment border-b border-apple-divider/40 transition text-xs';
 
         return `
           <tr class="${rowClass}">
-            <td class="py-3 px-4">${nameDisplay}</td>
-            <td class="py-3 px-4 text-slate-600">${g.ten_khoa_hoc}</td>
-            <td class="py-3 px-4">${typeBadge}</td>
-            <td class="py-3 px-4 font-medium text-slate-600">${formatMethod(g.phuong_thuc_tt)}</td>
-            <td class="py-3 px-4 text-slate-400">${formatDateTime(g.ngay_tao)}</td>
-            <td class="py-3 px-4 text-right">${amountDisplay}</td>
+            <td class="py-3.5 px-4">${nameDisplay}</td>
+            <td class="py-3.5 px-4 text-slate-600 font-medium">${g.ten_khoa_hoc}</td>
+            <td class="py-3.5 px-4">${typeBadge}</td>
+            <td class="py-3.5 px-4">${formatMethod(g.phuong_thuc_tt)}</td>
+            <td class="py-3.5 px-4 text-slate-400">${formatDateTime(g.ngay_tao)}</td>
+            <td class="py-3.5 px-4 text-right flex items-center justify-end h-[50px]">${amountDisplay}</td>
           </tr>
         `;
       }).join('') + (giao_dich.length === 0 ? '<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs">Không có dữ liệu giao dịch.</td></tr>' : '');
