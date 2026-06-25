@@ -22,17 +22,20 @@ export async function renderSalaryManagement(container) {
         
         <!-- Header & Action Row -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 class="font-bold text-apple-ink text-sm">Bảng lương nhân sự</h3>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm tracking-tight">Bảng tính lương & Phụ cấp</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Duyệt chi lương cứng, lương ca dạy, phụ cấp và cấu trừ hàng tháng</p>
+          </div>
           <div class="flex items-center gap-2">
             <!-- Dropdown lọc kỳ lương -->
-            <select id="salary-filter-month" class="border border-slate-200 rounded-full px-3 py-1.5 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue font-bold text-slate-700">
+            <select id="salary-filter-month" class="border border-slate-200 rounded-full px-3.5 py-1.5 text-xs bg-white outline-none cursor-pointer focus:border-[#0071e3] transition font-bold text-slate-700">
               ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `<option value="${m}" ${m === filterMonth ? 'selected' : ''}>Tháng ${m}</option>`).join('')}
             </select>
-            <select id="salary-filter-year" class="border border-slate-200 rounded-full px-3 py-1.5 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue font-bold text-slate-700">
+            <select id="salary-filter-year" class="border border-slate-200 rounded-full px-3.5 py-1.5 text-xs bg-white outline-none cursor-pointer focus:border-[#0071e3] transition font-bold text-slate-700">
               ${[2025, 2026, 2027].map(y => `<option value="${y}" ${y === filterYear ? 'selected' : ''}>Năm ${y}</option>`).join('')}
             </select>
             
-            <button id="btn-refresh-salary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-salary" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
           </div>
@@ -44,28 +47,28 @@ export async function renderSalaryManagement(container) {
         </div>
 
         <!-- Bảng chi tiết lương nhân sự -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50 shrink-0">
+        <div class="bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Bảng thanh toán lương chi tiết</h3>
-            <span class="text-[10px] bg-blue-50 text-apple-blue px-2.5 py-0.5 rounded-full font-bold">Thanh toán tự động</span>
+            <span class="text-[10px] bg-blue-50 text-[#0071e3] px-2.5 py-0.5 rounded-full font-bold">Thanh toán tự động</span>
           </div>
 
           <div class="overflow-x-auto max-h-[450px] overflow-y-auto w-full">
             <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
               <thead>
-                <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Nhân sự</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Công quét (ngày)</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Ca dạy (Nhóm/Kèm)</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Mức lương gốc</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Phụ cấp & Thưởng</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Khấu trừ / Tạm ứng</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Thực lĩnh</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Trạng thái</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold text-right">Hành động</th>
+                <tr class="border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Nhân sự</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Công quét (ngày)</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Ca dạy (Nhóm/Kèm)</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Mức lương gốc</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Phụ cấp & Thưởng</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Khấu trừ / Tạm ứng</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Thực lĩnh</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Trạng thái</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold text-right">Hành động</th>
                 </tr>
               </thead>
-              <tbody id="salary-table-body" class="divide-y divide-[#f3f3f5]">
+              <tbody id="salary-table-body" class="divide-y divide-slate-100">
                 <!-- Rendered by JS -->
               </tbody>
             </table>
@@ -74,26 +77,26 @@ export async function renderSalaryManagement(container) {
         </div>
 
         <!-- Modal xem chi tiết (Cải tiến 3) -->
-        <div id="salary-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
-          <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[80vh]">
-            <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50">
+        <div id="salary-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[999] hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[80vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div>
-                <h3 id="detail-modal-title" class="font-extrabold text-slate-800 text-sm">Chi tiết hoạt động trong tháng</h3>
-                <p id="detail-modal-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
+                <h3 id="detail-modal-title" class="font-extrabold text-slate-800 text-sm tracking-wide">Chi tiết hoạt động trong tháng</h3>
+                <p id="detail-modal-subtitle" class="text-[10px] text-slate-400 mt-0.5 font-semibold"></p>
               </div>
               <button id="close-salary-detail-modal" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors">
                 <span class="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
-            <div class="p-5 overflow-y-auto max-h-[50vh]">
+            <div class="p-6 overflow-y-auto max-h-[50vh]">
               <table class="w-full text-left border-collapse text-[11px]">
                 <thead>
-                  <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[9px] tracking-wider">
+                  <tr class="border-b border-slate-150 text-slate-400 uppercase text-[9px] tracking-wider">
                     <th id="modal-table-header-1" class="pb-2 font-semibold">Thời gian / Ngày học</th>
                     <th id="modal-table-header-2" class="pb-2 font-semibold">Thông tin chi tiết</th>
                   </tr>
                 </thead>
-                <tbody id="detail-modal-body" class="divide-y divide-[#f3f3f5]">
+                <tbody id="detail-modal-body" class="divide-y divide-slate-100">
                   <!-- Rendered dynamically -->
                 </tbody>
               </table>
@@ -172,13 +175,13 @@ export async function renderSalaryManagement(container) {
 
         kpiContainer.innerHTML = `
           <!-- Card 1 -->
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Tổng quỹ lương</span>
-                <span class="text-2xl font-extrabold text-[#1a1c1d] block mt-2 tracking-tight">${totalThucLinh.toLocaleString('vi-VN')}đ</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Tổng quỹ lương</span>
+                <span class="text-2xl font-extrabold text-slate-800 block mt-2 tracking-tight">${totalThucLinh.toLocaleString('vi-VN')}đ</span>
               </div>
-              <div class="p-2.5 bg-blue-50 text-apple-blue rounded-xl">
+              <div class="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">payments</span>
               </div>
             </div>
@@ -186,10 +189,10 @@ export async function renderSalaryManagement(container) {
           </div>
 
           <!-- Card 2 -->
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Đã thanh toán</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Đã thanh toán</span>
                 <span class="text-2xl font-extrabold text-emerald-600 block mt-2 tracking-tight">${totalPaid.toLocaleString('vi-VN')}đ</span>
               </div>
               <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
@@ -200,10 +203,10 @@ export async function renderSalaryManagement(container) {
           </div>
 
           <!-- Card 3 -->
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Chưa thanh toán</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Chưa thanh toán</span>
                 <span class="text-2xl font-extrabold text-amber-600 block mt-2 tracking-tight">${totalUnpaid.toLocaleString('vi-VN')}đ</span>
               </div>
               <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
@@ -214,13 +217,13 @@ export async function renderSalaryManagement(container) {
           </div>
 
           <!-- Card 4 -->
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Ca dạy giáo viên</span>
-                <span class="text-2xl font-extrabold text-apple-blue block mt-2 tracking-tight">${totalSessions} ca</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Ca dạy giáo viên</span>
+                <span class="text-2xl font-extrabold text-[#0071e3] block mt-2 tracking-tight">${totalSessions} ca</span>
               </div>
-              <div class="p-2.5 bg-blue-50 text-apple-blue rounded-xl">
+              <div class="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">school</span>
               </div>
             </div>
@@ -239,48 +242,48 @@ export async function renderSalaryManagement(container) {
         tableBody.innerHTML = chunk.map((r, index) => {
           const isPaid = r.trang_thai === 'da_thanh_toan';
           const isTeacher = r.loai_ho_so === 'giao_vien';
-
+ 
           // Lương cơ bản / Lương ca
           let detailLuongText = '';
           if (isTeacher) {
             detailLuongText = `
               <div class="font-semibold text-slate-700 text-[11px]">Nhóm: ${r.don_gia_ca_nhom ? r.don_gia_ca_nhom.toLocaleString('vi-VN') : '150.000'}đ/ca</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Kèm: ${r.don_gia_ca_kem ? r.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ/ca</div>
+              <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Kèm: ${r.don_gia_ca_kem ? r.don_gia_ca_kem.toLocaleString('vi-VN') : '200.000'}đ/ca</div>
             `;
           } else {
             detailLuongText = `
               <div class="font-semibold text-slate-700 text-[11px]">${r.luong_cung_ngay ? r.luong_cung_ngay.toLocaleString('vi-VN') : '300.000'}đ/ngày</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Tính theo công quét thẻ</div>
+              <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Tính theo công quét thẻ</div>
             `;
           }
-
+ 
           const statusClass = isPaid
-            ? 'bg-emerald-100 text-emerald-800'
-            : 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-250/30'
+            : 'bg-amber-50 text-amber-700 border border-amber-250/30';
           const statusLabel = isPaid
             ? 'Đã thanh toán'
             : 'Chưa thanh toán';
-
+ 
           // Cấu hình ô nhập liệu Phụ cấp & Khấu trừ (Cải tiến 1)
           const phuCapInput = isPaid
-            ? `<span class="font-bold text-slate-600">${r.phu_cap.toLocaleString('vi-VN')}đ</span>`
-            : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
-                 <input type="text" class="input-phu-cap w-full outline-none text-slate-700 text-center font-bold text-[11px]" data-idx="${index}" value="${r.phu_cap.toLocaleString('vi-VN')}">
+            ? `<span class="font-bold text-slate-600 text-xs">${r.phu_cap.toLocaleString('vi-VN')}đ</span>`
+            : `<div class="flex items-center border border-slate-200 hover:border-slate-350 focus-within:border-[#0071e3] focus-within:ring-2 focus-within:ring-blue-100 rounded-full px-3 py-1 bg-white max-w-[120px] transition-all">
+                 <input type="text" class="input-phu-cap w-full outline-none text-slate-700 text-center font-bold text-[11px] bg-transparent" data-idx="${index}" value="${r.phu_cap.toLocaleString('vi-VN')}">
                  <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
                </div>`;
-
+ 
           const khauTruInput = isPaid
-            ? `<span class="font-bold text-red-600">${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}đ</span>`
-            : `<div class="flex items-center border border-slate-200 hover:border-slate-300 rounded-lg px-2 py-1 bg-white max-w-[110px]">
-                 <input type="text" class="input-khau-tru w-full outline-none text-slate-700 text-center font-bold text-[11px] text-red-600" data-idx="${index}" value="${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}">
+            ? `<span class="font-bold text-red-600 text-xs">${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}đ</span>`
+            : `<div class="flex items-center border border-slate-200 hover:border-slate-350 focus-within:border-[#0071e3] focus-within:ring-2 focus-within:ring-blue-100 rounded-full px-3 py-1 bg-white max-w-[120px] transition-all">
+                 <input type="text" class="input-khau-tru w-full outline-none text-slate-700 text-center font-bold text-[11px] text-red-600 bg-transparent" data-idx="${index}" value="${r.khau_tru ? r.khau_tru.toLocaleString('vi-VN') : '0'}">
                  <span class="text-[10px] text-slate-400 font-semibold ml-0.5">đ</span>
                </div>`;
-
+ 
           return `
             <tr class="hover:bg-slate-50/50 transition-colors">
-              <td class="py-3 px-5">
+              <td class="py-3.5 px-5">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
+                  <div class="w-8 h-8 rounded-full bg-[#0071e3]/10 flex items-center justify-center font-bold text-[#0071e3] text-xs select-none">
                     ${r.ho_ten.charAt(0)}
                   </div>
                   <div>
@@ -289,35 +292,35 @@ export async function renderSalaryManagement(container) {
                   </div>
                 </div>
               </td>
-              <td class="py-3 px-5">
-                <button type="button" class="btn-view-work-days text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
+              <td class="py-3.5 px-5">
+                <button type="button" class="btn-view-work-days text-[#0071e3] hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
                   ${r.work_days} ngày công
                 </button>
               </td>
-              <td class="py-3 px-5">
+              <td class="py-3.5 px-5">
                 ${isTeacher
-              ? `<button type="button" class="btn-view-sessions text-apple-blue hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
+              ? `<button type="button" class="btn-view-sessions text-[#0071e3] hover:underline font-bold text-[11.5px] text-left cursor-pointer" data-idx="${index}">
                        ${r.group_sessions + r.tutor_sessions} ca dạy
                      </button>
-                     <div class="text-[9px] text-slate-400 mt-0.5">(${r.group_sessions} nhóm / ${r.tutor_sessions} kèm)</div>`
+                     <div class="text-[9px] text-slate-400 mt-0.5 font-medium">(${r.group_sessions} nhóm / ${r.tutor_sessions} kèm)</div>`
               : '<span class="text-slate-400 font-medium">—</span>'}
               </td>
-              <td class="py-3 px-5">${detailLuongText}</td>
-              <td class="py-3 px-5">${phuCapInput}</td>
-              <td class="py-3 px-5">${khauTruInput}</td>
-              <td class="py-3 px-5 font-extrabold text-[#0066cc] text-[13px]">
+              <td class="py-3.5 px-5">${detailLuongText}</td>
+              <td class="py-3.5 px-5">${phuCapInput}</td>
+              <td class="py-3.5 px-5">${khauTruInput}</td>
+              <td class="py-3.5 px-5 font-extrabold text-[#0071e3] text-[13px]">
                 <span class="row-thuc-linh" id="thuc-linh-${index}">${r.thuc_linh.toLocaleString('vi-VN')}</span>đ
               </td>
-              <td class="py-3 px-5">
+              <td class="py-3.5 px-5">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusClass}">
                   ${statusLabel}
                 </span>
                 ${r.ngay_thanh_toan ? `<div class="text-[9px] text-slate-400 mt-1 font-semibold">${new Date(r.ngay_thanh_toan).toLocaleDateString('vi-VN')}</div>` : ''}
               </td>
-              <td class="py-3 px-5 text-right">
+              <td class="py-3.5 px-5 text-right">
                 ${isPaid
               ? `<span class="text-slate-400 font-bold text-[11px]">Đã duyệt chi</span>`
-              : `<button type="button" class="btn-pay-salary px-3 py-1 bg-apple-blue text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
+              : `<button type="button" class="btn-pay-salary px-3.5 py-1.5 bg-[#0071e3] text-white text-[10.5px] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all shadow-sm" data-idx="${index}">Thanh toán</button>`}
               </td>
             </tr>
           `;

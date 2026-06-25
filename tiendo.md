@@ -1,3 +1,68 @@
+### [25/06/2026 11:15] — Nâng cấp đồng bộ giao diện Chấm công & Tính lương phụ cấp chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/AttendanceStaff.js`, `frontend/src/pages/SalaryManagement.js`
+- **Mô tả**:
+  - **iOS Segmented Control**: Chuyển đổi tab chấm công sang kiểu trượt phân khúc chuẩn iOS với nền mờ.
+  - **KPI Bento Cards & Grid**: Tinh chỉnh 4 thẻ KPI chấm công và 4 thẻ quỹ lương sang phong cách kính mờ bo tròn mềm mại.
+  - **Bảng dữ liệu lượt quét & tính lương**: Định dạng lại bảng với viền siêu mỏng `border-slate-100`, tag trạng thái màu dịu (Emerald/Amber), và các input phụ cấp/khấu trừ bo tròn mềm mịn, đổi màu viền khi focus.
+  - **Modal**: Đồng bộ hóa góc bo modal `rounded-[28px]` với lớp backdrop-blur-md chất lượng cao.
+- **Kết quả**: Thành công
+
+### [25/06/2026 11:06] — Nâng cấp đồng bộ giao diện Học viên, Giáo viên & Nhân viên chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
+- **Mô tả**:
+  - **iOS Segmented Control**: Nâng cấp thanh điều hướng 3 nút phụ sang phong cách trượt phân khúc của iOS với viền mờ tinh xảo và bóng đổ nhẹ ở nút được chọn.
+  - **Bảng dữ liệu & Avatar**: Loại bỏ các nét viền bảng thô ráp, đổi màu nền tiêu đề bảng và thiết kế avatar nhân sự sang gradient/pastel nhẹ tạo cảm giác vô cùng sạch sẽ.
+  - **Bộ lọc & Nút bấm**: Cải tiến dropdown select và ô tìm kiếm sang kiểu bo tròn hoàn toàn (rounded-full) với tông nền nhẹ của iOS. Nút "Hủy khóa" và "Xóa" được thay thế bằng pill-buttons màu đỏ hồng pastel dịu mắt.
+  - **Modal**: Đồng bộ thiết kế modal tạo mới với góc bo tròn rộng `rounded-[28px]`, hiệu ứng bóng đổ sâu và backdrop blur mượt mà.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:59] — Nâng cấp giao diện Lớp học & Xếp lịch chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  - **Form bên trái**: Đổi màu nền từ xám thô sang trắng ngọc phối hợp viền mỏng tinh khiết, bo góc tròn rộng. Các ô input, select chuyển sang phong cách iOS (`bg-slate-50/50`).
+  - **Lưới chọn giờ (Time grid)**: Làm lại các ô nút chọn giờ với viền mỏng mượt mà, các nút active đổi thành gradient xanh dương mượt, bỏ đi viền đen thô cũ.
+  - **Danh sách học sinh & badges**: Làm lại danh sách chọn học viên và các pill-badge học sinh đã chọn thành các viên thuốc bo tròn cao cấp với hiệu ứng đổ bóng nhẹ.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:55] — Nâng cấp giao diện Quản lý gói học đại trà & gói học kèm 1-1 chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/CoursePackages.js`, `frontend/src/pages/TutoringPackages.js`
+- **Mô tả**:
+  - **Thẻ gói học**: Thiết kế lại với bo góc `rounded-2xl`, bổ sung bóng đổ mịn mượt và viền mờ cao cấp (`border-slate-100`). Thêm đường viền chỉ thị gradient khẽ phía trên đầu (màu xanh dương cho đại trà, xanh ngọc cho học kèm).
+  - **Học phí & thông tin**: Chữ số học phí to đậm nổi bật, các thông tin phụ như số buổi/thời hạn được phân cấp trực quan hơn.
+  - **Nút bấm & Modal**: Thay đổi toàn bộ các nút sửa/xóa và nút trong modal sang dạng bo tròn hoàn chỉnh (rounded-full), thiết kế hộp thoại (modal) có góc bo rộng `rounded-[28px]` với lớp phủ backdrop blur đẳng cấp.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:53] — Nâng cấp giao diện Lượt vào ra (CheckinLogs) chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/CheckinLogs.js`
+- **Mô tả**:
+  - **Khung nhật ký & nút bấm**: Chuyển đổi khung xám thô cũ sang nền trắng thanh lịch phối hợp viền mờ siêu mỏng, bo góc rộng, nút bấm gradient Apple-style.
+  - **Thẻ nhật ký quét (Log Cards)**: Thiết kế lại với bóng đổ mịn màng, loại bỏ vạch màu thô, tích hợp đèn tín hiệu (Status Pulse Indicator) nhấp nháy phát sáng (xanh lá cho CHECK-IN, đỏ hồng cho CHECK-OUT).
+  - **Modal Quét QR**: Nâng cấp hiệu ứng bo góc cực rộng `rounded-[28px]` chuẩn Apple, cải tiến khung Camera quét QR và các ô nhập thủ công sang phong cách hiện đại.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:51] — Nâng cấp giao diện Thời khóa biểu (Schedules) chuẩn Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/Schedules.js`
+- **Mô tả**:
+  - **Lưới lịch tuần**: Làm mềm dịu các đường viền ngăn cách (đổi từ `border-apple-divider/40` sang `border-slate-100/70`), tạo cảm giác thoáng đãng và thanh lịch.
+  - **Thẻ lớp học**: Thiết kế lại với bo góc `rounded-lg`, tăng độ tương phản nhẹ và thêm viền trái nổi bật (`border-l-[3.5px]`) tương ứng với từng trạng thái học (xanh lá cho Đã học, đỏ hồng cho Vắng, vàng hổ phách cho Chờ học).
+  - **Bảng ca học chi tiết**: Định dạng cột trạng thái thành các huy hiệu (badge) bo tròn thời thượng kèm dấu chấm tròn trạng thái tinh tế.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:45] — Nâng cấp giao diện trang Tổng quan chuẩn Bento Grid Apple Premium
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/Overview.js`
+- **Mô tả**:
+  - **Bento Row 1**: Bo tròn góc rộng (`rounded-3xl`), nâng kích thước padding và icon, thêm đổ bóng mềm mượt (`shadow-sm`) và hiệu ứng hover phóng to nhẹ có chiều sâu.
+  - **Card Doanh thu lớn**: Thiết kế lại theo phong cách Dark Luxury hiện đại (tông màu đen mờ sâu `from-[#1c1d21] to-[#343538]`), nâng cấp thiết kế các thẻ thông số doanh thu bên trong.
+  - **Rating & Yêu cầu học viên**: Tái thiết kế các thành phần con với đường viền mờ ảo, màu sắc dịu nhẹ, chuyên nghiệp như widget hệ điều hành iOS.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 10:41] — Thiết kế lại giao diện Báo cáo Doanh thu chuẩn Apple-style Premium
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/RevenueReport.js`

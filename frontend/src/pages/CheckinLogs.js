@@ -25,25 +25,37 @@ export async function renderCheckinLogs(container) {
 
     function renderLogCards(pageLogs) {
       if (pageLogs.length === 0) {
-        return '<p class="col-span-2 text-slate-500 text-xs text-center py-12">Chưa có lượt quét nào.</p>';
+        return '<p class="col-span-2 text-slate-400 text-xs text-center py-16 font-medium">Chưa có lượt quét nào trong ngày hôm nay.</p>';
       }
       return pageLogs.map(log => {
         const isValid = log.loai === 'vao';
+        const indicatorColor = isValid ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse';
         return `
-          <div class="bg-white rounded-2xl p-4 flex items-center border border-apple-divider/40 shadow-sm relative overflow-hidden transition hover:bg-apple-parchment">
-            ${!isValid ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>' : '<div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>'}
-            <div class="w-10 h-10 rounded-full bg-apple-parchment flex items-center justify-center font-bold text-apple-blue mr-4 select-none">
+          <div class="bg-white rounded-2xl p-4 flex items-center border border-slate-100/80 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.01] hover:bg-slate-50/40">
+            <!-- Glowing status indicator dot -->
+            <div class="absolute right-4 top-4 w-2 h-2 rounded-full ${indicatorColor}"></div>
+            
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200/50 flex items-center justify-center font-bold text-slate-700 mr-4 select-none border border-slate-200/40">
               ${log.ho_ten.charAt(0)}
             </div>
-            <div class="flex-1 text-xs">
-              <h4 class="font-bold text-apple-ink text-sm">${log.ho_ten}</h4>
-              <p class="text-slate-400 mt-0.5">Mã: ${log.ma_ho_so} • ${log.chi_nhanh_thuc_hien || 'Trung tâm'}</p>
+            
+            <div class="flex-1 min-w-0 pr-6">
+              <h4 class="font-bold text-slate-800 text-sm truncate">${log.ho_ten}</h4>
+              <p class="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5 truncate">
+                <span>Mã: ${log.ma_ho_so}</span>
+                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span>${log.chi_nhanh_thuc_hien || 'Trung tâm'}</span>
+              </p>
             </div>
-            <div class="text-right text-[10px]">
-              <p class="text-slate-400 mb-1">${new Date(log.thoi_diem).toLocaleTimeString()}</p>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold tracking-wider ${isValid ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-          }">
-                ${isValid ? 'CHECK-IN HỢP LỆ' : 'CHECK-OUT'}
+            
+            <div class="text-right text-[10px] shrink-0">
+              <p class="text-slate-400 font-bold mb-1.5 tracking-tight">${new Date(log.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider ${
+                isValid 
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                  : 'bg-rose-50 text-rose-700 border border-rose-100'
+              }">
+                ${isValid ? 'CHECK-IN' : 'CHECK-OUT'}
               </span>
             </div>
           </div>
@@ -53,17 +65,20 @@ export async function renderCheckinLogs(container) {
 
     container.innerHTML = `
       <div class="space-y-4">
-        <div class="bg-apple-parchment rounded-2xl p-6 border border-apple-divider shadow-sm space-y-4 min-h-[400px]">
-          <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40 flex-wrap gap-2">
-            <h3 class="font-bold text-apple-ink text-sm">Nhật ký check-in gần đây</h3>
+        <div class="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm space-y-5 min-h-[400px]">
+          <div class="flex justify-between items-center pb-3.5 border-b border-slate-100 flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-slate-800 text-sm tracking-wide">Nhật ký check-in gần đây</h3>
+              <span class="px-2 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded-full text-[9px]">${logs.length} lượt</span>
+            </div>
             <div class="flex items-center gap-2">
-              <button id="btn-logs-scan-qr" class="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-apple-blue to-[#007eff] hover:shadow-md text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[30px]">
+              <button id="btn-logs-scan-qr" class="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-apple-blue to-[#007eff] hover:shadow-md text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
                 <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>Quét QR Check-in
               </button>
-              <button id="btn-refresh-checkin" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[30px]">
+              <button id="btn-refresh-checkin" class="flex items-center justify-center gap-1.5 px-3.5 py-1.5 border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
                 <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
               </button>
-              <span class="text-[10px] text-slate-400 bg-white px-3 py-1.5 rounded-full font-bold">Hôm nay</span>
+              <span class="text-[9px] text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full font-bold">Hôm nay</span>
             </div>
           </div>
           <div id="checkin-log-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
@@ -73,10 +88,10 @@ export async function renderCheckinLogs(container) {
       </div>
 
       <!-- Modal quét QR Check-in -->
-      <div id="logs-scan-modal" class="fixed inset-0 bg-black/45 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl overflow-hidden" style="animation: modalIn 0.2s ease">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-[#f3f3f5]">
-            <h3 class="text-sm font-bold text-[#1a1c1d] flex items-center gap-2">
+      <div id="logs-scan-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden animate-fadeIn">
+        <div class="bg-white rounded-[28px] max-w-md w-full border border-slate-100 shadow-2xl overflow-hidden" style="animation: modalIn 0.2s ease">
+          <div class="flex items-center justify-between px-6 py-4.5 border-b border-slate-50">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[20px]">qr_code_scanner</span>
               Quét mã QR học viên
             </h3>
@@ -86,13 +101,13 @@ export async function renderCheckinLogs(container) {
           </div>
           <div class="p-6 space-y-4 text-xs">
             <!-- Camera Scanner Area -->
-            <div id="logs-reader" class="w-full aspect-square bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden relative">
+            <div id="logs-reader" class="w-full aspect-square bg-slate-50 border border-slate-150 rounded-[20px] overflow-hidden relative shadow-inner">
               <!-- Camera preview will render here -->
             </div>
             
             <!-- File upload fallback -->
             <div class="flex justify-center">
-              <button id="btn-logs-upload-qr" class="flex items-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition active:scale-95">
+              <button id="btn-logs-upload-qr" class="flex items-center gap-1.5 px-4.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-full transition active:scale-95 shadow-sm">
                 <span class="material-symbols-outlined text-[16px]">file_upload</span>
                 Chọn ảnh QR từ máy
               </button>
@@ -100,13 +115,13 @@ export async function renderCheckinLogs(container) {
             </div>
 
             <!-- Manual input fallback -->
-            <form id="logs-scan-form" class="space-y-3 pt-2 border-t border-[#f3f3f5]">
-              <div class="space-y-1">
-                <label class="block font-semibold text-slate-600">Hoặc nhập mã học viên thủ công</label>
+            <form id="logs-scan-form" class="space-y-3 pt-4 border-t border-slate-100">
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Hoặc nhập mã học viên thủ công</label>
                 <div class="flex gap-2">
                   <input type="text" id="logs-scan-input" placeholder="Ví dụ: HV034" required
-                    class="flex-1 border border-[#e2e2e4] rounded-xl px-3 py-2 outline-none focus:border-apple-blue transition bg-[#fafafa]">
-                  <button type="submit" class="px-4 py-2 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition active:scale-95">
+                    class="flex-1 border border-slate-200 rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-slate-50/50 text-xs">
+                  <button type="submit" class="px-5 py-2 bg-slate-800 text-white font-semibold rounded-full hover:bg-slate-900 transition active:scale-95 text-xs">
                     Gửi
                   </button>
                 </div>

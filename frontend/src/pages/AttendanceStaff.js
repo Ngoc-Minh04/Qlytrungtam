@@ -11,37 +11,41 @@ export async function renderAttendanceStaff(container) {
   let filterYear = now.getFullYear();
 
   // Khởi động container rỗng và render cấu trúc layout chính
-  async function initLayout() {
+  function initLayout() {
     container.innerHTML = `
       <div class="space-y-6 animate-fadeIn">
         
         <!-- Header & Action Row -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm tracking-tight">Quản lý Chấm công</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Theo dõi lịch trình và lượt quét ra vào của giáo viên, nhân sự</p>
+          </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button id="btn-refresh-attendance" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-attendance" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             
             ${(userRole === 'admin' || userRole === 'le_tan') ? `
-              <button id="btn-attendance-scan-qr" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
+              <button id="btn-attendance-scan-qr" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-[#10b981] hover:opacity-95 hover:shadow-md text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
                 <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>Quét QR Chấm công
               </button>
             ` : ''}
 
             ${(userRole === 'admin' || userRole === 'le_tan' || userRole === 'giao_vien') ? `
-              <button id="btn-add-log" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-apple-blue to-[#007eff] text-white text-xs font-semibold rounded-full transition-all active:scale-95 shadow-md hover:shadow-lg h-[32px]">
-                <span class="material-symbols-outlined text-[16px]">add</span>${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Thêm lượt quét'}
+              <button id="btn-add-log" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[34px]">
+                <span class="material-symbols-outlined text-[16px]">add</span>${userRole === 'giao_vien' ? 'Tự chấm công' : 'Thêm lượt quét'}
               </button>
             ` : ''}
           </div>
         </div>
 
-        <!-- Tab Switcher Premium -->
-        <div class="flex border-b border-apple-divider/50 gap-6">
-          <button id="tab-history" class="pb-3 text-xs font-bold transition-all border-b-2 outline-none relative" type="button">
+        <!-- Tab Switcher Premium: iOS Segmented Control -->
+        <div class="inline-flex bg-slate-100/80 p-0.5 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
+          <button id="tab-history" class="px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5" type="button">
             Lượt ra vào chi tiết
           </button>
-          <button id="tab-sheet" class="pb-3 text-xs font-bold transition-all border-b-2 outline-none relative" type="button">
+          <button id="tab-sheet" class="px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none flex items-center gap-1.5" type="button">
             Bảng chấm công tháng
           </button>
         </div>
@@ -54,40 +58,40 @@ export async function renderAttendanceStaff(container) {
       </div>
 
       <!-- Modal Thêm lượt quét chấm công thủ công -->
-      <div id="add-log-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Ghi nhận lượt quét thủ công'}</h3>
+      <div id="add-log-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-[28px] w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">${userRole === 'giao_vien' ? 'Tự chấm công bổ sung' : 'Ghi nhận lượt quét thủ công'}</h3>
             <button id="close-log-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-              <span class="material-symbols-outlined text-[18px]">close</span>
+              <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
           
-          <form id="add-log-form" class="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)]">
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Giáo viên / Nhân sự</label>
-              <select name="ho_so_id" id="modal-attendance-teacher" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+          <form id="add-log-form" class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-70px)] text-xs">
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Giáo viên / Nhân sự</label>
+              <select name="ho_so_id" id="modal-attendance-teacher" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer">
                 <option value="">-- Chọn Nhân sự --</option>
               </select>
               <input type="hidden" id="modal-attendance-teacher-hidden">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ngày quét</label>
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Ngày quét</label>
                 <div id="attendance-date-container" class="relative">
-                  <input type="date" name="ngay_quet" id="attendance-date" required />
+                  <input type="date" name="ngay_quet" id="attendance-date" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
                 </div>
               </div>
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Giờ quét</label>
-                <input type="time" name="gio_quet" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all" />
+              <div class="space-y-1.5">
+                <label class="font-semibold text-slate-500 block">Giờ quét</label>
+                <input type="time" name="gio_quet" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
               </div>
             </div>
 
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phương thức chấm công</label>
-              <select name="phuong_thuc" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-apple-blue outline-none transition-all">
+            <div class="space-y-1.5">
+              <label class="font-semibold text-slate-500 block">Phương thức chấm công</label>
+              <select name="phuong_thuc" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer">
                 <option value="thu_cong">Ghi nhận thủ công</option>
                 <option value="the_tu">Thẻ từ / Vân tay</option>
                 <option value="qr_code">QR Code</option>
@@ -95,8 +99,8 @@ export async function renderAttendanceStaff(container) {
               </select>
             </div>
 
-            <div class="pt-2 shrink-0">
-              <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#007eff] text-white py-2.5 rounded-xl text-xs font-semibold hover:shadow-lg transition-all active:scale-[0.98]">
+            <div class="pt-3 shrink-0">
+              <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98] text-xs">
                 Xác nhận ghi nhận
               </button>
             </div>
@@ -105,24 +109,24 @@ export async function renderAttendanceStaff(container) {
       </div>
 
       <!-- Modal quét QR Chấm công -->
-      <div id="attendance-scan-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50 animate-fadeIn">
-        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
-          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Quét mã QR Chấm công</h3>
+      <div id="attendance-scan-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center z-50 animate-fadeIn">
+        <div class="bg-white rounded-[28px] w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">Quét mã QR Chấm công</h3>
             <button id="close-attendance-scan-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
-              <span class="material-symbols-outlined text-[18px]">close</span>
+              <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
           
           <div class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
             <!-- Camera Scanner Area -->
-            <div id="attendance-reader" class="w-full aspect-square bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden relative">
+            <div id="attendance-reader" class="w-full aspect-square bg-slate-50 border border-slate-150 rounded-[20px] overflow-hidden relative shadow-inner">
               <!-- Camera preview will render here -->
             </div>
             
             <!-- File upload fallback -->
             <div class="flex justify-center">
-              <button id="btn-attendance-upload-qr" class="flex items-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition active:scale-95">
+              <button id="btn-attendance-upload-qr" class="flex items-center gap-1.5 px-4.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-full transition active:scale-95 shadow-sm">
                 <span class="material-symbols-outlined text-[16px]">file_upload</span>
                 Chọn ảnh QR từ máy
               </button>
@@ -130,13 +134,13 @@ export async function renderAttendanceStaff(container) {
             </div>
 
             <!-- Manual input fallback -->
-            <form id="attendance-scan-form" class="space-y-3 pt-2 border-t border-[#f3f3f5]">
-              <div class="space-y-1">
-                <label class="block font-semibold text-slate-600">Hoặc nhập mã nhân sự thủ công</label>
+            <form id="attendance-scan-form" class="space-y-3 pt-4 border-t border-slate-100">
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Hoặc nhập mã nhân sự thủ công</label>
                 <div class="flex gap-2">
                   <input type="text" id="attendance-scan-input" placeholder="Ví dụ: GV001" required
-                    class="flex-1 border border-[#e2e2e4] rounded-xl px-3 py-2 outline-none focus:border-apple-blue transition bg-[#fafafa]">
-                  <button type="submit" class="px-4 py-2 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition active:scale-95">
+                    class="flex-1 border border-slate-200 rounded-full px-4 py-2 outline-none focus:border-[#0071e3] transition bg-slate-50/50 text-xs">
+                  <button type="submit" class="px-5 py-2 bg-slate-800 text-white font-semibold rounded-full hover:bg-slate-900 transition active:scale-95 text-xs">
                     Gửi
                   </button>
                 </div>
@@ -153,13 +157,13 @@ export async function renderAttendanceStaff(container) {
 
     function updateTabStyle() {
       if (activeTab === 'history') {
-        tabHistory.className = 'pb-3 text-xs font-extrabold text-apple-blue border-b-2 border-apple-blue outline-none relative';
-        tabSheet.className = 'pb-3 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 outline-none relative';
+        tabHistory.className = 'px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none bg-white text-slate-800 shadow-sm border border-slate-200/20';
+        tabSheet.className = 'px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none text-slate-500 hover:text-slate-700';
       } else {
-        tabSheet.className = 'pb-3 text-xs font-extrabold text-apple-blue border-b-2 border-apple-blue outline-none relative';
-        tabHistory.className = 'pb-3 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 outline-none relative';
+        tabSheet.className = 'px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none bg-white text-slate-800 shadow-sm border border-slate-200/20';
+        tabHistory.className = 'px-5 py-1.5 rounded-full text-xs font-bold transition-all relative outline-none text-slate-500 hover:text-slate-700';
       }
-    }
+    };
 
     tabHistory.addEventListener('click', () => {
       activeTab = 'history';
@@ -436,23 +440,23 @@ export async function renderAttendanceStaff(container) {
       targetEl.innerHTML = `
         <!-- KPI Cards Grid (Bento style) -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Tổng ca quét</span>
-                <span class="text-3xl font-extrabold text-[#1a1c1d] block mt-2 tracking-tight">${totalCheckins}</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Tổng ca quét</span>
+                <span class="text-3xl font-extrabold text-slate-800 block mt-2 tracking-tight">${totalCheckins}</span>
               </div>
-              <div class="p-2.5 bg-blue-50 text-apple-blue rounded-xl">
+              <div class="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">fingerprint</span>
               </div>
             </div>
             <p class="text-[10px] text-slate-400 mt-3">Lượt quét thẻ ra/vào ghi nhận được</p>
           </div>
 
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Đúng giờ</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Đúng giờ</span>
                 <span class="text-3xl font-extrabold text-emerald-600 block mt-2 tracking-tight">${onTimeCount}</span>
               </div>
               <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
@@ -462,10 +466,10 @@ export async function renderAttendanceStaff(container) {
             <p class="text-[10px] text-slate-400 mt-3">Số ca check-in trước 08:05 sáng</p>
           </div>
 
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Đi muộn</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Đi muộn</span>
                 <span class="text-3xl font-extrabold text-amber-600 block mt-2 tracking-tight">${lateCount}</span>
               </div>
               <div class="p-2.5 bg-amber-50 text-amber-500 rounded-xl">
@@ -475,13 +479,13 @@ export async function renderAttendanceStaff(container) {
             <p class="text-[10px] text-slate-400 mt-3">Số ca check-in muộn sau 08:05 sáng</p>
           </div>
 
-          <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-[#0066cc]/50 hover:shadow-md transition-all duration-300">
+          <div class="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm min-h-[120px] hover:border-slate-200 hover:shadow-md transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Tỷ lệ đúng giờ</span>
-                <span class="text-3xl font-extrabold text-[#0066cc] block mt-2 tracking-tight">${onTimeRate}%</span>
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Tỷ lệ đúng giờ</span>
+                <span class="text-3xl font-extrabold text-[#0071e3] block mt-2 tracking-tight">${onTimeRate}%</span>
               </div>
-              <div class="p-2.5 bg-blue-50 text-[#0066cc] rounded-xl">
+              <div class="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">schedule</span>
               </div>
             </div>
@@ -490,8 +494,8 @@ export async function renderAttendanceStaff(container) {
         </div>
 
         <!-- Bảng danh sách log check-in -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div class="p-5 border-b border-[#f3f3f5] flex justify-between items-center bg-slate-50/50 shrink-0">
+        <div class="bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
             <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Lịch sử check-in nhân sự</h3>
             <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">Thời gian thực</span>
           </div>
@@ -499,15 +503,15 @@ export async function renderAttendanceStaff(container) {
           <div class="overflow-x-auto max-h-[450px] overflow-y-auto w-full">
             <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
               <thead>
-                <tr class="border-b border-[#e2e2e4] text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Nhân viên / Giáo viên</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Ngày quét</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Giờ quét</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold">Phương thức</th>
-                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3 px-5 font-semibold text-right">Trạng thái</th>
+                <tr class="border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-50/20">
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Nhân viên / Giáo viên</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Ngày quét</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Giờ quét</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold">Phương thức</th>
+                  <th class="sticky top-0 bg-[#f9fafb] z-20 py-3.5 px-5 font-semibold text-right">Trạng thái</th>
                 </tr>
               </thead>
-              <tbody id="attendance-history-body" class="divide-y divide-[#f3f3f5]">
+              <tbody id="attendance-history-body" class="divide-y divide-slate-100">
                 <!-- Injected by JS -->
               </tbody>
             </table>
@@ -523,10 +527,10 @@ export async function renderAttendanceStaff(container) {
       function renderHistoryRows() {
         const chunk = processedLogs.slice(0, displayCount);
         historyBody.innerHTML = chunk.map(log => `
-          <tr class="hover:bg-slate-50/55 transition-colors">
+          <tr class="hover:bg-slate-50/50 transition-colors">
             <td class="py-3 px-5">
               <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-full bg-apple-blue/10 flex items-center justify-center font-bold text-apple-blue text-xs select-none">
+                <div class="w-7 h-7 rounded-full bg-[#0071e3]/10 flex items-center justify-center font-bold text-[#0071e3] text-xs select-none">
                   ${log.ho_ten.charAt(0)}
                 </div>
                 <div>
@@ -538,7 +542,7 @@ export async function renderAttendanceStaff(container) {
             <td class="py-3 px-5 text-slate-500 font-medium">${log.dateStr}</td>
             <td class="py-3 px-5 text-slate-700 font-semibold">${log.timeStr}</td>
             <td class="py-3 px-5">
-              <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/50">
                 ${log.phuong_thuc === 'qr_code' ? 'QR Code Động' : 'Thẻ Vân Tay'}
               </span>
             </td>
@@ -618,19 +622,19 @@ export async function renderAttendanceStaff(container) {
 
       targetEl.innerHTML = `
         <!-- Bộ lọc tháng / năm -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3 justify-between">
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3 justify-between">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="material-symbols-outlined text-apple-blue text-[18px]">calendar_month</span>
-            <span class="font-bold text-slate-700 text-xs">Chọn kỳ chấm công:</span>
-            <select id="select-filter-month" class="border border-slate-200 rounded-full px-3 py-1 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue">
+            <span class="material-symbols-outlined text-[#0071e3] text-[18px]">calendar_month</span>
+            <span class="font-bold text-slate-700 text-xs">Kỳ chấm công:</span>
+            <select id="select-filter-month" class="border border-slate-200 rounded-full px-3.5 py-1 text-xs bg-white outline-none cursor-pointer focus:border-[#0071e3] transition font-semibold text-slate-700">
               ${monthOptions}
             </select>
-            <select id="select-filter-year" class="border border-slate-200 rounded-full px-3 py-1 text-xs bg-white outline-none cursor-pointer focus:border-apple-blue">
+            <select id="select-filter-year" class="border border-slate-200 rounded-full px-3.5 py-1 text-xs bg-white outline-none cursor-pointer focus:border-[#0071e3] transition font-semibold text-slate-700">
               ${yearOptions}
             </select>
             
             ${(userRole === 'admin' || userRole === 'le_tan') ? `
-              <button id="btn-export-attendance-csv" class="flex items-center justify-center gap-1.5 px-3.5 py-1 border border-emerald-200 hover:bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full transition-all active:scale-95 shadow-sm ml-2 h-[26px]">
+              <button id="btn-export-attendance-csv" class="flex items-center justify-center gap-1.5 px-4 py-1 border border-emerald-200 hover:bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full transition-all active:scale-95 shadow-sm ml-2 h-[26px]">
                 <span class="material-symbols-outlined text-[14px]">download</span>Xuất báo cáo (CSV)
               </button>
             ` : ''}
@@ -641,16 +645,16 @@ export async function renderAttendanceStaff(container) {
         </div>
 
         <!-- Bảng Grid tổng hợp công -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        <div class="bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div class="overflow-x-auto w-full relative max-h-[450px] overflow-y-auto">
             <table class="w-full border-collapse">
               <thead>
-                <tr class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider border-b border-[#e2e2e4]">
-                  <th class="p-3 border border-apple-divider/45 sticky top-0 left-0 bg-slate-50 z-30 min-w-[150px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                <tr class="bg-[#f9fafb] text-slate-500 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100">
+                  <th class="p-3 border-b border-r border-slate-100 sticky top-0 left-0 bg-[#f9fafb] z-30 min-w-[150px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                     Nhân sự
                   </th>
-                  ${daysArray.map(d => `<th class="p-1.5 border border-apple-divider/45 text-center min-w-[28px] sticky top-0 bg-slate-50 z-20">${d}</th>`).join('')}
-                  <th class="p-3 border border-apple-divider/45 text-center bg-blue-50/45 min-w-[70px] sticky top-0 z-20">Công/Tháng</th>
+                  ${daysArray.map(d => `<th class="p-1.5 border-b border-r border-slate-100 text-center min-w-[28px] sticky top-0 bg-[#f9fafb] z-20">${d}</th>`).join('')}
+                  <th class="p-3 border-b border-slate-100 text-center bg-blue-50/45 min-w-[70px] sticky top-0 z-20">Công/Tháng</th>
                 </tr>
               </thead>
               <tbody id="attendance-sheet-body">
@@ -677,20 +681,20 @@ export async function renderAttendanceStaff(container) {
             const isPresent = workDates.has(d);
             if (isPresent) totalPresent++;
             daysHtml += `
-              <td class="p-1.5 text-center border border-apple-divider/40 text-[10px] font-bold">
-                ${isPresent ? '<span class="text-emerald-500 font-extrabold text-[12px]">✓</span>' : '<span class="text-slate-200">-</span>'}
+              <td class="p-1.5 text-center border-b border-r border-slate-100 text-[10px] font-bold">
+                ${isPresent ? '<span class="text-emerald-500 font-extrabold text-[12px]">✓</span>' : '<span class="text-slate-200 font-medium">-</span>'}
               </td>
             `;
           });
 
           return `
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="p-3 border border-apple-divider/45 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+              <td class="p-3 border-b border-r border-slate-100 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
                 <div class="font-bold text-slate-800">${person.ho_ten}</div>
                 <div class="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">${person.ma_ho_so} — ${person.loai_ho_so === 'giao_vien' ? 'Giáo viên' : 'Nhân viên'}</div>
               </td>
               ${daysHtml}
-              <td class="p-3 border border-apple-divider/45 text-center font-extrabold text-apple-blue bg-blue-50/30 whitespace-nowrap text-xs">
+              <td class="p-3 border-b border-slate-100 text-center font-extrabold text-[#0071e3] bg-blue-50/20 whitespace-nowrap text-xs">
                 ${totalPresent} / ${totalDays}
               </td>
             </tr>

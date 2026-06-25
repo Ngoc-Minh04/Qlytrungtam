@@ -9,45 +9,45 @@ export async function renderClassManagement(container) {
     <div class="space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
         <!-- Form bên trái (Đăng ký lịch dạy - chiếm 3 phần) -->
-        <div class="lg:col-span-3 bg-apple-parchment rounded-[18px] p-6 border border-apple-divider/60 space-y-4 h-fit">
-          <div class="flex justify-between items-center pb-1 border-b border-apple-divider/40">
-            <h3 class="font-bold text-apple-ink text-sm">Đăng ký lịch dạy</h3>
-            <button id="btn-refresh-class-form" class="flex items-center justify-center gap-1 px-2.5 py-1 border border-[#e2e2e4] hover:bg-white text-slate-700 text-[11px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[28px]" type="button">
+        <div class="lg:col-span-3 bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm space-y-5 h-fit">
+          <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">Đăng ký lịch dạy</h3>
+            <button id="btn-refresh-class-form" class="flex items-center justify-center gap-1.5 px-3 py-1 border border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[30px]" type="button">
               <span class="material-symbols-outlined text-[14px]">refresh</span>Tải lại
             </button>
           </div>
           
           <form id="schedule-form" class="space-y-4 text-xs">
             <!-- 1. Chọn Giáo viên -->
-            <div>
-              <label class="block font-semibold text-slate-600 mb-1">Chọn Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
-              <select id="class-teacher" required class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Chọn Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+              <select id="class-teacher" required class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50 cursor-pointer">
                 <option value="">-- Chọn giáo viên --</option>
               </select>
             </div>
 
             <!-- 2. Dropdown Loại lớp -->
-            <div>
-              <label class="block font-semibold text-slate-600 mb-1">Loại hình lớp học <span class="text-rose-500 font-bold">*</span></label>
-              <select id="class-type" required class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Loại hình lớp học <span class="text-rose-500 font-bold">*</span></label>
+              <select id="class-type" required class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50 cursor-pointer">
                 <option value="nhom" selected>Lớp học nhóm (1 GV - Nhiều HS, tối đa 50)</option>
                 <option value="ca_nhan">Lớp học kèm (1 kèm 1)</option>
               </select>
             </div>
 
             <!-- Gói học đại trà (Hiển thị khi chọn lớp nhóm) -->
-            <div id="course-package-group">
-              <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học / Khóa học <span class="text-rose-500 font-bold">*</span></label>
-              <select id="class-course-package" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+            <div id="course-package-group" class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Chọn Gói học / Khóa học <span class="text-rose-500 font-bold">*</span></label>
+              <select id="class-course-package" class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50 cursor-pointer">
                 <option value="">-- Chọn gói học phí --</option>
               </select>
             </div>
 
             <!-- Gói học kèm & Học viên đăng ký (Hiển thị khi chọn lớp kèm 1-1) -->
             <div id="tutoring-contract-group" class="hidden space-y-3">
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Chọn Gói học kèm của học viên <span class="text-rose-500 font-bold">*</span></label>
-                <select id="class-tutoring-select" class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Chọn Gói học kèm của học viên <span class="text-rose-500 font-bold">*</span></label>
+                <select id="class-tutoring-select" class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50 cursor-pointer">
                   <option value="">-- Chọn gói kèm đang hoạt động --</option>
                 </select>
                 <input type="hidden" id="class-tutoring-id">
@@ -56,17 +56,18 @@ export async function renderClassManagement(container) {
 
             <!-- Panel chọn học viên (Chỉ dành cho lớp nhóm) -->
             <div id="student-picker-panel" class="space-y-2">
-              <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded-xl border border-apple-divider/40">
-                <span class="font-bold text-slate-700">Học sinh trong lớp <span id="selected-count-badge" class="text-apple-blue">(0/50)</span></span>
-                <div class="flex items-center gap-2">
-                  <button type="button" id="btn-select-all-students" class="text-emerald-600 font-bold text-[10px] uppercase hover:underline">Chọn tất cả</button>
-                  <button type="button" id="btn-toggle-student-list" class="text-apple-blue font-bold text-[10px] uppercase hover:underline">Ẩn/Hiện</button>
+              <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-700 text-[11px]">Học sinh trong lớp <span id="selected-count-badge" class="text-apple-blue font-extrabold">(0/50)</span></span>
+                <div class="flex items-center gap-2 text-[10px]">
+                  <button type="button" id="btn-select-all-students" class="text-emerald-600 font-bold uppercase hover:underline">Chọn tất cả</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" id="btn-toggle-student-list" class="text-apple-blue font-bold uppercase hover:underline">Ẩn/Hiện</button>
                 </div>
               </div>
               <div>
-                <input type="text" id="student-search" placeholder="Tìm học viên..." class="w-full border border-apple-divider rounded-full px-3 py-1.5 text-xs outline-none focus:border-apple-blue transition bg-white mb-1.5">
+                <input type="text" id="student-search" placeholder="Tìm học viên..." class="w-full border border-slate-200 rounded-full px-4 py-2 text-xs outline-none focus:border-apple-blue transition bg-slate-50/30 mb-1.5">
               </div>
-              <div id="student-picker-list" class="bg-white border border-apple-divider/50 rounded-xl p-3 max-h-48 overflow-y-auto space-y-1.5">
+              <div id="student-picker-list" class="bg-white border border-slate-100 rounded-2xl p-3 max-h-48 overflow-y-auto space-y-1.5 shadow-inner">
                 <p class="text-slate-400 italic text-center py-2">Đang tải danh sách học viên...</p>
               </div>
               <div id="selected-student-badges" class="flex flex-wrap gap-1.5 pt-1">
@@ -74,48 +75,48 @@ export async function renderClassManagement(container) {
               </div>
             </div>
 
-            <!-- Ngày học - có min để không chọn quá khứ -->
-            <div>
-              <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
+            <!-- Ngày học -->
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
               <div id="class-date-container" class="relative">
                 <input type="date" id="class-date" required min="${todayStr}" value="${todayStr}">
               </div>
             </div>
 
             <!-- Tự động xếp lịch cả tháng/theo gói -->
-            <div class="space-y-2 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
+            <div class="space-y-2.5 p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
               <div class="flex items-center gap-2">
                 <input type="checkbox" id="auto-schedule-month" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer">
-                <label for="auto-schedule-month" class="font-bold text-slate-700 cursor-pointer select-none text-[11px]">Tự động xếp lịch</label>
+                <label for="auto-schedule-month" class="font-bold text-slate-700 cursor-pointer select-none text-[11px]">Tự động xếp lịch nhiều buổi</label>
               </div>
-              <div id="auto-schedule-options" class="hidden pl-2 space-y-1.5">
-                <span class="block font-semibold text-slate-500 text-[10px]">Chọn các Thứ học cố định:</span>
+              <div id="auto-schedule-options" class="hidden pl-2 space-y-2 border-l-2 border-slate-200">
+                <span class="block font-bold text-slate-500 text-[10px] uppercase tracking-wider">Chọn các Thứ học cố định:</span>
                 <div class="grid grid-cols-4 gap-1.5">
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="1" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
                     T2
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="2" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
                     T3
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="3" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
                     T4
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="4" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
                     T5
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="5" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5" checked>
                     T6
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="6" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
                     T7
                   </label>
-                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] text-slate-600">
+                  <label class="flex items-center gap-1 cursor-pointer select-none text-[10.5px] font-semibold text-slate-600">
                     <input type="checkbox" name="schedule-days" value="0" class="rounded text-apple-blue focus:ring-apple-blue w-3.5 h-3.5">
                     CN
                   </label>
@@ -124,8 +125,8 @@ export async function renderClassManagement(container) {
             </div>
 
             <!-- Giờ bắt đầu: Grid button 8h-22h -->
-            <div>
-              <label class="block font-semibold text-slate-600 mb-1">Giờ bắt đầu <span class="text-rose-500 font-bold">*</span></label>
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Giờ bắt đầu <span class="text-rose-500 font-bold">*</span></label>
               <div id="time-grid" class="grid grid-cols-4 gap-1.5">
                 <!-- Sẽ render bằng JS -->
               </div>
@@ -133,32 +134,32 @@ export async function renderClassManagement(container) {
             </div>
 
             <!-- Thời lượng -->
-            <div>
-              <label class="block font-semibold text-slate-600 mb-1">Thời lượng buổi học <span class="text-rose-500 font-bold">*</span></label>
+            <div class="space-y-1.5">
+              <label class="block font-semibold text-slate-500">Thời lượng buổi học <span class="text-rose-500 font-bold">*</span></label>
               <div class="grid grid-cols-3 gap-2">
-                <button type="button" class="duration-btn px-3 py-2 rounded-xl border-2 border-apple-divider bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50 transition active:scale-95" data-duration="60">1 tiếng</button>
-                <button type="button" class="duration-btn px-3 py-2 rounded-xl border-2 border-apple-divider bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50 transition active:scale-95" data-duration="90">1.5 tiếng</button>
-                <button type="button" class="duration-btn px-3 py-2 rounded-xl border-2 border-apple-divider bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50 transition active:scale-95" data-duration="120">2 tiếng</button>
+                <button type="button" class="duration-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50/50 transition active:scale-95" data-duration="60">1 tiếng</button>
+                <button type="button" class="duration-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50/50 transition active:scale-95" data-duration="90">1.5 tiếng</button>
+                <button type="button" class="duration-btn px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-apple-blue hover:bg-blue-50/50 transition active:scale-95" data-duration="120">2 tiếng</button>
               </div>
               <input type="hidden" id="class-duration" value="">
             </div>
 
             <!-- Giờ kết thúc (tự tính) -->
-            <div id="class-end-display" class="hidden">
-              <label class="block font-semibold text-slate-600 mb-1">Giờ kết thúc (tự tính)</label>
-              <div class="bg-white border border-apple-divider rounded-full px-4 py-2 font-bold text-apple-blue text-xs" id="class-end-label">--:--</div>
+            <div id="class-end-display" class="hidden space-y-1.5">
+              <label class="block font-semibold text-slate-500">Giờ kết thúc (tự tính)</label>
+              <div class="bg-slate-50 border border-slate-100 rounded-full px-4 py-2.5 font-extrabold text-apple-blue text-xs select-none" id="class-end-label">--:--</div>
               <input type="hidden" id="class-end" required>
             </div>
 
-            <button type="submit" class="w-full bg-apple-blue hover:opacity-90 text-white font-semibold py-2.5 rounded-full transition active:scale-95 shadow-md">
+            <button type="submit" class="w-full bg-gradient-to-r from-apple-blue to-[#0071e3]/95 hover:opacity-90 text-white font-bold py-3 rounded-full transition active:scale-95 shadow-md shadow-blue-500/15">
               Xếp lịch & Tạo lớp ngay
             </button>
           </form>
         </div>
 
         <!-- Danh sách lịch sử đặt lịch bên phải (chiếm 7 phần) -->
-        <div class="lg:col-span-7 bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col shadow-sm" id="class-list-container">
-          <div class="p-6 flex items-center justify-center text-slate-400 text-xs">Đang tải lịch sử đặt lịch...</div>
+        <div class="lg:col-span-7 bg-white rounded-[24px] border border-slate-100 overflow-hidden flex flex-col shadow-sm" id="class-list-container">
+          <div class="p-6 flex items-center justify-center text-slate-400 text-xs font-semibold">Đang tải lịch sử đặt lịch...</div>
         </div>
       </div>
     </div>
@@ -213,10 +214,10 @@ export async function renderClassManagement(container) {
       const isSelected = label === selectedStartTime;
       return `
         <button type="button" 
-          class="time-slot-btn py-2 rounded-xl text-[11px] font-bold transition text-center border-2 
-            ${isPast ? 'bg-slate-100 border-slate-100 text-slate-300 cursor-not-allowed' : 
-              isSelected ? 'bg-apple-blue border-apple-blue text-white shadow-md shadow-apple-blue/20' :
-              'bg-white border-apple-divider text-slate-600 hover:border-apple-blue hover:bg-blue-50 active:scale-95'}"
+          class="time-slot-btn py-1.5 rounded-lg text-[10.5px] font-semibold transition-all duration-200 text-center border
+            ${isPast ? 'bg-slate-100/50 border-slate-100 text-slate-350 cursor-not-allowed' : 
+              isSelected ? 'bg-gradient-to-r from-apple-blue to-[#0071e3]/90 border-apple-blue text-white shadow-sm shadow-blue-500/25' :
+              'bg-white border-slate-200 text-slate-600 hover:border-apple-blue hover:bg-blue-50/50 hover:text-apple-blue active:scale-95'}"
           data-time="${label}" ${isPast ? 'disabled' : ''}
         >${label}</button>
       `;
@@ -480,12 +481,12 @@ export async function renderClassManagement(container) {
     studentPickerList.innerHTML = filteredStudents.map(s => {
       const isSelected = selectedStudentIds.includes(s.id);
       return `
-        <div class="flex items-center gap-2.5 hover:bg-slate-50 p-2 rounded-xl transition cursor-pointer select-none border ${isSelected ? 'border-apple-blue/30 bg-blue-50/20' : 'border-transparent'}" data-id="${s.id}">
-          <div class="w-7 h-7 rounded-full overflow-hidden shadow-sm bg-apple-parchment flex items-center justify-center font-bold text-apple-blue shrink-0">
+        <div class="flex items-center gap-2.5 hover:bg-slate-50 p-2 rounded-xl transition cursor-pointer select-none border ${isSelected ? 'border-apple-blue/20 bg-blue-50/30' : 'border-transparent'}" data-id="${s.id}">
+          <div class="w-7 h-7 rounded-full overflow-hidden shadow-sm bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 select-none">
             ${s.avatar_url ? `<img src="${s.avatar_url}" class="w-full h-full object-cover">` : (s.ho_ten || 'H').charAt(0)}
           </div>
-          <span class="text-slate-700 font-semibold">${s.ho_ten}</span>
-          <span class="text-[9px] text-slate-400 ml-auto">${s.trinh_do_dau_vao || ''}</span>
+          <span class="text-slate-700 font-semibold text-[11px]">${s.ho_ten}</span>
+          <span class="text-[9px] text-slate-400 ml-auto font-medium">${s.trinh_do_dau_vao || ''}</span>
         </div>
       `;
     }).join('');
@@ -553,9 +554,9 @@ export async function renderClassManagement(container) {
       const student = allStudents.find(s => s.id === id);
       if (!student) return '';
       return `
-        <span class="inline-flex items-center gap-1 bg-blue-50 text-apple-blue font-bold px-2 py-1 rounded-full text-[10px] border border-blue-100">
+        <span class="inline-flex items-center gap-1.5 bg-blue-50 text-apple-blue font-bold px-3 py-1 rounded-full text-[10px] border border-blue-100/50 shadow-sm">
           ${student.ho_ten}
-          <button type="button" class="btn-remove-selected text-red-500 hover:text-red-700 font-extrabold focus:outline-none" data-id="${id}">×</button>
+          <button type="button" class="btn-remove-selected text-red-500 hover:text-red-700 font-extrabold focus:outline-none ml-0.5 text-xs" data-id="${id}">×</button>
         </span>
       `;
     }).join('');

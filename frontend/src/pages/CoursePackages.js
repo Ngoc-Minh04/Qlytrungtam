@@ -16,30 +16,33 @@ export async function renderCoursePackages(container) {
 
     // Tạo HTML các cột so sánh ngang premium
     const comparisonsHtml = packages.map(p => `
-      <div class="bg-white rounded-xl p-3 border border-apple-divider/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-apple-blue to-[#0071e3]"></div>
-        <div class="space-y-1.5">
-          <div class="flex justify-between items-start">
-            <h4 class="font-bold text-apple-ink text-xs tracking-tight">${p.ten_goi}</h4>
-            <span class="px-1.5 py-0.5 rounded-full text-[8px] font-extrabold bg-blue-50 text-apple-blue uppercase">Đại trà</span>
+      <div class="bg-white rounded-2xl p-5 pt-6 border border-slate-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group">
+        <!-- Subtle gradient indicator line -->
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-apple-blue to-[#0071e3]/85"></div>
+        
+        <div class="space-y-3 mt-1.5">
+          <div class="flex justify-between items-start gap-2">
+            <h4 class="font-bold text-slate-800 text-xs tracking-tight leading-tight select-none">${p.ten_goi}</h4>
+            <span class="px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-blue-50 text-apple-blue uppercase tracking-wider shrink-0 select-none">Đại trà</span>
           </div>
-          <p class="text-[10px] text-slate-500 leading-normal min-h-[30px]">${p.mo_ta || 'Chưa cập nhật mô tả.'}</p>
-          <div class="border-t border-slate-100 pt-1.5">
-            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Thời hạn</div>
-            <div class="text-[11px] font-extrabold text-apple-ink mt-0.5">${p.so_thang} tháng</div>
+          <p class="text-[10.5px] text-slate-450 leading-relaxed min-h-[40px]">${p.mo_ta || 'Chưa cập nhật mô tả.'}</p>
+          <div class="border-t border-slate-50 pt-3">
+            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Thời hạn khóa học</div>
+            <div class="text-[11px] font-black text-slate-700 mt-1">${p.so_thang} tháng</div>
           </div>
         </div>
-        <div class="pt-2 mt-2 border-t border-slate-100 flex flex-col gap-2">
+        
+        <div class="pt-3 mt-3 border-t border-slate-50 flex flex-col gap-3">
           <div class="flex flex-col">
             <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Học phí trọn gói</span>
-            <span class="text-sm font-extrabold text-apple-blue mt-0.5">${p.gia.toLocaleString('vi-VN')} VNĐ</span>
+            <span class="text-sm font-extrabold text-apple-blue mt-0.5 tracking-tight">${p.gia.toLocaleString('vi-VN')} VNĐ</span>
           </div>
           ${role === 'admin' || role === 'le_tan' ? `
-            <div class="flex gap-1.5">
-              <button class="btn-edit-pkg flex-1 py-1 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-[11px] transition active:scale-95 flex items-center justify-center gap-0.5" data-id="${p.id}">
+            <div class="flex gap-1.5 mt-1">
+              <button class="btn-edit-pkg flex-1 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-full text-[11px] transition active:scale-95 flex items-center justify-center gap-0.5" data-id="${p.id}">
                 <span class="material-symbols-outlined text-[13px]">edit</span>Sửa
               </button>
-              <button class="btn-delete-pkg py-1 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-[11px] transition active:scale-95 flex items-center justify-center" data-id="${p.id}">
+              <button class="btn-delete-pkg py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-full text-[11px] transition active:scale-95 flex items-center justify-center" data-id="${p.id}">
                 <span class="material-symbols-outlined text-[13px]">delete</span>
               </button>
             </div>
@@ -51,10 +54,10 @@ export async function renderCoursePackages(container) {
     container.innerHTML = `
       <div id="course-packages-wrapper" class="space-y-6">
         <div class="flex justify-between items-center gap-2 flex-wrap">
-          <h3 class="font-bold text-apple-ink text-sm">Gói khóa học đại trà</h3>
+          <h3 class="font-bold text-slate-800 text-sm tracking-wide">Gói khóa học đại trà</h3>
           <div class="flex items-center gap-2">
             <!-- Nút Refresh đồng bộ kích thước -->
-            <button id="btn-refresh-course-packages" class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-course-packages" class="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             ${role === 'admin' || role === 'le_tan' ? `
@@ -69,7 +72,7 @@ export async function renderCoursePackages(container) {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           ${comparisonsHtml}
           ${packages.length === 0 ? `
-            <div class="col-span-full bg-white rounded-2xl border border-apple-divider p-12 text-center text-slate-400 text-xs">
+            <div class="col-span-full bg-white rounded-2xl border border-slate-100 p-16 text-center text-slate-400 text-xs">
               <span class="material-symbols-outlined text-[36px] block opacity-40 mb-2">inventory_2</span>
               Chưa có gói học phí nào được tạo.
             </div>
@@ -78,10 +81,10 @@ export async function renderCoursePackages(container) {
       </div>
 
       <!-- MODAL THÊM / SỬA GÓI HỌC PHÍ -->
-      <div id="pkg-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl">
-          <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
-            <h3 id="modal-title" class="text-sm font-bold text-[#1a1c1d] flex items-center gap-2">
+      <div id="pkg-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 animate-fadeIn">
+        <div class="bg-white rounded-[28px] max-w-md w-full p-6 space-y-4 border border-slate-100 shadow-2xl" style="animation: modalIn 0.2s ease">
+          <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+            <h3 id="modal-title" class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[20px]">inventory_2</span>
               Thêm gói học phí mới
             </h3>
@@ -91,30 +94,33 @@ export async function renderCoursePackages(container) {
           </div>
           <form id="pkg-form" class="space-y-4 text-xs">
             <div>
-              <label class="block font-semibold text-slate-600 mb-1.5">Tên gói học phí <span class="text-rose-500 font-bold">*</span></label>
-              <input type="text" id="pkg-name" placeholder="Ví dụ: Anh văn giao tiếp 3 tháng..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+              <label class="block font-semibold text-slate-500 mb-1.5">Tên gói học phí <span class="text-rose-500 font-bold">*</span></label>
+              <input type="text" id="pkg-name" placeholder="Ví dụ: Anh văn giao tiếp 3 tháng..." class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
             </div>
             <div>
-              <label class="block font-semibold text-slate-600 mb-1.5">Mô tả chi tiết <span class="text-rose-500 font-bold">*</span></label>
-              <textarea id="pkg-desc" rows="3" placeholder="Nhập mô tả về quyền lợi, số buổi..." class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa] resize-none"></textarea>
+              <label class="block font-semibold text-slate-500 mb-1.5">Mô tả chi tiết <span class="text-rose-500 font-bold">*</span></label>
+              <textarea id="pkg-desc" rows="3" placeholder="Nhập mô tả về quyền lợi, số buổi..." class="w-full border border-slate-200 rounded-[18px] px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50 resize-none"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Thời hạn (tháng) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="number" id="pkg-months" min="1" max="60" value="1" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <label class="block font-semibold text-slate-500 mb-1.5">Thời hạn (tháng) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="number" id="pkg-months" min="1" max="60" value="1" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
               </div>
               <div>
-                <label class="block font-semibold text-slate-600 mb-1.5">Giá tiền (VNĐ) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="text" id="pkg-price" placeholder="0" class="w-full border border-[#e2e2e4] rounded-xl px-3.5 py-2.5 outline-none focus:border-apple-blue transition bg-[#fafafa]">
+                <label class="block font-semibold text-slate-500 mb-1.5">Giá tiền (VNĐ) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="text" id="pkg-price" placeholder="0" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
-              <button type="button" id="btn-cancel-modal" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-xl bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm">Lưu gói học</button>
+            <div class="flex justify-end gap-2 pt-4 border-t border-slate-50">
+              <button type="button" id="btn-cancel-modal" class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95">Hủy bỏ</button>
+              <button type="submit" class="px-7 py-2.5 rounded-full bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm">Lưu gói học</button>
             </div>
           </form>
         </div>
       </div>
+      <style>
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+      </style>
     `;
 
     // Sự kiện quản lý Modal

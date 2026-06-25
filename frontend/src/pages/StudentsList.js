@@ -38,41 +38,50 @@ export async function renderStudentsList(container, role) {
     teachersList = (await teachersRes.json()).data || [];
 
     const statusBadges = {
-      con_han: `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-[#10b981]"></div><span class="font-semibold text-slate-800 text-[11px]">Đang hoạt động</span></div>`,
-      sap_het_han: `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse"></div><span class="font-semibold text-slate-800 text-[11px]">Sắp hết hạn</span></div>`,
-      het_han: `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-600"></div><span class="font-semibold text-red-600 text-[11px]">Đã hết hạn</span></div>`,
-      chua_dang_ky: `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-slate-400"></div><span class="font-semibold text-slate-500 text-[11px]">Chưa mua gói</span></div>`
+      con_han: `<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] animate-pulse"></span><span class="font-bold text-emerald-700 text-[10.5px]">Đang hoạt động</span></div>`,
+      sap_het_han: `<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] animate-pulse"></span><span class="font-bold text-amber-700 text-[10.5px]">Sắp hết hạn</span></div>`,
+      het_han: `<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]"></span><span class="font-bold text-rose-700 text-[10.5px]">Đã hết hạn</span></div>`,
+      chua_dang_ky: `<div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span><span class="font-bold text-slate-500 text-[10.5px]">Chưa mua gói</span></div>`
     };
 
     function renderTableRows(pageStudents) {
       if (pageStudents.length === 0) {
-        return `<tr><td colspan="5" class="px-6 py-6 text-center text-slate-500 text-xs">Không tìm thấy học viên nào phù hợp.</td></tr>`;
+        return `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs font-semibold">Không tìm thấy học viên nào phù hợp.</td></tr>`;
       }
       return pageStudents.map(sv => `
-        <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${sv.id}">
-          <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
+        <tr class="hover:bg-slate-50/50 border-b border-slate-100 text-xs transition group cursor-pointer" data-id="${sv.id}">
+          <td class="sticky left-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none shrink-0">
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-gradient-to-br from-slate-100 to-slate-200/50 flex items-center justify-center font-bold text-slate-700 select-none shrink-0 border border-slate-200/20">
                 ${sv.avatar_url ? `<img src="${sv.avatar_url}" class="w-full h-full object-cover">` : (sv.ho_ten || 'H').charAt(0)}
               </div>
               <div>
-                <div class="font-bold text-apple-ink text-sm">${sv.ho_ten}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">ID: ${sv.ma_ho_so}</div>
+                <div class="font-bold text-slate-800 text-sm tracking-tight">${sv.ho_ten}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Mã: ${sv.ma_ho_so}</div>
               </div>
             </div>
           </td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f3f3f5] text-apple-ink font-bold text-[10px] border border-[#e2e2e4]">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-600 font-bold text-[10px] border border-slate-200/60">
               ${sv.trinh_do_dau_vao || 'Cơ bản A1'}
             </span>
           </td>
           <td class="px-6 py-4">
-            <div class="text-apple-ink font-medium">${sv.so_dien_thoai || '—'}</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">${sv.ten_phu_huynh || 'Chưa cập nhật'}</div>
+            <div class="text-slate-700 font-semibold">${sv.so_dien_thoai || '—'}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">${sv.ten_phu_huynh || 'Chưa cập nhật'}</div>
           </td>
-          <td class="px-6 py-4">${statusBadges[sv.trang_thai_mau] || statusBadges['chua_dang_ky']}</td>
-          <td class="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4 text-right">
-            <button class="btn-cancel-reg px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${sv.id}" data-price="${sv.goi_dang_ky_gan_nhat_price || 0}">
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full ${
+              sv.trang_thai_mau === 'con_han' ? 'bg-emerald-50/55 border border-emerald-100/70' :
+              sv.trang_thai_mau === 'sap_het_han' ? 'bg-amber-50/55 border border-amber-100/70' :
+              sv.trang_thai_mau === 'het_han' ? 'bg-rose-50/55 border border-rose-100/70' :
+              'bg-slate-50 border border-slate-200/60'
+            }">
+              ${statusBadges[sv.trang_thai_mau] || statusBadges['chua_dang_ky']}
+            </span>
+          </td>
+          <td class="sticky right-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4 text-right">
+            <button class="btn-cancel-reg px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100/80 text-rose-600 rounded-full transition text-[11px] font-bold active:scale-95 shadow-sm" data-id="${sv.id}" data-price="${sv.goi_dang_ky_gan_nhat_price || 0}">
               Hủy khóa
             </button>
           </td>
@@ -84,19 +93,19 @@ export async function renderStudentsList(container, role) {
       <div class="space-y-4">
         <!-- Tab 3 nút: Học viên / Giáo viên / Nhân viên -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none">
-            <button id="tab-students" class="px-5 py-1.5 rounded-lg bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
+          <div class="inline-flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
+            <button id="tab-students" class="px-5 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/30 text-xs font-bold text-slate-800 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
             </button>
-            <button id="tab-teachers" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+            <button id="tab-teachers" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
             </button>
-            <button id="tab-staff" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+            <button id="tab-staff" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
           <div class="flex items-center gap-2">
-            <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             <button id="btn-add-student-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
@@ -107,12 +116,12 @@ export async function renderStudentsList(container, role) {
         </div>
 
         <!-- Bộ lọc gộp lại trên 1 dòng có bộ lọc nâng cao -->
-        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-[#e2e2e4] shadow-sm">
+        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-slate-100 shadow-sm">
           <div class="relative flex-1 min-w-[180px] text-xs">
-            <input id="search-students-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
-            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
+            <input id="search-students-input" class="w-full pl-8 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
+            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-450 text-[16px]">search</span>
           </div>
-          <select id="filter-level" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-level" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả trình độ</option>
             <option value="Cơ bản A1">A1 Beginner</option>
             <option value="Cơ bản A2">A2 Elementary</option>
@@ -121,14 +130,14 @@ export async function renderStudentsList(container, role) {
             <option value="Cao cấp C1">C1 Advanced</option>
             <option value="Cao cấp C2">C2 Proficiency</option>
           </select>
-          <select id="filter-status" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-status" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả trạng thái</option>
             <option value="con_han">Đang hoạt động</option>
             <option value="sap_het_han">Sắp hết hạn</option>
             <option value="het_han">Đã hết hạn</option>
             <option value="chua_dang_ky">Chưa mua gói</option>
           </select>
-          <select id="filter-package" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-package" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer max-w-[160px]">
             <option value="">Tất cả gói học</option>
             <optgroup label="Khóa học đại trà">
               ${coursePkgs.map(p => `<option value="course_${p.id}">${p.ten_goi}</option>`).join('')}
@@ -137,32 +146,32 @@ export async function renderStudentsList(container, role) {
               ${tutoringPkgs.map(p => `<option value="tutor_${p.id}">${p.ten_goi}</option>`).join('')}
             </optgroup>
           </select>
-          <select id="filter-teacher" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-teacher" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer max-w-[160px]">
             <option value="">Tất cả giáo viên</option>
             ${teachersList.map(t => `<option value="${t.id}">${t.ho_ten}</option>`).join('')}
           </select>
-          <select id="filter-gender" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-gender" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả giới tính</option>
             <option value="nam">Nam</option>
             <option value="nữ">Nữ</option>
             <option value="khác">Khác</option>
           </select>
-          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
             <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
           </button>
         </div>
 
         <!-- Table Container (bỏ cột Chi nhánh, còn 5 cột) -->
-        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
+        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden flex flex-col shadow-sm">
           <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">HỌC VIÊN</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">TRÌNH ĐỘ</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">LIÊN HỆ PHỤ HUYNH</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">TRẠNG THÁI</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 text-right">THAO TÁC</th>
+                <tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">HỌC VIÊN</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">TRÌNH ĐỘ</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">LIÊN HỆ PHỤ HUYNH</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">TRẠNG THÁI</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody id="students-table-body">
@@ -171,8 +180,8 @@ export async function renderStudentsList(container, role) {
             </table>
           </div>
           <!-- Nút Tải thêm học viên kiểm soát được -->
-          <div id="load-more-container" class="py-3 px-6 text-center border-t border-[#f3f3f5] bg-slate-50/50 hidden">
-            <button id="btn-load-more" class="px-5 py-2 bg-white hover:bg-slate-50 border border-[#e2e2e4] text-slate-600 rounded-full text-xs font-bold transition active:scale-95 inline-flex items-center gap-1">
+          <div id="load-more-container" class="py-3 px-6 text-center border-t border-slate-100 bg-slate-50/50 hidden">
+            <button id="btn-load-more" class="px-5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-full text-xs font-bold transition active:scale-95 inline-flex items-center gap-1">
               <span>Tải thêm học viên</span>
               <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
             </button>
@@ -182,8 +191,8 @@ export async function renderStudentsList(container, role) {
       </div>
 
       <!-- MODAL TIẾP NHẬN HỌC VIÊN MỚI (Ẩn mặc định) -->
-      <div id="add-student-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
+      <div id="add-student-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 animate-fadeIn">
+        <div class="bg-white rounded-[28px] max-w-2xl w-full p-6 space-y-4 border border-slate-100 shadow-2xl max-h-[90vh] overflow-y-auto" style="animation: modalIn 0.2s ease">
           <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
             <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[20px]">person_add</span>

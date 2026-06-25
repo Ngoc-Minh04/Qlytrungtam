@@ -29,30 +29,30 @@ export async function renderStaffList(container, role) {
 
     function renderTableRows(pageList) {
       if (pageList.length === 0) {
-        return `<tr><td colspan="5" class="px-6 py-6 text-center text-slate-500 text-xs">Không tìm thấy nhân viên nào phù hợp.</td></tr>`;
+        return `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs font-semibold">Không tìm thấy nhân viên nào phù hợp.</td></tr>`;
       }
       return pageList.map(nv => `
-        <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${nv.id}">
-          <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
+        <tr class="hover:bg-slate-50/50 border-b border-slate-100 text-xs transition group cursor-pointer" data-id="${nv.id}">
+          <td class="sticky left-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-bold text-white select-none text-sm shrink-0">
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-gradient-to-br from-slate-100 to-slate-200/50 flex items-center justify-center font-bold text-slate-700 select-none shrink-0 border border-slate-200/20">
                 ${nv.avatar_url ? `<img src="${nv.avatar_url}" class="w-full h-full object-cover">` : (nv.ho_ten || 'N').charAt(0)}
               </div>
               <div>
-                <div class="font-bold text-apple-ink text-sm">${nv.ho_ten || '—'}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Mã: ${nv.ma_ho_so || '—'}</div>
+                <div class="font-bold text-slate-800 text-sm tracking-tight">${nv.ho_ten || '—'}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Mã: ${nv.ma_ho_so || '—'}</div>
               </div>
             </div>
           </td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-100">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-50/60 text-emerald-700 font-bold text-[10px] border border-emerald-100/70 select-none">
               ${roleLabels[nv.chuc_vu] || nv.chuc_vu || 'Nhân viên'}
             </span>
           </td>
-          <td class="px-6 py-4 text-slate-600 font-medium">${nv.so_dien_thoai || '—'}</td>
-          <td class="px-6 py-4 text-slate-600">${nv.email || '—'}</td>
-          <td class="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4 text-right">
-            <button class="btn-delete-staff px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${nv.id}">
+          <td class="px-6 py-4 text-slate-700 font-semibold">${nv.so_dien_thoai || '—'}</td>
+          <td class="px-6 py-4 text-slate-600 font-medium">${nv.email || '—'}</td>
+          <td class="sticky right-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4 text-right">
+            <button class="btn-delete-staff px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100/80 text-rose-600 rounded-full transition text-[11px] font-bold active:scale-95 shadow-sm" data-id="${nv.id}">
               Xóa
             </button>
           </td>
@@ -64,22 +64,22 @@ export async function renderStaffList(container, role) {
       <div class="space-y-4">
         <!-- Tab 3 nút -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none">
-            <button id="tab-students" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+          <div class="inline-flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
+            <button id="tab-students" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
             </button>
-            <button id="tab-teachers" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+            <button id="tab-teachers" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
             </button>
-            <button id="tab-staff-active" class="px-5 py-1.5 rounded-lg bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
+            <button id="tab-staff-active" class="px-5 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/30 text-xs font-bold text-slate-800 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
           <div class="flex items-center gap-2">
-            <button id="btn-refresh-staff" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-staff" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
-            <button id="btn-add-staff-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-add-staff-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">add</span>
               Thêm nhân viên mới
             </button>
@@ -87,32 +87,32 @@ export async function renderStaffList(container, role) {
         </div>
 
         <!-- Bộ lọc -->
-        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-[#e2e2e4] shadow-sm">
+        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-slate-100 shadow-sm">
           <div class="relative flex-1 min-w-[180px] text-xs">
-            <input id="search-staff-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
-            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
+            <input id="search-staff-input" class="w-full pl-8 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
+            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-455 text-[16px]">search</span>
           </div>
-          <select id="filter-staff-role" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-staff-role" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả vai trò</option>
             <option value="Quản lý">Quản lý</option>
             <option value="Nhân viên">Nhân viên</option>
           </select>
-          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
             <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
           </button>
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
+        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden flex flex-col shadow-sm">
           <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">NHÂN VIÊN</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">CHỨC VỤ</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">SỐ ĐIỆN THOẠI</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">EMAIL</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 text-right">THAO TÁC</th>
+                <tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">NHÂN VIÊN</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">CHỨC VỤ</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">SỐ ĐIỆN THOẠI</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">EMAIL</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody id="staff-table-body">
@@ -121,8 +121,8 @@ export async function renderStaffList(container, role) {
             </table>
           </div>
           <!-- Nút Tải thêm nhân viên kiểm soát được -->
-          <div id="load-more-container" class="py-3 px-6 text-center border-t border-[#f3f3f5] bg-slate-50/50 hidden">
-            <button id="btn-load-more" class="px-5 py-2 bg-white hover:bg-slate-50 border border-[#e2e2e4] text-slate-600 rounded-full text-xs font-bold transition active:scale-95 inline-flex items-center gap-1">
+          <div id="load-more-container" class="py-3 px-6 text-center border-t border-slate-100 bg-slate-50/50 hidden">
+            <button id="btn-load-more" class="px-5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-full text-xs font-bold transition active:scale-95 inline-flex items-center gap-1">
               <span>Tải thêm nhân viên</span>
               <span id="load-more-spinner" class="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-apple-blue hidden"></span>
             </button>
@@ -132,14 +132,14 @@ export async function renderStaffList(container, role) {
       </div>
 
       <!-- MODAL THÊM NHÂN VIÊN MỚI -->
-      <div id="add-staff-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
-          <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
-            <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
-              <span class="material-symbols-outlined text-emerald-600 text-[20px]">person_add</span>
+      <div id="add-staff-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 animate-fadeIn">
+        <div class="bg-white rounded-[28px] max-w-xl w-full p-6 space-y-4 border border-slate-100 shadow-2xl max-h-[90vh] overflow-y-auto" style="animation: modalIn 0.2s ease">
+          <div class="flex justify-between items-center pb-3.5 border-b border-slate-50">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span class="material-symbols-outlined text-apple-blue text-[20px]">person_add</span>
               Thêm nhân viên mới
             </h3>
-            <button id="btn-close-staff-modal" class="p-1.5 text-[#727784] hover:bg-[#f3f3f5] rounded-full transition-all">
+            <button id="btn-close-staff-modal" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
               <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
@@ -147,76 +147,75 @@ export async function renderStaffList(container, role) {
             <div class="flex flex-col sm:flex-row gap-4 items-start">
               <!-- Avatar vuông góc trái trên cùng -->
               <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
-                <span class="block font-semibold text-slate-600 self-start sm:self-center">Ảnh đại diện</span>
-                <div class="relative w-24 h-24 border border-dashed border-[#e2e2e4] rounded-2xl overflow-hidden flex items-center justify-center bg-[#f3f3f5] hover:bg-slate-100 transition cursor-pointer group" id="modal-avatar-preview-container">
+                <span class="block font-semibold text-slate-500 self-start sm:self-center">Ảnh đại diện</span>
+                <div class="relative w-24 h-24 border border-dashed border-slate-200 rounded-[20px] overflow-hidden flex items-center justify-center bg-slate-50 hover:bg-slate-100/50 transition cursor-pointer group shadow-inner" id="modal-avatar-preview-container">
                   <span class="material-symbols-outlined text-[28px] text-slate-400 group-hover:scale-110 transition duration-150">upload</span>
                   <img id="modal-add-avatar-preview" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
                 <input type="file" id="modal-add-avatar" accept="image/*" class="hidden">
-                <button type="button" id="btn-trigger-avatar-upload" class="px-2.5 py-1 bg-white border border-[#e2e2e4] text-[10px] font-bold rounded-lg hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
+                <button type="button" id="btn-trigger-avatar-upload" class="px-3 py-1 bg-white border border-slate-200 text-[10px] font-bold rounded-full hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
               </div>
 
               <!-- Cột thông tin cơ bản bên phải avatar -->
               <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <div class="sm:col-span-2">
-                  <label class="block font-semibold text-slate-600 mb-1">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <div class="sm:col-span-2 space-y-1.5">
+                  <label class="block font-semibold text-slate-500">Họ và tên nhân viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-staff-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
                 </div>
               </div>
             </div>
 
             <!-- Các hàng thông tin khác phía dưới -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-staff-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Địa chỉ Email</label>
-                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Địa chỉ Email</label>
+                <input type="email" id="modal-staff-email" placeholder="staff@example.com" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-staff-role" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Chức vụ / Vai trò <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-staff-role" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Nhân viên">Nhân viên</option>
                   <option value="Quản lý">Quản lý</option>
                 </select>
               </div>
-              <div class="hidden">
-                <label class="block font-semibold text-slate-600 mb-1">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-staff-branch" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+              <div class="hidden space-y-1.5">
+                <label class="block font-semibold text-slate-500">Chi nhánh <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-staff-branch" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Trung tam chính" selected>Trung tâm chính</option>
                   <option value="Downtown Campus">Downtown Campus</option>
                 </select>
               </div>
 
               <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
-              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50/55 rounded-[20px] border border-slate-100">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="modal-staff-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
                   <label for="modal-staff-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
-                  <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập </label>
-                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
+                  <div class="space-y-1.5">
+                    <label class="block font-semibold text-slate-500">Tên đăng nhập </label>
+                    <input type="text" id="modal-staff-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 cursor-not-allowed">
                   </div>
-                  <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
-                    <input type="text" id="modal-staff-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
+                  <div class="space-y-1.5">
+                    <label class="block font-semibold text-slate-500">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-staff-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-white">
                   </div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
-              <button type="button" id="btn-cancel-staff-add" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-xl bg-emerald-600 hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">Lưu nhân viên</button>
+            <div class="flex justify-end gap-2 pt-4 border-t border-slate-50">
+              <button type="button" id="btn-cancel-staff-add" class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-7 py-2.5 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu nhân viên</button>
             </div>
           </form>
         </div>
-      </div>
     `;
 
     const tableBody = document.getElementById('staff-table-body');

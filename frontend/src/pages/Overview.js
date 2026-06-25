@@ -121,116 +121,116 @@ async function renderAdminOverview(container, role) {
       </div>
 
       <!-- ===== BENTO ROW 1: KPI nhỏ x4 ===== -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
         <!-- HV -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="students-group">
-          <div class="flex items-start justify-between mb-3">
-            <div class="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-              <span class="material-symbols-outlined text-blue-600 text-[20px]">group</span>
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-2.5 bg-blue-50 rounded-2xl group-hover:bg-blue-100 transition-colors">
+              <span class="material-symbols-outlined text-blue-600 text-[22px]">group</span>
             </div>
-            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wide">Active</span>
+            <span class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Hoạt động</span>
           </div>
-          <div class="text-3xl font-extrabold text-slate-800 tracking-tight leading-none">${students.length}</div>
-          <div class="text-[11px] font-medium text-slate-500 mt-1">Tổng học viên</div>
-          <div class="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[12px] text-blue-400">arrow_forward</span>Xem danh sách
+          <div class="text-3.5xl font-black text-slate-800 tracking-tight leading-none">${students.length}</div>
+          <div class="text-xs font-bold text-slate-500 mt-1.5">Tổng học viên</div>
+          <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-blue-500">arrow_forward</span>Xem danh sách
           </div>
         </div>
 
         <!-- GV -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-purple-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="teachers-group">
-          <div class="flex items-start justify-between mb-3">
-            <div class="p-2 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
-              <span class="material-symbols-outlined text-purple-600 text-[20px]">badge</span>
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-2.5 bg-purple-50 rounded-2xl group-hover:bg-purple-100 transition-colors">
+              <span class="material-symbols-outlined text-purple-600 text-[22px]">badge</span>
             </div>
-            <span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full uppercase tracking-wide">GV</span>
+            <span class="text-[9px] font-extrabold text-purple-600 bg-purple-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Nhân sự</span>
           </div>
-          <div class="text-3xl font-extrabold text-slate-800 tracking-tight leading-none">${teachers.length}</div>
-          <div class="text-[11px] font-medium text-slate-500 mt-1">Giáo viên & Trợ giảng</div>
-          <div class="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[12px] text-purple-400">arrow_forward</span>Xem nhân sự
+          <div class="text-3.5xl font-black text-slate-800 tracking-tight leading-none">${teachers.length}</div>
+          <div class="text-xs font-bold text-slate-500 mt-1.5">Giáo viên & Trợ giảng</div>
+          <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-purple-500">arrow_forward</span>Xem nhân sự
           </div>
         </div>
 
         <!-- Buổi hôm nay -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-amber-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="schedules">
-          <div class="flex items-start justify-between mb-3">
-            <div class="p-2 bg-amber-50 rounded-xl group-hover:bg-amber-100 transition-colors">
-              <span class="material-symbols-outlined text-amber-600 text-[20px]">calendar_today</span>
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-2.5 bg-amber-50 rounded-2xl group-hover:bg-amber-100 transition-colors">
+              <span class="material-symbols-outlined text-amber-600 text-[22px]">calendar_today</span>
             </div>
-            <span class="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wide">Hôm nay</span>
+            <span class="text-[9px] font-extrabold text-amber-700 bg-amber-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Hôm nay</span>
           </div>
-          <div class="text-3xl font-extrabold text-slate-800 tracking-tight leading-none">${checkinsToday.length}</div>
-          <div class="text-[11px] font-medium text-slate-500 mt-1">Check-in hôm nay</div>
-          <div class="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[12px] text-amber-400">arrow_forward</span>
+          <div class="text-3.5xl font-black text-slate-800 tracking-tight leading-none">${checkinsToday.length}</div>
+          <div class="text-xs font-bold text-slate-500 mt-1.5">Check-in hôm nay</div>
+          <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-amber-500">arrow_forward</span>
             ${earliestCheckin ? `Sớm nhất: ${earliestCheckin.ho_ten.split(' ').pop()} (${earliestCheckin.gio_quet.slice(0, 5)})` : 'Xem lượt vào-ra'}
           </div>
         </div>
 
         <!-- Yêu cầu chờ -->
-        <div class="bento-card group cursor-pointer rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98] border
-          ${pendingBookings.length > 0 ? 'bg-red-50 border-red-200 hover:border-red-400' : 'bg-white border-[#e2e2e4] hover:border-emerald-300'}"
+        <div class="bento-card group cursor-pointer rounded-3xl p-5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] border
+          ${pendingBookings.length > 0 ? 'bg-red-50/60 border-red-200 hover:border-red-400' : 'bg-white border-apple-divider/30 hover:border-emerald-300'}"
           data-nav="finance-group">
-          <div class="flex items-start justify-between mb-3">
-            <div class="p-2 rounded-xl transition-colors ${pendingBookings.length > 0 ? 'bg-red-100' : 'bg-emerald-50 group-hover:bg-emerald-100'}">
-              <span class="material-symbols-outlined text-[20px] ${pendingBookings.length > 0 ? 'text-red-600' : 'text-emerald-600'}">pending_actions</span>
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-2.5 rounded-2xl transition-colors ${pendingBookings.length > 0 ? 'bg-red-100/80' : 'bg-emerald-50 group-hover:bg-emerald-100'}">
+              <span class="material-symbols-outlined text-[22px] ${pendingBookings.length > 0 ? 'text-red-600' : 'text-emerald-600'}">pending_actions</span>
             </div>
-            ${pendingBookings.length > 0 ? `<span class="text-[9px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full uppercase tracking-wide animate-pulse">Cần xử lý</span>` : `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wide">OK</span>`}
+            ${pendingBookings.length > 0 ? `<span class="text-[9px] font-extrabold text-red-700 bg-red-100/80 px-2.5 py-1 rounded-full uppercase tracking-wider animate-pulse">Cần xử lý</span>` : `<span class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-full uppercase tracking-wider">Hoàn tất</span>`}
           </div>
-          <div class="text-3xl font-extrabold tracking-tight leading-none ${pendingBookings.length > 0 ? 'text-red-700' : 'text-slate-800'}">${pendingBookings.length}</div>
-          <div class="text-[11px] font-medium mt-1 ${pendingBookings.length > 0 ? 'text-red-600' : 'text-slate-500'}">Booking chờ duyệt</div>
-          <div class="text-[10px] mt-2 flex items-center gap-1 ${pendingBookings.length > 0 ? 'text-red-400' : 'text-slate-400'}">
-            <span class="material-symbols-outlined text-[12px]">arrow_forward</span>Vào xử lý ngay
+          <div class="text-3.5xl font-black tracking-tight leading-none ${pendingBookings.length > 0 ? 'text-red-700' : 'text-slate-800'}">${pendingBookings.length}</div>
+          <div class="text-xs font-bold mt-1.5 ${pendingBookings.length > 0 ? 'text-red-600' : 'text-slate-500'}">Booking chờ duyệt</div>
+          <div class="text-[10px] mt-3 flex items-center gap-1 ${pendingBookings.length > 0 ? 'text-red-400' : 'text-slate-400'}">
+            <span class="material-symbols-outlined text-[13px]">arrow_forward</span>Vào xử lý ngay
           </div>
         </div>
 
       </div>
 
       <!-- ===== BENTO ROW 2: Doanh thu lớn + Yêu cầu ===== -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        <!-- Doanh thu tháng — full width trên mobile, 2/3 trên desktop -->
-        <div class="bento-card group cursor-pointer lg:col-span-2 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98]
-          bg-gradient-to-br from-[#0055cc] to-[#0a6ebd] border border-[#0055cc] hover:border-blue-400"
+        <!-- Doanh thu tháng (Phong cách Dark Mode Premium Luxury) -->
+        <div class="bento-card group cursor-pointer lg:col-span-2 rounded-3xl p-6 shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]
+          bg-gradient-to-br from-[#1c1d21] to-[#343538] border border-slate-700/40 hover:border-slate-500/50"
           data-nav="revenue-report">
-          <div class="flex items-start justify-between mb-4">
+          <div class="flex items-start justify-between mb-5">
             <div>
-              <span class="text-[10px] font-bold text-blue-200 uppercase tracking-widest block">Doanh thu tháng ${now.getMonth() + 1}/${now.getFullYear()}</span>
-              <div class="text-4xl font-extrabold text-white tracking-tight mt-1">${fmt(monthRevenue)}<span class="text-lg font-semibold text-blue-200 ml-1">đ</span></div>
+              <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Doanh thu tháng ${now.getMonth() + 1}/${now.getFullYear()}</span>
+              <div class="text-4xl font-black text-white tracking-tight mt-1.5">${fmt(monthRevenue)}<span class="text-sm font-semibold text-slate-400 ml-1.5">VNĐ</span></div>
             </div>
-            <div class="p-2.5 bg-white/15 rounded-xl">
+            <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner">
               <span class="material-symbols-outlined text-white text-[24px]">payments</span>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3 mt-2">
-            <div class="bg-white/10 rounded-xl p-3">
-              <div class="text-[10px] text-blue-200 font-semibold uppercase tracking-wide">Tổng doanh thu</div>
-              <div class="text-base font-extrabold text-white mt-0.5">${fmt(totalRevenue)} đ</div>
+          <div class="grid grid-cols-2 gap-4 mt-2">
+            <div class="bg-white/5 rounded-2xl p-4 border border-white/5 backdrop-blur-md">
+              <div class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Tổng tích lũy</div>
+              <div class="text-lg font-black text-white mt-1">${fmt(totalRevenue)} <span class="text-[10px] text-slate-400 font-normal">đ</span></div>
             </div>
-            <div class="bg-white/10 rounded-xl p-3">
-              <div class="text-[10px] text-blue-200 font-semibold uppercase tracking-wide">Học phí chưa thu</div>
-              <div class="text-base font-extrabold text-amber-300 mt-0.5">${fmt(unpaidRevenue)} đ</div>
+            <div class="bg-white/5 rounded-2xl p-4 border border-white/5 backdrop-blur-md">
+              <div class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Chưa đối soát</div>
+              <div class="text-lg font-black text-amber-400 mt-1">${fmt(unpaidRevenue)} <span class="text-[10px] text-slate-400 font-normal">đ</span></div>
             </div>
           </div>
-          <div class="mt-3 text-[10px] text-blue-200 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[12px]">arrow_forward</span>Xem báo cáo chi tiết
+          <div class="mt-4 text-[10px] text-slate-400 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-slate-400">arrow_forward</span>Xem báo cáo doanh thu chi tiết
           </div>
         </div>
 
         <!-- Gói bán chạy -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-6 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="course-packages-group">
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <div class="p-2 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors">
+              <div class="p-2.5 bg-indigo-50 rounded-2xl group-hover:bg-indigo-100 transition-colors">
                 <span class="material-symbols-outlined text-indigo-600 text-[18px]">school</span>
               </div>
-              <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Gói bán chạy</span>
+              <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Gói bán chạy nhất</span>
             </div>
           </div>
           <div class="space-y-2.5">
@@ -258,89 +258,89 @@ async function renderAdminOverview(container, role) {
       </div>
 
       <!-- ===== BENTO ROW 3: Chất lượng GV + Yêu cầu HV + Feed ===== -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <!-- Đánh giá GV -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-6 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-amber-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="quality-group">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="p-2 bg-amber-50 rounded-xl group-hover:bg-amber-100 transition-colors">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="p-2.5 bg-amber-50 rounded-2xl group-hover:bg-amber-100 transition-colors">
               <span class="material-symbols-outlined text-amber-500 text-[18px]">star</span>
             </div>
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Chất lượng giảng dạy</span>
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Chất lượng giảng dạy</span>
           </div>
           ${avgRating ? `
-            <div class="flex items-end gap-3 mb-3">
-              <div class="text-4xl font-extrabold text-slate-800 tracking-tight leading-none">${avgRating}</div>
+            <div class="flex items-end gap-3 mb-4">
+              <div class="text-4xl font-black text-slate-800 tracking-tight leading-none">${avgRating}</div>
               <div>
-                <div class="flex gap-0.5 mb-1">
+                <div class="flex gap-0.5 mb-1.5">
                   ${Array.from({ length: 5 }).map((_, i) => `<span class="material-symbols-outlined fill-current text-[14px] ${i < Math.round(parseFloat(avgRating)) ? 'text-amber-400' : 'text-slate-200'}">star</span>`).join('')}
                 </div>
-                <div class="text-[10px] text-slate-400">${ratings.length} lượt đánh giá</div>
+                <div class="text-[10px] text-slate-400 font-bold">${ratings.length} lượt đánh giá</div>
               </div>
             </div>
             ${topTeacher ? `
-              <div class="bg-amber-50 rounded-xl p-2.5 flex items-center gap-2">
-                <span class="material-symbols-outlined text-amber-500 text-[16px]">emoji_events</span>
+              <div class="bg-gradient-to-br from-amber-50 to-orange-50/30 rounded-2xl p-3 flex items-center gap-3 border border-amber-100">
+                <span class="material-symbols-outlined text-amber-500 text-[18px]">emoji_events</span>
                 <div class="min-w-0">
-                  <div class="text-[10px] text-amber-700 font-bold uppercase">GV được yêu thích nhất</div>
-                  <div class="text-[11px] font-semibold text-slate-700 truncate">${topTeacher.ho_ten || `GV #${topTeacher.giao_vien_id}`}</div>
+                  <div class="text-[9px] text-amber-700 font-extrabold uppercase tracking-wide">GV được yêu thích nhất</div>
+                  <div class="text-[11px] font-bold text-slate-700 truncate">${topTeacher.ho_ten || `GV #${topTeacher.giao_vien_id}`}</div>
                 </div>
-                <div class="text-amber-600 font-extrabold text-sm ml-auto shrink-0">${parseFloat(topTeacher.trung_binh).toFixed(1)}★</div>
+                <div class="text-amber-600 font-black text-sm ml-auto shrink-0">${parseFloat(topTeacher.trung_binh).toFixed(1)}★</div>
               </div>
             ` : ''}
           ` : `<p class="text-xs text-slate-400 py-4 text-center">Chưa có đánh giá nào</p>`}
-          <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
+          <div class="text-[10px] text-slate-400 mt-4 flex items-center gap-1">
             <span class="material-symbols-outlined text-[12px] text-amber-400">arrow_forward</span>Xem tất cả đánh giá
           </div>
         </div>
 
         <!-- Yêu cầu tổng hợp -->
-        <div class="bento-card group cursor-pointer bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-200 active:scale-[0.98]"
+        <div class="bento-card group cursor-pointer bg-white border border-apple-divider/30 rounded-3xl p-6 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-rose-300 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
           data-nav="finance-group">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="p-2 bg-rose-50 rounded-xl group-hover:bg-rose-100 transition-colors">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="p-2.5 bg-rose-50 rounded-2xl group-hover:bg-rose-100 transition-colors">
               <span class="material-symbols-outlined text-rose-500 text-[18px]">inbox</span>
             </div>
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Yêu cầu từ học viên</span>
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Yêu cầu từ học viên</span>
           </div>
           <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-amber-500 text-[16px]">calendar_add_on</span>
-                <span class="text-[11px] font-semibold text-slate-700">Đặt lịch chờ duyệt</span>
+            <div class="flex items-center justify-between p-3.5 bg-amber-50/60 rounded-2xl border border-amber-100/70">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-amber-500 text-[18px]">calendar_add_on</span>
+                <span class="text-[11px] font-bold text-slate-700">Đặt lịch chờ duyệt</span>
               </div>
-              <span class="text-base font-extrabold ${pendingBookings.length > 0 ? 'text-amber-600' : 'text-slate-400'}">${pendingBookings.length}</span>
+              <span class="text-base font-black ${pendingBookings.length > 0 ? 'text-amber-600' : 'text-slate-400'}">${pendingBookings.length}</span>
             </div>
-            <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-red-500 text-[16px]">cancel</span>
-                <span class="text-[11px] font-semibold text-slate-700">Đã hủy khóa học</span>
+            <div class="flex items-center justify-between p-3.5 bg-red-50/60 rounded-2xl border border-red-100/70">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-red-500 text-[18px]">cancel</span>
+                <span class="text-[11px] font-bold text-slate-700">Đã hủy khóa học</span>
               </div>
-              <span class="text-base font-extrabold text-red-500">${cancelRequests.length}</span>
+              <span class="text-base font-black text-red-500">${cancelRequests.length}</span>
             </div>
-            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-slate-400 text-[16px]">how_to_reg</span>
-                <span class="text-[11px] font-semibold text-slate-700">Đăng ký đang hoạt động</span>
+            <div class="flex items-center justify-between p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100/70">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-slate-400 text-[18px]">how_to_reg</span>
+                <span class="text-[11px] font-bold text-slate-700">Đăng ký đang hoạt động</span>
               </div>
-              <span class="text-base font-extrabold text-slate-700">${regs.filter(r => r.trang_thai === 'dang_hoat_dong').length}</span>
+              <span class="text-base font-black text-slate-700">${regs.filter(r => r.trang_thai === 'dang_hoat_dong').length}</span>
             </div>
           </div>
-          <div class="text-[10px] text-slate-400 mt-3 flex items-center gap-1">
+          <div class="text-[10px] text-slate-400 mt-4 flex items-center gap-1">
             <span class="material-symbols-outlined text-[12px] text-rose-400">arrow_forward</span>Vào xử lý yêu cầu
           </div>
         </div>
 
         <!-- Feed hoạt động gần đây -->
-        <div class="bg-white border border-[#e2e2e4] rounded-2xl p-5 shadow-sm md:col-span-2 lg:col-span-1">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="p-2 bg-slate-100 rounded-xl">
+        <div class="bg-white border border-apple-divider/30 rounded-3xl p-6 shadow-sm md:col-span-2 lg:col-span-1 flex flex-col">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="p-2.5 bg-slate-100 rounded-2xl">
               <span class="material-symbols-outlined text-slate-500 text-[18px]">dynamic_feed</span>
             </div>
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Hoạt động gần đây</span>
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Hoạt động gần đây</span>
           </div>
-          <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1 custom-scroll">
+          <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1 flex-1 stella-scroll">
             ${feedItems.length === 0 ? `<p class="text-xs text-slate-400 text-center py-6">Chưa có hoạt động nào.</p>` :
       feedItems.map(item => `
                 <div class="flex items-start gap-2.5 py-2 border-b border-[#f3f3f5] last:border-0 cursor-pointer hover:bg-slate-50 rounded-lg px-1 transition-colors feed-item" data-nav="${item.page}">

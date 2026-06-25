@@ -27,31 +27,31 @@ export async function renderTeachersList(container, role) {
 
     function renderTableRows(pageTeachers) {
       if (pageTeachers.length === 0) {
-        return `<tr><td colspan="6" class="px-6 py-6 text-center text-slate-500 text-xs">Không tìm thấy giáo viên nào phù hợp.</td></tr>`;
+        return `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-xs font-semibold">Không tìm thấy giáo viên nào phù hợp.</td></tr>`;
       }
       return pageTeachers.map(t => `
-        <tr class="hover:bg-slate-50 border-b border-apple-divider/40 text-xs transition group cursor-pointer" data-id="${t.id}">
-          <td class="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4">
+        <tr class="hover:bg-slate-50/50 border-b border-slate-100 text-xs transition group cursor-pointer" data-id="${t.id}">
+          <td class="sticky left-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full overflow-hidden shadow-md bg-apple-parchment flex items-center justify-center font-bold text-apple-blue select-none shrink-0">
+              <div class="w-9 h-9 rounded-full overflow-hidden shadow-sm bg-gradient-to-br from-slate-100 to-slate-200/50 flex items-center justify-center font-bold text-slate-700 select-none shrink-0 border border-slate-200/20">
                 ${t.avatar_url ? `<img src="${t.avatar_url}" class="w-full h-full object-cover">` : (t.ho_ten ? t.ho_ten.charAt(0) : 'G')}
               </div>
               <div>
-                <div class="font-bold text-apple-ink text-sm">${t.ho_ten}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Mã số: ${t.ma_ho_so}</div>
+                <div class="font-bold text-slate-800 text-sm tracking-tight">${t.ho_ten}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Mã số: ${t.ma_ho_so}</div>
               </div>
             </div>
           </td>
           <td class="px-6 py-4 hidden">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f3f3f5] text-apple-ink font-bold text-[10px] border border-[#e2e2e4]">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-600 font-bold text-[10px] border border-slate-200/60">
               ${t.chuyen_mon || 'Dạy tiếng Anh'}
             </span>
           </td>
-          <td class="px-6 py-4 text-slate-600 font-medium">${t.so_dien_thoai || '—'}</td>
-          <td class="px-6 py-4 text-slate-600">${t.email || '—'}</td>
-          <td class="px-6 py-4 text-slate-600">${t.kinh_nghiem || 0} năm kinh nghiệm</td>
-          <td class="sticky right-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-6 py-4 text-right">
-            <button class="btn-delete-teacher-row px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition text-[11px] font-semibold active:scale-95" data-id="${t.id}">
+          <td class="px-6 py-4 text-slate-700 font-semibold">${t.so_dien_thoai || '—'}</td>
+          <td class="px-6 py-4 text-slate-600 font-medium">${t.email || '—'}</td>
+          <td class="px-6 py-4 text-slate-600 font-medium">${t.kinh_nghiem || 0} năm kinh nghiệm</td>
+          <td class="sticky right-0 bg-white group-hover:bg-slate-50/50 transition-colors z-10 px-6 py-4 text-right">
+            <button class="btn-delete-teacher-row px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100/80 text-rose-600 rounded-full transition text-[11px] font-bold active:scale-95 shadow-sm" data-id="${t.id}">
               Xóa
             </button>
           </td>
@@ -63,20 +63,20 @@ export async function renderTeachersList(container, role) {
       <div class="space-y-6">
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="inline-flex bg-[#f3f3f5] p-1 rounded-xl border border-[#e2e2e4] select-none">
-            <button id="tab-students" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+          <div class="inline-flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
+            <button id="tab-students" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
             </button>
-            <button id="tab-teachers-active" class="px-5 py-1.5 rounded-lg bg-white shadow-sm border border-apple-divider/20 text-xs font-semibold text-apple-ink transition active:scale-95">
+            <button id="tab-teachers-active" class="px-5 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/30 text-xs font-bold text-slate-800 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
             </button>
-            <button id="tab-staff" class="px-5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-apple-ink transition active:scale-95">
+            <button id="tab-staff" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
             </button>
           </div>
           <div class="flex items-center gap-2">
             <!-- Nút Refresh đồng bộ kích thước -->
-            <button id="btn-refresh-teachers" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
+            <button id="btn-refresh-teachers" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
             <button id="btn-add-teacher-modal" class="flex items-center gap-1.5 px-5 py-2 rounded-full bg-apple-blue text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-sm h-[32px]">
@@ -87,14 +87,14 @@ export async function renderTeachersList(container, role) {
         </div>
 
         <!-- Filter & Search Bar -->
-        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-[#e2e2e4] shadow-sm">
+        <div class="bg-white p-3 rounded-2xl flex flex-wrap gap-2 items-center border border-slate-100 shadow-sm">
           <!-- Tìm kiếm -->
           <div class="relative flex-1 min-w-[180px] text-xs">
-            <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-[#f3f3f5] border border-[#e2e2e4] rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
-            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400 text-[16px]">search</span>
+            <input id="search-teachers-input" class="w-full pl-8 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-full outline-none focus:border-apple-blue focus:bg-white transition text-xs" placeholder="Tìm tên, mã số, hoặc SĐT..." type="text"/>
+            <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-450 text-[16px]">search</span>
           </div>
           <!-- Bộ lọc Chuyên môn (Ẩn) -->
-          <select id="filter-expertise" class="hidden border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-expertise" class="hidden border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả chuyên môn</option>
             <option value="Dạy tiếng Anh">Dạy tiếng Anh</option>
             <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
@@ -102,37 +102,37 @@ export async function renderTeachersList(container, role) {
             <option value="Tiếng Anh Trẻ Em">Tiếng Anh Trẻ Em</option>
           </select>
           <!-- Bộ Lọc Kinh Nghiệm -->
-          <select id="filter-experience" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-experience" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả kinh nghiệm</option>
             <option value="1-3">1 - 3 năm</option>
             <option value="3-5">3 - 5 năm</option>
             <option value="5+">> 5 năm</option>
           </select>
           <!-- Bộ Lọc Giới Tính -->
-          <select id="filter-gender" class="border border-[#e2e2e4] bg-[#f3f3f5] rounded-full px-3 py-2 outline-none focus:border-apple-blue text-xs font-medium transition cursor-pointer">
+          <select id="filter-gender" class="border border-slate-200 bg-slate-50/50 rounded-full px-3.5 py-2 outline-none focus:border-apple-blue text-xs font-semibold text-slate-600 transition cursor-pointer">
             <option value="">Tất cả giới tính</option>
             <option value="Nam">Nam</option>
             <option value="Nữ">Nữ</option>
             <option value="Khác">Khác</option>
           </select>
           <!-- Nút Đặt lại bộ lọc -->
-          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
+          <button id="btn-reset-filters" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-full transition-all active:scale-95 shadow-sm h-[32px]" type="button">
             <span class="material-symbols-outlined text-[16px]">restart_alt</span>Đặt lại bộ lọc
           </button>
         </div>
 
         <!-- Table Container -->
-        <div class="bg-white rounded-2xl border border-[#e2e2e4] overflow-hidden flex flex-col shadow-sm">
+        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden flex flex-col shadow-sm">
           <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr class="bg-[#f3f3f5] border-b border-[#e2e2e4] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">GIÁO VIÊN</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 hidden">CHUYÊN MÔN</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">SỐ ĐIỆN THOẠI</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">EMAIL</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4">KINH NGHIỆM</th>
-                  <th class="sticky top-0 bg-[#f3f3f5] z-20 px-6 py-4 text-right">THAO TÁC</th>
+                <tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">GIÁO VIÊN</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4 hidden">CHUYÊN MÔN</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">SỐ ĐIỆN THOẠI</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">EMAIL</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4">KINH NGHIỆM</th>
+                  <th class="sticky top-0 bg-slate-50 z-20 px-6 py-4 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody id="teachers-table-body">
@@ -152,14 +152,14 @@ export async function renderTeachersList(container, role) {
       </div>
 
       <!-- MODAL THÊM GIÁO VIÊN MỚI -->
-      <div id="add-teacher-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 border border-[#e2e2e4] shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
-          <div class="flex justify-between items-center pb-3 border-b border-[#f3f3f5]">
-            <h3 class="text-[15px] font-bold text-[#1a1c1d] flex items-center gap-2">
+      <div id="add-teacher-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 animate-fadeIn">
+        <div class="bg-white rounded-[28px] max-w-xl w-full p-6 space-y-4 border border-slate-100 shadow-2xl max-h-[90vh] overflow-y-auto" style="animation: modalIn 0.2s ease">
+          <div class="flex justify-between items-center pb-3.5 border-b border-slate-50">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <span class="material-symbols-outlined text-apple-blue text-[20px]">person_add</span>
               Thêm giáo viên / Trợ giảng mới
             </h3>
-            <button id="btn-close-teacher-modal" class="p-1.5 text-[#727784] hover:bg-[#f3f3f5] rounded-full transition-all">
+            <button id="btn-close-teacher-modal" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
               <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
@@ -167,43 +167,43 @@ export async function renderTeachersList(container, role) {
             <div class="flex flex-col sm:flex-row gap-4 items-start">
               <!-- Avatar vuông góc trái trên cùng -->
               <div class="flex flex-col items-center gap-2 shrink-0 w-full sm:w-28">
-                <span class="block font-semibold text-slate-600 self-start sm:self-center">Ảnh đại diện</span>
-                <div class="relative w-24 h-24 border border-dashed border-[#e2e2e4] rounded-2xl overflow-hidden flex items-center justify-center bg-[#f3f3f5] hover:bg-slate-100 transition cursor-pointer group" id="modal-avatar-preview-container">
+                <span class="block font-semibold text-slate-500 self-start sm:self-center">Ảnh đại diện</span>
+                <div class="relative w-24 h-24 border border-dashed border-slate-200 rounded-[20px] overflow-hidden flex items-center justify-center bg-slate-50 hover:bg-slate-100/50 transition cursor-pointer group shadow-inner" id="modal-avatar-preview-container">
                   <span class="material-symbols-outlined text-[28px] text-slate-400 group-hover:scale-110 transition duration-150">upload</span>
                   <img id="modal-add-avatar-preview" class="absolute inset-0 w-full h-full object-cover hidden">
                 </div>
                 <input type="file" id="modal-add-avatar" accept="image/*" class="hidden">
-                <button type="button" id="btn-trigger-avatar-upload" class="px-2.5 py-1 bg-white border border-[#e2e2e4] text-[10px] font-bold rounded-lg hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
+                <button type="button" id="btn-trigger-avatar-upload" class="px-3 py-1 bg-white border border-slate-200 text-[10px] font-bold rounded-full hover:bg-slate-50 shadow-sm active:scale-95 transition">Chọn ảnh</button>
               </div>
 
               <!-- Cột thông tin cơ bản bên phải avatar -->
               <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <div class="sm:col-span-2">
-                  <label class="block font-semibold text-slate-600 mb-1">Họ và tên giáo viên <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <div class="sm:col-span-2 space-y-1.5">
+                  <label class="block font-semibold text-slate-500">Họ và tên giáo viên <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="modal-teacher-fullName" placeholder="Nhập họ tên đầy đủ..." class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
                 </div>
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">Kinh nghiệm (năm) <span class="text-rose-500 font-bold">*</span></label>
-                  <input type="number" id="modal-teacher-exp" min="0" value="1" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
+                <div class="space-y-1.5">
+                  <label class="block font-semibold text-slate-500">Kinh nghiệm (năm) <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="number" id="modal-teacher-exp" min="0" value="1" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
                 </div>
               </div>
             </div>
 
             <!-- Các hàng thông tin khác phía dưới -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
-                <input type="tel" id="modal-teacher-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Số điện thoại (10 số) <span class="text-rose-500 font-bold">*</span></label>
+                <input type="tel" id="modal-teacher-phone" placeholder="0xxxxxxxxx" maxlength="10" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Phải đúng 10 chữ số, bắt đầu bằng 0</p>
               </div>
-              <div>
-                <label class="block font-semibold text-slate-600 mb-1">Địa chỉ Email</label>
-                <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-apple-pearl text-xs">
-                <p class="text-[10px] text-slate-400 mt-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
+              <div class="space-y-1.5">
+                <label class="block font-semibold text-slate-500">Địa chỉ Email</label>
+                <input type="email" id="modal-teacher-email" placeholder="teacher@example.com" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-slate-50/50">
+                <p class="text-[10px] text-slate-400 mt-1 font-medium pl-1">Ví dụ: abc@gmail.com (không bắt buộc)</p>
               </div>
-              <div class="sm:col-span-2 hidden">
-                <label class="block font-semibold text-slate-600 mb-1">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
-                <select id="modal-teacher-expertise" class="w-full border border-[#e2e2e4] bg-[#f3f3f5] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
+              <div class="sm:col-span-2 hidden space-y-1.5">
+                <label class="block font-semibold text-slate-500">Chuyên môn giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+                <select id="modal-teacher-expertise" class="w-full border border-slate-200 bg-slate-50/50 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition text-xs cursor-pointer">
                   <option value="Dạy tiếng Anh" selected>Dạy tiếng Anh</option>
                   <option value="Dạy Giao tiếp">Dạy Giao tiếp</option>
                   <option value="Luyện thi IELTS">Luyện thi IELTS</option>
@@ -212,30 +212,29 @@ export async function renderTeachersList(container, role) {
               </div>
 
               <!-- Checkbox Tự động tạo tài khoản và Tài khoản / Mật khẩu -->
-              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+              <div class="sm:col-span-2 space-y-3 p-4 bg-slate-50/55 rounded-[20px] border border-slate-100">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="modal-teacher-autoAccount" class="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" checked>
                   <label for="modal-teacher-autoAccount" class="font-bold text-slate-700 cursor-pointer select-none text-xs">Tự động tạo tài khoản đăng nhập</label>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
-                  <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập</label>
-                    <input type="text" id="modal-teacher-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
+                  <div class="space-y-1.5">
+                    <label class="block font-semibold text-slate-500">Tên đăng nhập</label>
+                    <input type="text" id="modal-teacher-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 cursor-not-allowed">
                   </div>
-                  <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Mật khẩu đăng nhập</label>
-                    <input type="text" id="modal-teacher-password" placeholder="Mật khẩu..." class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none focus:border-apple-blue transition bg-white text-xs" value="123456">
+                  <div class="space-y-1.5">
+                    <label class="block font-semibold text-slate-500">Mật khẩu đăng nhập</label>
+                    <input type="text" id="modal-teacher-password" placeholder="Mật khẩu..." class="w-full border border-slate-250 rounded-full px-4 py-2.5 outline-none focus:border-apple-blue transition bg-white">
                   </div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2 pt-4 border-t border-[#f3f3f5]">
-              <button type="button" id="btn-cancel-teacher-add" class="px-5 py-2.5 rounded-xl border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
-              <button type="submit" class="px-7 py-2.5 rounded-xl bg-apple-blue hover:opacity-90 text-white font-semibold transition active:scale-95 shadow-sm text-xs">Lưu giáo viên</button>
+            <div class="flex justify-end gap-2 pt-4 border-t border-slate-50">
+              <button type="button" id="btn-cancel-teacher-add" class="px-5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition active:scale-95 text-xs">Hủy bỏ</button>
+              <button type="submit" class="px-7 py-2.5 rounded-full bg-apple-blue hover:opacity-90 text-white font-bold transition active:scale-95 shadow-sm text-xs">Lưu giáo viên</button>
             </div>
           </form>
         </div>
-      </div>
     `;
 
     const tableBody = document.getElementById('teachers-table-body');
