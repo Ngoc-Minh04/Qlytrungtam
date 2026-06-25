@@ -1,3 +1,9 @@
+### [25/06/2026 08:40] — Sửa lỗi xuất báo cáo chấm công tháng (CSV) bị lỗi quyền truy cập 403
+- **Loại**: Sửa bug
+- **File**: `backend/src/routes/api.js`, `frontend/src/pages/AttendanceStaff.js`
+- **Mô tả**: Sửa lỗi 403 Forbidden khi xuất file báo cáo chấm công. Do trình duyệt chuyển hướng trực tiếp bằng `window.location.href` không đính kèm custom headers xác thực. Đã thay đổi Frontend truyền thêm `role` qua URL query parameters và cập nhật Backend chấp nhận xác thực phân quyền qua query parameter này cho riêng API tải file.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 08:28] — Sửa lỗi hiển thị font chữ UTF-8 của Stella AI
 - **Loại**: Sửa bug
 - **File**: `backend/src/routes/api.js`

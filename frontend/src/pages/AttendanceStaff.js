@@ -740,7 +740,7 @@ export async function renderAttendanceStaff(container) {
 
       // Gắn sự kiện xuất CSV
       document.getElementById('btn-export-attendance-csv')?.addEventListener('click', () => {
-        window.location.href = `${API_BASE}/attendance/export?month=${filterMonth}&year=${filterYear}`;
+        window.location.href = `${API_BASE}/attendance/export?month=${filterMonth}&year=${filterYear}&role=${userRole}`;
       });
 
     } catch (err) {

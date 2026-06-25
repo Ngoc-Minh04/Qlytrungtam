@@ -5001,11 +5001,19 @@ router.get('/attendance/summary', async (req, res) => {
 });
 
 // GET /api/attendance/export: Xuất dữ liệu chấm công tháng dạng CSV
-router.get('/attendance/export', verifyAccess(['admin', 'le_tan']), async (req, res) => {
-  const { month, year } = req.query;
-  const now = new Date();
-  const targetMonth = month ? parseInt(month) : (now.getMonth() + 1);
-  const targetYear = year ? parseInt(year) : now.getFullYear();
+router.get('/attendance/export', async (req, res) => {
+  const { month, year, role } = req.query;
+  const userRole = role || req.headers['x-user-role'] || 'hoc_vien';
+
+  if (userRole !== 'admin' && userRole !== 'le_tan') {
+    return res.status(403).json({ 
+      success: false, 
+      error: 'Quyền truy cập bị từ chối. Hành động này yêu cầu quyền: admin, le_tan' 
+    });
+  }
+
+  const targetMonth = month ? parseInt(month) : (new Date().getMonth() + 1);
+  const targetYear = year ? parseInt(year) : new Date().getFullYear();
 
   try {
     const peopleRes = await pool.query(

@@ -57,13 +57,13 @@ export async function renderAuditLogs(container) {
       tableBody.innerHTML = chunk.map(log => {
         const userKey = (log.ten_dang_nhap || '').toLowerCase().trim();
         const displayUsername = userKey === 'system' ? 'Hệ thống' : (log.ten_dang_nhap || '—');
-        
+
         const roleKey = (log.vai_tro || '').toLowerCase().trim();
         const displayRole = roleMap[roleKey] || log.vai_tro || '—';
-        
+
         const actionKey = (log.hanh_dong || '').toLowerCase().trim();
         const displayAction = actionMap[actionKey] || log.hanh_dong || '—';
-        
+
         return `
           <tr class="hover:bg-apple-parchment border-b border-apple-divider/40 transition text-[11px]">
             <td class="px-6 py-4 whitespace-nowrap text-slate-500">${new Date(log.thoi_diem).toLocaleString()}</td>
@@ -81,7 +81,7 @@ export async function renderAuditLogs(container) {
       <div class="space-y-4">
         <div class="bg-apple-white rounded-[18px] border border-apple-divider overflow-hidden flex flex-col">
           <div class="p-5 border-b border-apple-divider flex justify-between items-center flex-wrap gap-2">
-            <h3 class="font-bold text-apple-ink text-sm uppercase tracking-wider">Nhật ký hệ thống giám sát thao tác (Audit Logs)</h3>
+            <h3 class="font-bold text-apple-ink text-sm uppercase tracking-wider">Nhật ký hệ thống giám sát thao tác</h3>
             <button id="btn-refresh-audit" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-[#e2e2e4] hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
               <span class="material-symbols-outlined text-[16px]">refresh</span>Tải lại
             </button>
