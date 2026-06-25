@@ -60,11 +60,12 @@ export function initChatbot() {
     </style>
 
     <!-- FAB Button -->
-    <button id="stella-fab" class="stella-fab fixed bottom-6 right-6 z-[9998] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 active:scale-95"
-      style="background: linear-gradient(135deg, ${cfg.color} 0%, ${cfg.color}cc 100%); box-shadow: 0 6px 24px ${cfg.color}55;">
+    <button id="stella-fab" class="stella-fab fixed bottom-6 right-6 z-[9998] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-95"
+      style="background: linear-gradient(135deg, ${cfg.color} 0%, ${cfg.color}cc 100%); box-shadow: 0 6px 24px ${cfg.color}55; transition: transform 0.2s ease, box-shadow 0.2s ease;">
       <span class="material-symbols-outlined text-white text-[26px]" id="stella-fab-icon">smart_toy</span>
       <span id="stella-notif-dot" class="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full hidden"></span>
     </button>
+
 
     <!-- Chat Panel -->
     <div id="stella-panel" class="stella-panel fixed bottom-24 right-6 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] hidden flex-col rounded-3xl overflow-hidden shadow-2xl border border-[#e2e2e4]"
@@ -114,6 +115,147 @@ export function initChatbot() {
 
   document.body.appendChild(widget);
 
+  // --- LOGIC KÉO THẢ (DRAG & DROP) CHO CHAT PANEL & FAB BUTTON ---
+  const fab = document.getElementById('stella-fab');
+  const panel = document.getElementById('stella-panel');
+  const header = panel.querySelector('div[style*="background"]');
+
+  let panelOffset = { x: 0, y: 0 };
+  let fabOffset = { x: 0, y: 0 };
+  let isDraggingFab = false;
+  let fabClickTimeout = null;
+
+  // 1. Kéo thả Panel
+  function dragPanelStart(e) {
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+    const rect = panel.getBoundingClientRect();
+    panelOffset.x = clientX - rect.left;
+    panelOffset.y = clientY - rect.top;
+
+    // Tắt transition để kéo mượt lập tức
+    panel.style.transition = 'none';
+
+    document.addEventListener('mousemove', dragPanelMove);
+    document.addEventListener('mouseup', dragPanelEnd);
+    document.addEventListener('touchmove', dragPanelMove, { passive: false });
+    document.addEventListener('touchend', dragPanelEnd);
+  }
+
+  function dragPanelMove(e) {
+    if (e.cancelable) e.preventDefault();
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+    let x = clientX - panelOffset.x;
+    let y = clientY - panelOffset.y;
+
+    // Giới hạn trong cửa sổ trình duyệt
+    const minX = 0;
+    const minY = 0;
+    const maxX = window.innerWidth - panel.offsetWidth;
+    const maxY = window.innerHeight - panel.offsetHeight;
+
+    x = Math.max(minX, Math.min(x, maxX));
+    y = Math.max(minY, Math.min(y, maxY));
+
+    // Cập nhật vị trí bằng top/left, gỡ bỏ bottom/right định vị mặc định
+    panel.style.bottom = 'auto';
+    panel.style.right = 'auto';
+    panel.style.left = `${x}px`;
+    panel.style.top = `${y}px`;
+  }
+
+  function dragPanelEnd() {
+    panel.style.transition = ''; // Bật lại transition mặc định
+    document.removeEventListener('mousemove', dragPanelMove);
+    document.removeEventListener('mouseup', dragPanelEnd);
+    document.removeEventListener('touchmove', dragPanelMove);
+    document.removeEventListener('touchend', dragPanelEnd);
+  }
+
+  // 2. Kéo thả FAB
+  let fabStartX = 0, fabStartY = 0;
+
+  function dragFabStart(e) {
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+    const rect = fab.getBoundingClientRect();
+    
+    fabStartX = clientX;
+    fabStartY = clientY;
+    fabOffset.x = clientX - rect.left;
+    fabOffset.y = clientY - rect.top;
+    isDraggingFab = false;
+
+    // Tắt transition để kéo mượt lập tức
+    fab.style.transition = 'none';
+
+    document.addEventListener('mousemove', dragFabMove);
+    document.addEventListener('mouseup', dragFabEnd);
+    document.addEventListener('touchmove', dragFabMove, { passive: false });
+    document.addEventListener('touchend', dragFabEnd);
+  }
+
+  function dragFabMove(e) {
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+    // Khoảng cách kéo tối thiểu để nhận diện là kéo (tránh nhận nhầm click)
+    if (Math.abs(clientX - fabStartX) > 5 || Math.abs(clientY - fabStartY) > 5) {
+      isDraggingFab = true;
+    }
+
+    if (!isDraggingFab) return;
+    if (e.cancelable) e.preventDefault();
+
+    let x = clientX - fabOffset.x;
+    let y = clientY - fabOffset.y;
+
+    const minX = 0;
+    const minY = 0;
+    const maxX = window.innerWidth - fab.offsetWidth;
+    const maxY = window.innerHeight - fab.offsetHeight;
+
+    x = Math.max(minX, Math.min(x, maxX));
+    y = Math.max(minY, Math.min(y, maxY));
+
+    fab.style.bottom = 'auto';
+    fab.style.right = 'auto';
+    fab.style.left = `${x}px`;
+    fab.style.top = `${y}px`;
+  }
+
+  function dragFabEnd(e) {
+    fab.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'; // Bật lại transition
+    document.removeEventListener('mousemove', dragFabMove);
+    document.removeEventListener('mouseup', dragFabEnd);
+    document.removeEventListener('touchmove', dragFabMove);
+    document.removeEventListener('touchend', dragFabEnd);
+
+    // Nếu đang kéo, chặn sự kiện click bằng cách tắt trạng thái mở
+    if (isDraggingFab) {
+      // Chèn cờ để tạm thời chặn hành động click click trong cùng một khung thời gian
+      fab.dataset.dragged = 'true';
+      setTimeout(() => {
+        fab.dataset.dragged = 'false';
+      }, 50);
+    }
+  }
+
+  // Cho phép di chuyển Panel khi kéo Header của nó
+  if (header) {
+    header.style.cursor = 'move';
+    header.addEventListener('mousedown', dragPanelStart);
+    header.addEventListener('touchstart', dragPanelStart, { passive: true });
+  }
+
+  // Cho phép di chuyển nút FAB
+  fab.style.cursor = 'move';
+  fab.addEventListener('mousedown', dragFabStart);
+  fab.addEventListener('touchstart', dragFabStart, { passive: true });
+  // --- KẾT THÚC LOGIC KÉO THẢ ---
+
   // Quick suggestions theo role
   const quickSuggestions = {
     hoc_vien: ['📅 Lịch học của tôi', '💰 Học phí còn lại', '📝 Đặt lịch học thêm', '📖 Mẹo học tiếng Anh'],
@@ -148,18 +290,17 @@ export function initChatbot() {
   }
 
   // Events
-  const fab = document.getElementById('stella-fab');
-  const panel = document.getElementById('stella-panel');
   const fabIcon = document.getElementById('stella-fab-icon');
 
   fab.addEventListener('click', () => {
+    if (fab.dataset.dragged === 'true') {
+      return; // Bỏ qua sự kiện click nếu nút vừa được kéo thả di chuyển vị trí
+    }
     _isChatOpen = !_isChatOpen;
     if (_isChatOpen) {
       panel.classList.remove('hidden');
       panel.classList.add('flex');
-      fabIcon.textContent = 'close';
-      fab.style.animation = 'none';
-      fab.style.transform = '';
+      fab.classList.add('hidden'); // Ẩn nút FAB khi mở khung chat
       document.getElementById('stella-input')?.focus();
       scrollToBottom();
     } else {
@@ -173,8 +314,7 @@ export function initChatbot() {
     _isChatOpen = false;
     panel.classList.add('hidden');
     panel.classList.remove('flex');
-    fabIcon.textContent = 'smart_toy';
-    fab.style.animation = '';
+    fab.classList.remove('hidden'); // Hiện lại nút FAB khi đóng khung chat
   }
 
   // Auto resize textarea

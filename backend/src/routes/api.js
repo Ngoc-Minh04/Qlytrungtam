@@ -1192,7 +1192,7 @@ router.get('/reports/revenue', verifyAccess(['admin', 'le_tan']), async (req, re
       SELECT n.ten_goi, COUNT(r.goi_id) as so_luong, SUM(r.so_tien_da_thu) as tong_doanh_thu
       FROM all_regs r
       JOIN all_names n ON r.goi_id = n.id AND r.loai_goi = n.loai_goi
-      WHERE r.trang_thai != 'tam_dung' ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
+      WHERE r.trang_thai NOT IN ('tam_dung', 'huy') ${regDateCondition.replace(/ngay_tao/g, 'r.ngay_tao')}
       GROUP BY n.ten_goi
       ORDER BY so_luong DESC
       LIMIT 3

@@ -1,3 +1,27 @@
+### [25/06/2026 10:37] — Tối ưu hóa UI Chatbot: Tự động ẩn nút FAB khi mở khung chat
+- **Loại**: Cải tiến trải nghiệm người dùng (UX/UI)
+- **File**: `frontend/src/pages/Chatbot.js`
+- **Mô tả**: Thay thế logic thay đổi icon của nút FAB (`stella-fab`) thành ẩn hẳn nút FAB này đi khi khung chat (`stella-panel`) đang hiển thị. Điều này giúp giao diện gọn gàng hơn, không bị hiển thị thừa nút tròn có icon dấu nhân (X) khi khung chat đã có nút đóng (X) tích hợp ở header.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:18] — Khắc phục độ trễ (lag) khi kéo thả di chuyển chatbot Stella AI
+- **Loại**: Tối ưu hóa hiệu năng trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/Chatbot.js`
+- **Mô tả**: Tắt thuộc tính CSS `transition` tạm thời (gán `transition = 'none'`) ngay khi bắt đầu hành động kéo thả (`mousedown`/`touchstart`) và khôi phục lại khi kết thúc hành động (`mouseup`/`touchend`). Giúp chatbot di chuyển mượt mà lập tức theo con trỏ chuột/tay vuốt mà không bị trễ (delay 200ms do transition CSS).
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:08] — Cung cấp tính năng kéo thả (drag & drop) di chuyển chatbot Stella AI
+- **Loại**: Cải tiến trải nghiệm người dùng (UX)
+- **File**: `frontend/src/pages/Chatbot.js`
+- **Mô tả**: Tích hợp tính năng kéo thả chuột / cảm ứng màn hình cho cả nút tròn Chatbot (`#stella-fab`) và hộp thoại chat (`#stella-panel` - kéo phần Header). Giúp người dùng dễ dàng di chuyển chatbot tránh che khuất thông tin số liệu quan trọng trên màn hình.
+- **Kết quả**: Thành công
+
+### [25/06/2026 10:06] — Sửa lỗi đếm sai lượt đăng ký gói học phổ biến nhất (loại bỏ trạng thái đã hủy)
+- **Loại**: Sửa lỗi logic Backend
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Thay đổi câu lệnh SQL truy vấn gói bán chạy nhất (`bestSellerQuery`) tại API `/api/reports/revenue` để loại bỏ luôn các gói đăng ký đã bị hủy (`trang_thai = 'huy'`). Giúp thống kê hiển thị chính xác số lượng học viên đăng ký thực tế.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 09:56] — Sửa lỗi hiển thị fallback 100% hình thức thanh toán khi doanh thu bằng 0
 - **Loại**: Sửa lỗi giao diện (UI/UX)
 - **File**: `frontend/src/pages/RevenueReport.js`
