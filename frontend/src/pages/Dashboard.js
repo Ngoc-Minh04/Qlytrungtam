@@ -637,7 +637,7 @@ export function renderDashboard(role) {
 
   // Logout
   document.getElementById('btn-header-logout')?.addEventListener('click', () => {
-    localStorage.clear();
+    ['isLoggedIn', 'userRole', 'username', 'hoTen', 'taiKhoanId', 'hoSoId', 'chiNhanh'].forEach(k => localStorage.removeItem(k));
     window.location.hash = '/login';
   });
 

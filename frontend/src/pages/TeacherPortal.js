@@ -13,7 +13,7 @@ function getAuthHeaders() {
 }
 
 function logout() {
-  localStorage.clear();
+  ['isLoggedIn', 'userRole', 'username', 'hoTen', 'taiKhoanId', 'hoSoId', 'chiNhanh'].forEach(k => localStorage.removeItem(k));
   window.location.hash = '/login';
 }
 

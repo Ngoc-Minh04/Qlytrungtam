@@ -11,6 +11,17 @@ export function initChatbot() {
 
   const role = localStorage.getItem('userRole') || 'hoc_vien';
   const hoTen = localStorage.getItem('hoTen') || '';
+  const username = localStorage.getItem('username') || localStorage.getItem('userEmail') || hoTen || role;
+  const storageKey = `stella_chat_history_${username}`;
+
+  // Nạp lịch sử từ localStorage
+  try {
+    const saved = localStorage.getItem(storageKey);
+    _chatHistory = saved ? JSON.parse(saved) : [];
+  } catch (err) {
+    console.error('Failed to load Stella chat history:', err);
+    _chatHistory = [];
+  }
 
   const roleConfig = {
     admin: { label: 'Admin', color: '#6366f1', bg: 'from-[#6366f1] to-[#4f46e5]', hint: 'Hỏi về doanh thu, nhân sự, vận hành...' },
@@ -58,35 +69,34 @@ export function initChatbot() {
     <!-- Chat Panel -->
     <div id="stella-panel" class="stella-panel fixed bottom-24 right-6 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] hidden flex-col rounded-3xl overflow-hidden shadow-2xl border border-[#e2e2e4]"
       style="height: 520px; max-height: calc(100vh - 120px);">
-
+      
       <!-- Header -->
-      <div class="shrink-0 px-4 py-3.5 flex items-center justify-between bg-gradient-to-r ${cfg.bg}">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-            <span class="material-symbols-outlined text-white text-[20px]">smart_toy</span>
+      <div class="px-4 py-3.5 text-white flex items-center justify-between"
+        style="background: linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc);">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[19px]">smart_toy</span>
           </div>
           <div>
             <div class="text-white font-bold text-[13px] leading-tight">Stella AI</div>
-            <div class="text-white/70 text-[10px] flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span>
-              Trợ lý ${cfg.label} · Powered by Education
-            </div>
+            <div class="text-[10px] text-white/75 mt-0.5">${cfg.hint}</div>
           </div>
         </div>
         <button id="stella-close" class="p-1.5 rounded-full hover:bg-white/20 transition-colors">
-          <span class="material-symbols-outlined text-white text-[18px]">close</span>
+          <span class="material-symbols-outlined text-white text-[18px] block">close</span>
         </button>
       </div>
 
       <!-- Messages -->
       <div id="stella-messages" class="stella-scroll flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]"></div>
 
-      <!-- Input -->
-      <div class="shrink-0 p-3 bg-white border-t border-[#f0f0f0]">
-        <div class="flex items-end gap-2">
-          <textarea id="stella-input"
-            class="flex-1 resize-none border border-[#e2e6ef] rounded-2xl px-3.5 py-2.5 text-[12.5px] outline-none focus:border-[${cfg.color}] transition-all bg-[#f8f9fc] max-h-[100px] leading-relaxed"
-            placeholder="${cfg.hint}" rows="1"
+      <!-- Footer -->
+      <div class="p-3 bg-white border-t border-[#f0f0f2]">
+        <div class="flex items-end gap-2 bg-[#f4f5f8] rounded-2xl px-3.5 py-2.5">
+          <textarea id="stella-input" 
+            placeholder="Nhập câu hỏi..." 
+            rows="1" 
+            class="flex-1 bg-transparent border-0 outline-none text-[12px] text-slate-700 placeholder-slate-400 resize-none max-h-24 leading-relaxed"
             style="scrollbar-width: thin;"></textarea>
           <button id="stella-send"
             class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-40"
@@ -122,8 +132,20 @@ export function initChatbot() {
     quickBtnsEl.appendChild(btn);
   });
 
-  // Tin nhắn chào
-  addMessage('bot', `Xin chào ${hoTen || 'bạn'}! Mình là **Stella**, trợ lý AI của Stellar Academy 🌟\n\nMình có thể giúp bạn với tư cách **${cfg.label}**. Bạn muốn hỏi gì nào?`);
+  // Nạp lịch sử tin nhắn hoặc hiển thị lời chào nếu rỗng
+  const messagesEl = document.getElementById('stella-messages');
+  if (messagesEl) {
+    if (_chatHistory.length === 0) {
+      const welcomeMsg = `Xin chào ${hoTen || 'bạn'}! Mình là **Stella**, trợ lý AI của Stellar Academy 🌟\n\nMình có thể giúp bạn với tư cách **${cfg.label}**. Bạn muốn hỏi gì nào?`;
+      addMessage('bot', welcomeMsg);
+      _chatHistory.push({ role: 'bot', content: welcomeMsg });
+      localStorage.setItem(storageKey, JSON.stringify(_chatHistory));
+    } else {
+      _chatHistory.forEach(msg => {
+        addMessage(msg.role === 'user' ? 'user' : 'bot', msg.content);
+      });
+    }
+  }
 
   // Events
   const fab = document.getElementById('stella-fab');
@@ -182,6 +204,7 @@ export function initChatbot() {
 
     addMessage('user', text);
     _chatHistory.push({ role: 'user', content: text });
+    localStorage.setItem(storageKey, JSON.stringify(_chatHistory));
 
     showTyping();
     _isTyping = true;
@@ -203,6 +226,7 @@ export function initChatbot() {
       const reply = data.success ? data.reply : (data.error || 'Có lỗi xảy ra, vui lòng thử lại.');
       addMessage('bot', reply);
       _chatHistory.push({ role: 'bot', content: reply });
+      localStorage.setItem(storageKey, JSON.stringify(_chatHistory));
     } catch (err) {
       console.error('Chatbot fetch error detail:', err);
       hideTyping();

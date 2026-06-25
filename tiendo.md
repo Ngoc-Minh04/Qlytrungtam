@@ -1,3 +1,21 @@
+### [25/06/2026 08:28] — Sửa lỗi hiển thị font chữ UTF-8 của Stella AI
+- **Loại**: Sửa bug
+- **File**: `backend/src/routes/api.js`
+- **Mô tả**: Thay đổi cơ chế nhận dữ liệu stream từ Groq API. Sử dụng Buffer thô gom các mảnh dữ liệu (chunks) rồi mới giải mã UTF-8 thông qua `Buffer.concat()`, khắc phục triệt để lỗi vỡ font chữ (hiển thị ký tự lạ dạng hỏi chấm đen) khi truyền tải các emoji hoặc chữ tiếng Việt có dấu.
+- **Kết quả**: Thành công
+
+### [25/06/2026 08:26] — Cải tiến logic Logout để bảo toàn lịch sử chat Stella AI
+- **Loại**: Cải tiến tính năng
+- **File**: `frontend/src/pages/Dashboard.js`, `frontend/src/pages/StudentPortal.js`, `frontend/src/pages/TeacherPortal.js`
+- **Mô tả**: Thay thế lệnh `localStorage.clear()` bằng phương án xóa chọn lọc các key liên quan đến phiên đăng nhập (như `isLoggedIn`, `userRole`, `username`, v.v.). Việc này giúp bảo vệ và giữ lại lịch sử chat Stella AI cùng trạng thái cấu hình cá nhân của người dùng không bị xóa sạch khi đăng xuất.
+- **Kết quả**: Thành công
+
+### [25/06/2026 08:21] — Lưu trữ lịch sử chat của Stella AI vào LocalStorage theo từng tài khoản
+- **Loại**: Cải tiến tính năng
+- **File**: `frontend/src/pages/Chatbot.js`
+- **Mô tả**: Thiết lập cơ chế lưu trữ lịch sử chat của Stella AI trong bộ nhớ trình duyệt `localStorage`. Phân tách khóa lưu trữ (`storageKey`) theo thông tin người dùng đang đăng nhập để tránh lẫn lộn lịch sử chat giữa các tài khoản khác nhau trên cùng một máy tính. Tự động tải lại lịch sử tin nhắn cũ khi mở widget chatbot.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 08:17] — Tích hợp gói học vào Chatbot Stella AI & Phân quyền doanh thu
 - **Loại**: Chỉnh sửa tính năng / Sửa bug
 - **File**: `backend/src/routes/api.js`
