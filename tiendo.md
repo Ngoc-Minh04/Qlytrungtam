@@ -1,3 +1,22 @@
+### [25/06/2026 14:58] — Việt hóa phương thức thanh toán và tối ưu chiều cao tab Gói học
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  * Chuyển đổi hiển thị phương thức thanh toán thô (ví dụ: `tien_mat`, `chuyen_khoan`, `the_ngan_hang`) sang tiếng Việt thân thiện ("Tiền mặt", "Chuyển khoản", "Thẻ ngân hàng") trên card "Gói đang hoạt động".
+  * Gộp 3 trường thông tin cuối của form đăng ký mới gồm *Giá thực tế*, *Đã thu* và *Phương thức thanh toán* vào cùng một hàng ngang sử dụng CSS Grid 3 cột (`sm:grid-cols-3`) để tối ưu hóa chiều cao.
+  * Giới hạn lại chiều cao tối đa của vùng cuộn nội dung tab Gói học (`max-h-[calc(90vh-140px)]`) và giảm bớt padding xuống `p-4`.
+  * Sửa lỗi cơ chế chuyển tab: Sử dụng `classList` (`add('hidden')` / `remove('hidden')`) thay vì can thiệp trực tiếp bằng inline `style.display` (làm mất tác dụng các class `flex-col`, `overflow-hidden` vốn có của Tailwind CSS, khiến modal bị cuộn không mong muốn).
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:44] — Nâng cấp thiết kế Modal viết nhận xét sang Grid 2 cột và Sticky Footer
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/LessonDiary.js`
+- **Mô tả**:
+  * Tăng chiều rộng tối đa của Modal nhận xét lên `max-w-2xl` để tối ưu diện tích ngang.
+  * Tái thiết lập bố cục form nhập liệu: Nhóm các ô Textarea (Nội dung, Nhận xét, Bài tập, Ghi chú) song song sang dạng Grid 2 cột giúp giảm 40% chiều cao của modal.
+  * Cố định nút "Lưu và gửi sổ liên lạc" ở chân modal (`Sticky Footer`) để luôn hiển thị, giúp giáo viên hoàn thành nhập liệu là có thể gửi ngay mà không cần trượt hay cuộn màn hình xuống dưới.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 14:38] — Khắc phục triệt để lỗi Sidebar đè lên modal nhận xét (Stacking Context)
 - **Loại**: Sửa lỗi giao diện (UI/UX)
 - **File**: `frontend/src/pages/LessonDiary.js`
@@ -45,6 +64,23 @@
 - **Mô tả**:
   * Gỡ bỏ hoàn toàn logic phân trang vuốt ngang (`setupSwipePagination`) tại bảng "Danh sách đăng ký đang hoạt động" của tab xử lý hủy đăng ký khóa học.
   * Cho phép dữ liệu hiển thị toàn bộ và sử dụng thanh cuộn dọc nội bộ của card để cuộn tự nhiên, tránh xung đột trải nghiệm vuốt ngang.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:51] — Cố định nút "Đăng ký gói học này" xuống chân Modal (Sticky Footer)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  * Di chuyển nút bấm "Đăng ký gói học này" từ trong form cuộn xuống khu vực chân modal cố định (ngang hàng với nút Đóng).
+  * Tích hợp cơ chế hiển thị động: Nút đăng ký sẽ ẩn mặc định và chỉ xuất hiện ở footer khi người dùng nhấn "Mở form", giúp người dùng hoàn thành điền thông tin là bấm đăng ký được ngay mà không cần cuộn trang xuống.
+- **Kết quả**: Thành công
+
+### [25/06/2026 14:48] — Tối ưu hóa biểu mẫu Đăng ký gói học mới (StudentsList)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`
+- **Mô tả**:
+  * Tăng chiều rộng tối đa của modal chi tiết học viên lên `max-w-3xl` để tạo không gian rộng rãi.
+  * Tái thiết lập form đăng ký gói học mới (`#register-package-form-wrap`): Thay đổi giao diện nhập thông tin (chọn loại gói, thời hạn, giá thực tế, thực thu, phương thức thanh toán) sang Grid 2 cột song song.
+  * Giúp giáo viên/nhân viên đăng ký nhanh chóng mà không cần trượt hay cuộn màn hình xuống dưới.
 - **Kết quả**: Thành công
 
 ### [25/06/2026 14:24] — Thêm thanh cuộn dọc tối đa (max-height) cho Hủy khóa học (StudentRequests)

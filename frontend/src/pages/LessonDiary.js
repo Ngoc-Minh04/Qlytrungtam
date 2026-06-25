@@ -483,7 +483,7 @@ async function loadDiaryData(container, userRole, students, studentId) {
 
       <!-- Modal Viết nhận xét sổ liên lạc mới -->
       <div id="diary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[99999] animate-fadeIn">
-        <div class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
+        <div class="bg-white rounded-[28px] w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]" style="animation: modalIn 0.2s ease">
           <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
             <h3 class="font-bold text-slate-800 text-sm tracking-wide">Tạo Nhật ký & Sổ liên lạc mới</h3>
             <button id="close-diary-modal" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all">
@@ -491,59 +491,71 @@ async function loadDiaryData(container, userRole, students, studentId) {
             </button>
           </div>
           
-          <form id="create-diary-form" novalidate class="p-6 space-y-4 text-xs overflow-y-auto max-h-[calc(90vh-70px)]">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1.5">
-                <label class="font-semibold text-slate-500 block">Chọn học viên</label>
-                <select name="hoc_vien_id" id="modal-select-student" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 cursor-pointer">
-                  <option value="">-- Chọn học viên --</option>
-                  ${students.map(s => `<option value="${s.id}" ${s.id === studentId ? 'selected' : ''}>${s.ho_ten}</option>`).join('')}
-                </select>
+          <form id="create-diary-form" novalidate class="flex flex-col flex-1 overflow-hidden">
+            <!-- Form Body (Scrollable) -->
+            <div class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              
+              <!-- 4 input chính hàng đầu -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Chọn học viên</label>
+                  <select name="hoc_vien_id" id="modal-select-student" required class="w-full border border-slate-200 rounded-full px-4 py-2 bg-slate-50/50 focus:border-[#0071e3] transition bg-white outline-none cursor-pointer">
+                    <option value="">-- Chọn học viên --</option>
+                    ${students.map(s => `<option value="${s.id}" ${s.id === studentId ? 'selected' : ''}>${s.ho_ten}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Chọn ca học cần nhận xét</label>
+                  <select id="modal-select-session" required disabled class="w-full border border-slate-200 rounded-full px-4 py-2 focus:border-[#0071e3] transition bg-slate-100 outline-none cursor-not-allowed">
+                    <option value="">-- Chọn học viên trước --</option>
+                  </select>
+                  <p id="modal-select-session-error" class="text-[9px] text-red-500 font-bold mt-1 pl-2 hidden flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[11px] font-bold">warning</span> Vui lòng chọn ca học thực tế
+                  </p>
+                </div>
               </div>
-              <div class="space-y-1.5">
-                <label class="font-semibold text-slate-500 block">Chọn ca học cần nhận xét</label>
-                <select id="modal-select-session" required disabled class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-100 cursor-not-allowed">
-                  <option value="">-- Chọn học viên trước --</option>
-                </select>
-                <p id="modal-select-session-error" class="text-[10px] text-red-500 font-bold mt-1 pl-2 hidden flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[12px] font-bold">warning</span> Vui lòng chọn ca học thực tế
-                </p>
+ 
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Số phút học</label>
+                  <input type="number" name="so_phut_hoc" id="modal-input-so-phut-hoc" value="90" required class="w-full border border-slate-200 rounded-full px-4 py-2 outline-none focus:border-[#0071e3] transition bg-slate-50/50" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Giáo viên giảng dạy</label>
+                  <input type="text" id="modal-display-teacher" readonly placeholder="Tên giáo viên" class="w-full border border-slate-200 rounded-full px-4 py-2 outline-none bg-slate-100 text-slate-500 cursor-not-allowed" />
+                </div>
               </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1.5">
-                <label class="font-semibold text-slate-500 block">Số phút học</label>
-                <input type="number" name="so_phut_hoc" id="modal-input-so-phut-hoc" value="90" required class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
+              <!-- Grid 2 cột cho phần nhận xét chi tiết -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Nội dung bài học</label>
+                  <textarea name="noi_dung_bai_hoc" required rows="2" placeholder="Ví dụ: Ôn tập ngữ pháp thì Hiện tại hoàn thành, luyện nói..." class="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 outline-none focus:border-[#0071e3] transition bg-slate-50/50 resize-none h-20 font-medium"></textarea>
+                </div>
+ 
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Nhận xét buổi học</label>
+                  <textarea name="nhan_xet_buoi_hoc" required rows="2" placeholder="Ví dụ: Học viên tiếp thu bài tốt, phản xạ nói lưu loát..." class="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 outline-none focus:border-[#0071e3] transition bg-slate-50/50 resize-none h-20 font-medium"></textarea>
+                </div>
+ 
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Bài tập về nhà</label>
+                  <textarea name="bai_tap_ve_nha" rows="2" placeholder="Ví dụ: Làm bài tập trang 45 sách giáo khoa..." class="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 outline-none focus:border-[#0071e3] transition bg-slate-50/50 resize-none h-20 font-medium"></textarea>
+                </div>
+ 
+                <div class="space-y-1.5">
+                  <label class="font-semibold text-slate-500 block">Dặn dò / Ghi chú thêm</label>
+                  <textarea name="dan_do_giao_vien" placeholder="Ví dụ: Ôn lại từ vựng chuẩn bị kiểm tra 15p buổi tới" class="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 outline-none focus:border-[#0071e3] transition bg-slate-50/50 resize-none h-20 font-medium"></textarea>
+                </div>
               </div>
-              <div class="space-y-1.5">
-                <label class="font-semibold text-slate-500 block">Giáo viên giảng dạy</label>
-                <input type="text" id="modal-display-teacher" readonly placeholder="Tên giáo viên" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none bg-slate-100 text-slate-500 cursor-not-allowed" />
-              </div>
+
             </div>
 
-            <div class="space-y-1.5">
-              <label class="font-semibold text-slate-500 block">Nội dung bài học</label>
-              <textarea name="noi_dung_bai_hoc" required rows="2" placeholder="Ví dụ: Ôn tập ngữ pháp thì Hiện tại hoàn thành, luyện nói theo nhóm..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="font-semibold text-slate-500 block">Nhận xét buổi học</label>
-              <textarea name="nhan_xet_buoi_hoc" required rows="3" placeholder="Ví dụ: Học viên tiếp thu bài tốt, phản xạ nói lưu loát..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="font-semibold text-slate-500 block">Bài tập về nhà</label>
-              <textarea name="bai_tap_ve_nha" rows="2" placeholder="Ví dụ: Làm bài tập trang 45 sách giáo khoa..." class="w-full border border-slate-200 rounded-[20px] px-4 py-3 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50 resize-none"></textarea>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="font-semibold text-slate-500 block">Dặn dò / Ghi chú thêm</label>
-              <input type="text" name="dan_do_giao_vien" placeholder="Ví dụ: Ôn lại từ vựng chuẩn bị kiểm tra 15p buổi tới" class="w-full border border-slate-200 rounded-full px-4 py-2.5 outline-none focus:border-[#0071e3] transition-all bg-slate-50/50" />
-            </div>
-
-            <div class="pt-3 shrink-0">
-              <button type="submit" class="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white py-3 rounded-full font-bold hover:shadow-lg transition-all active:scale-[0.98]">
+            <!-- Form Footer (Sticky/Fixed ở chân Modal) -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end shrink-0">
+              <button type="button" onclick="document.getElementById('diary-modal').classList.add('hidden')"
+                class="px-5 py-2 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-500 font-semibold transition active:scale-95">Hủy</button>
+              <button type="submit" class="px-6 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full font-bold hover:shadow-lg transition active:scale-[0.98]">
                 Lưu và gửi sổ liên lạc
               </button>
             </div>

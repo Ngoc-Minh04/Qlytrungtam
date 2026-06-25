@@ -730,7 +730,7 @@ export function showStudentDetailModal(sv) {
       ];
 
       modal.innerHTML = `
-        <div class="bg-white rounded-3xl max-w-2xl w-full border border-[#e2e2e4] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in duration-200">
+        <div class="bg-white rounded-3xl max-w-3xl w-full border border-[#e2e2e4] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in duration-200">
           <!-- Header cố định -->
           <div class="px-6 py-4 border-b border-[#f3f3f5] shrink-0">
             <div class="flex justify-between items-center">
@@ -857,8 +857,8 @@ export function showStudentDetailModal(sv) {
           </form>
 
           <!-- TAB PANEL 2: GÓI HỌC (Ẩn mặc định) -->
-          <div id="panel-packages" class="hidden flex-col overflow-hidden max-h-[calc(90vh-95px)]">
-            <div class="p-6 overflow-y-auto space-y-6 pr-4 scrollbar-thin flex-grow">
+          <div id="panel-packages" class="hidden flex-col overflow-hidden max-h-[calc(90vh-140px)]">
+            <div class="p-3 overflow-y-auto space-y-3 pr-2 scrollbar-thin flex-grow">
               <!-- Section: Gói đang hoạt động -->
               <div class="space-y-3">
                 <h4 class="font-bold text-apple-blue uppercase tracking-wider text-[10px] flex items-center gap-1.5">
@@ -866,7 +866,7 @@ export function showStudentDetailModal(sv) {
                 </h4>
                 <div id="active-packages-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   ${activeCourses.map(item => `
-                    <div class="border border-[#0066cc]/20 rounded-2xl p-4 bg-gradient-to-br from-[#0066cc]/5 to-transparent flex flex-col justify-between gap-3 relative overflow-hidden active-pkg-card" data-id="${item.id}" data-type="khoa_hoc" data-original-tu-ngay="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
+                    <div class="border border-[#0066cc]/20 rounded-xl p-3 bg-gradient-to-br from-[#0066cc]/5 to-transparent flex flex-col justify-between gap-2 relative overflow-hidden active-pkg-card" data-id="${item.id}" data-type="khoa_hoc" data-original-tu-ngay="${new Date(item.tu_ngay).toLocaleDateString('sv-SE')}">
                       <div class="pkg-view-mode">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center gap-2">
@@ -875,13 +875,13 @@ export function showStudentDetailModal(sv) {
                           </div>
                           <button type="button" class="btn-edit-active-pkg text-apple-blue hover:underline font-semibold text-[10px]">Sửa/Đổi gói</button>
                         </div>
-                        <div class="text-[10px] text-slate-500 mt-2 space-y-1">
-                          <p>Hạn dùng: <strong>${new Date(item.tu_ngay).toLocaleDateString('vi-VN')}</strong> - <strong>${new Date(item.den_ngay).toLocaleDateString('vi-VN')}</strong></p>
-                          <p>Giá thực tế: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
-                          <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
-                          <p>Thanh toán: <strong class="uppercase">${item.phuong_thuc_tt || 'Tần mặt'}</strong></p>
+                        <div class="text-[10px] text-slate-500 mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
+                           <p>📅 <strong>${new Date(item.tu_ngay).toLocaleDateString('vi-VN')}</strong> → <strong>${new Date(item.den_ngay).toLocaleDateString('vi-VN')}</strong></p>
+                           <p>💳 <strong>${item.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt' : item.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : item.phuong_thuc_tt === 'the_ngan_hang' ? 'Thẻ ngân hàng' : (item.phuong_thuc_tt || 'Tiền mặt')}</strong></p>
+                           <p>Giá: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
+                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
                         </div>
-                        <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}" data-type="khoa_hoc">
+                        <button type="button" class="btn-cancel-active-package w-full mt-2 bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded-xl font-bold transition active:scale-95 text-[10px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}" data-type="khoa_hoc">
                           Hủy gói / Hoàn tiền
                         </button>
                       </div>
@@ -941,12 +941,13 @@ export function showStudentDetailModal(sv) {
                           </div>
                           <button type="button" class="btn-edit-active-pkg text-purple-600 hover:underline font-semibold text-[10px]">Sửa/Đổi gói</button>
                         </div>
-                        <div class="text-[10px] text-slate-500 mt-2 space-y-1">
-                          <p>GV: <strong>${item.ten_giao_vien || 'Chưa xếp'}</strong></p>
-                          <p>Tiến trình: <strong>${item.so_buoi_da_hoc}</strong> / <strong>${item.so_buoi_dang_ky}</strong> buổi</p>
-                          <p>Từ ngày: <strong>${new Date(item.tu_ngay).toLocaleDateString('vi-VN')}</strong></p>
-                          <p>Giá thực tế: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
-                          <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
+                        <div class="text-[10px] text-slate-500 mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
+                           <p>GV: <strong>${item.ten_giao_vien || 'Chưa xếp'}</strong></p>
+                           <p>Tiến trình: <strong>${item.so_buoi_da_hoc}</strong> / <strong>${item.so_buoi_dang_ky}</strong> buổi</p>
+                           <p>Ngày bắt đầu: <strong>${new Date(item.tu_ngay).toLocaleDateString('vi-VN')}</strong></p>
+                           <p>Giá thực tế: <strong>${Number(item.gia_thuc_te || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
+                           <p>Thực thu: <strong>${Number(item.so_tien_da_thu || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
+                           <p>Thanh toán: <strong>${item.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt' : item.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : item.phuong_thuc_tt === 'the_ngan_hang' ? 'Thẻ ngân hàng' : (item.phuong_thuc_tt || 'Tiền mặt')}</strong></p>
                         </div>
                         <button type="button" class="btn-cancel-active-package w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl font-bold transition active:scale-95 text-[10.5px]" data-id="${item.id}" data-price="${item.so_tien_da_thu || 0}" data-type="hoc_kem">
                           Hủy gói / Hoàn tiền
@@ -1018,65 +1019,67 @@ export function showStudentDetailModal(sv) {
                   </h4>
                   <button type="button" id="btn-toggle-register-form" class="text-[10px] text-apple-blue font-semibold hover:underline focus:outline-none">Mở / Đóng form</button>
                 </div>
-                <div id="register-package-form-wrap" class="hidden space-y-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4">
-                  <div class="grid grid-cols-2 gap-3">
+                <div id="register-package-form-wrap" class="hidden space-y-2 bg-emerald-50/60 border border-emerald-100 rounded-xl p-3">
+                  
+                  <!-- Grid 2 cột cho thông tin gói -->
+                  <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Loại gói</label>
-                      <select id="reg-pkg-type" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
+                      <select id="reg-pkg-type" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
                         <option value="khoa_hoc">Khóa học đại trà</option>
                         <option value="hoc_kem">Gói kèm 1-1</option>
                       </select>
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Chọn gói</label>
-                      <select id="reg-pkg-id" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
+                      <select id="reg-pkg-id" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
                         <option value="">-- Đang tải... --</option>
                       </select>
                     </div>
+ 
+                    <!-- Hàng ngày bắt đầu / ngày kết thúc của khóa học -->
+                    <div id="reg-khoa-hoc-fields-start">
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5 uppercase">Ngày bắt đầu</label>
+                      <input type="date" id="reg-tu-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue" value="${new Date().toLocaleDateString('sv-SE')}">
+                    </div>
+                    <div id="reg-khoa-hoc-fields-end">
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5 uppercase">Ngày kết thúc</label>
+                      <input type="date" id="reg-den-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue">
+                    </div>
+
+                    <!-- Hàng số buổi của gói học kèm -->
+                    <div id="reg-hoc-kem-fields" class="col-span-2 hidden">
+                      <div class="hidden">
+                        <select id="reg-teacher-id">
+                          <option value="" selected>-- Chọn GV --</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Số buổi đăng ký</label>
+                        <input type="number" id="reg-so-buoi" min="1" readonly class="w-full border border-[#e2e2e4] bg-slate-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue cursor-not-allowed">
+                      </div>
+                    </div>
                   </div>
-                  <div id="reg-khoa-hoc-fields" class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Ngày bắt đầu</label>
-                      <input type="date" id="reg-tu-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue" value="${new Date().toLocaleDateString('sv-SE')}">
-                    </div>
-                    <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Ngày kết thúc</label>
-                      <input type="date" id="reg-den-ngay" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
-                    </div>
-                  </div>
-                  <div id="reg-hoc-kem-fields" class="grid grid-cols-1 gap-3 hidden">
-                    <div class="hidden">
-                      <select id="reg-teacher-id">
-                        <option value="" selected>-- Chọn GV --</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Số buổi đăng ký</label>
-                      <input type="number" id="reg-so-buoi" min="1" readonly class="w-full border border-[#e2e2e4] bg-slate-100 rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue cursor-not-allowed">
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
+
+                  <!-- Hàng 3 cột cho Giá thực tế, Đã thu, Phương thức thanh toán -->
+                  <div class="grid grid-cols-3 gap-2">
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Giá thực tế (VNĐ)</label>
-                      <input type="text" id="reg-gia-thuc-te" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="text" id="reg-gia-thuc-te" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue">
                     </div>
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Đã thu (VNĐ)</label>
-                      <input type="text" id="reg-da-thu" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue">
+                      <input type="text" id="reg-da-thu" placeholder="0" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue">
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Phương thức TT</label>
+                      <select id="reg-phuong-thuc" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-2 py-1.5 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
+                        <option value="tien_mat">Tiền mặt</option>
+                        <option value="chuyen_khoan">Chuyển khoản</option>
+                        <option value="the_ngan_hang">Thẻ ngân hàng</option>
+                      </select>
                     </div>
                   </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Phương thức thanh toán</label>
-                    <select id="reg-phuong-thuc" class="w-full border border-[#e2e2e4] bg-white rounded-xl px-3 py-2 text-xs outline-none focus:border-apple-blue transition cursor-pointer">
-                      <option value="tien_mat">Tiền mặt</option>
-                      <option value="chuyen_khoan">Chuyển khoản</option>
-                      <option value="the_ngan_hang">Thẻ ngân hàng</option>
-                    </select>
-                  </div>
-                  <button type="button" id="btn-submit-register-pkg" class="w-full py-2.5 bg-emerald-600 hover:opacity-90 text-white font-bold rounded-xl transition active:scale-95 text-xs shadow-sm">
-                    <span class="material-symbols-outlined text-[15px] align-middle mr-1">add_shopping_cart</span>
-                    Đăng ký gói học này
-                  </button>
                 </div>
               </div>
 
@@ -1110,6 +1113,10 @@ export function showStudentDetailModal(sv) {
             <!-- Footer cố định của Tab Gói học -->
             <div class="flex justify-end items-center px-6 py-4 border-t border-[#f3f3f5] bg-slate-50 shrink-0 gap-2">
               <button type="button" id="btn-close-pkg-tab" class="px-5 py-2 rounded-xl border border-[#e2e2e4] hover:bg-slate-100 text-slate-700 font-semibold transition active:scale-95 text-xs">Đóng</button>
+              <button type="button" id="btn-submit-register-pkg" class="hidden px-5 py-2 bg-emerald-600 hover:opacity-90 text-white font-bold rounded-xl transition active:scale-95 text-xs shadow-sm flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px]">add_shopping_cart</span>
+                Đăng ký gói học này
+              </button>
             </div>
           </div>
         </div>
@@ -1130,15 +1137,16 @@ export function showStudentDetailModal(sv) {
       btnTabInfo.addEventListener('click', () => {
         btnTabInfo.className = 'px-4 py-2 font-bold text-xs text-apple-blue border-b-2 border-apple-blue transition focus:outline-none';
         btnTabPackages.className = 'px-4 py-2 font-medium text-xs text-slate-400 hover:text-apple-ink transition focus:outline-none';
-        formInfoPanel.style.display = 'flex';
-        panelPackages.style.display = 'none';
+        formInfoPanel.classList.remove('hidden');
+        panelPackages.classList.add('hidden');
       });
 
       btnTabPackages.addEventListener('click', () => {
         btnTabPackages.className = 'px-4 py-2 font-bold text-xs text-apple-blue border-b-2 border-apple-blue transition focus:outline-none';
         btnTabInfo.className = 'px-4 py-2 font-medium text-xs text-slate-400 hover:text-apple-ink transition focus:outline-none';
-        formInfoPanel.style.display = 'none';
-        panelPackages.style.display = 'flex';
+        formInfoPanel.classList.add('hidden');
+        panelPackages.classList.remove('hidden');
+        panelPackages.classList.add('flex');
       });
 
       modal.querySelector('#close-student-detail-modal').addEventListener('click', () => modal.classList.add('hidden'));
@@ -1413,9 +1421,13 @@ export function showStudentDetailModal(sv) {
       // Toggle form đăng ký gói học
       modal.querySelector('#btn-toggle-register-form')?.addEventListener('click', () => {
         const wrap = modal.querySelector('#register-package-form-wrap');
+        const submitBtn = modal.querySelector('#btn-submit-register-pkg');
         wrap.classList.toggle('hidden');
         if (!wrap.classList.contains('hidden')) {
+          submitBtn?.classList.remove('hidden');
           loadRegisterFormData();
+        } else {
+          submitBtn?.classList.add('hidden');
         }
       });
 
@@ -1437,18 +1449,21 @@ export function showStudentDetailModal(sv) {
       function updatePkgOptions() {
         const type = modal.querySelector('#reg-pkg-type')?.value;
         const pkgSelect = modal.querySelector('#reg-pkg-id');
-        const khoaHocFields = modal.querySelector('#reg-khoa-hoc-fields');
+        const startField = modal.querySelector('#reg-khoa-hoc-fields-start');
+        const endField = modal.querySelector('#reg-khoa-hoc-fields-end');
         const hocKemFields = modal.querySelector('#reg-hoc-kem-fields');
         const teacherSel = modal.querySelector('#reg-teacher-id');
         const regSoBuoiInput = modal.querySelector('#reg-so-buoi');
         if (!pkgSelect) return;
         if (type === 'khoa_hoc') {
           pkgSelect.innerHTML = '<option value="">-- Chọn gói học phí --</option>' + allPkgsKH.map(p => `<option value="${p.id}" data-price="${p.gia}" data-months="${p.so_thang}">${p.ten_goi} (${Number(p.gia).toLocaleString('vi-VN')} VNĐ)</option>`).join('');
-          khoaHocFields?.classList.remove('hidden');
+          startField?.classList.remove('hidden');
+          endField?.classList.remove('hidden');
           hocKemFields?.classList.add('hidden');
         } else {
           pkgSelect.innerHTML = '<option value="">-- Chọn gói học kèm --</option>' + allPkgsKem.map(p => `<option value="${p.id}" data-price="${p.gia}" data-sessions="${p.so_buoi}">${p.ten_goi} (${Number(p.gia).toLocaleString('vi-VN')} VNĐ)</option>`).join('');
-          khoaHocFields?.classList.add('hidden');
+          startField?.classList.add('hidden');
+          endField?.classList.add('hidden');
           hocKemFields?.classList.remove('hidden');
           if (regSoBuoiInput) regSoBuoiInput.value = ''; // Để trống khi chưa chọn gói cụ thể
           if (teacherSel) {
