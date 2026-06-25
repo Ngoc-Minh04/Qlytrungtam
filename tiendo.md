@@ -1,3 +1,33 @@
+### [25/06/2026 15:20] — Tái cấu trúc phân tách rõ ràng danh mục Học viên & Nhân sự (TeachersList.js, StaffList.js, StudentsList.js)
+- **Loại**: Cải tiến cấu trúc & giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentsList.js`, `frontend/src/pages/TeachersList.js`, `frontend/src/pages/StaffList.js`
+- **Mô tả**: 
+  * Loại bỏ các tab Giáo viên & Nhân viên khỏi menu con của trang danh sách Học viên. Thay bằng tiêu đề badge đơn giản "Quản lý Học viên".
+  * Loại bỏ tab Học viên khỏi menu con của trang danh sách Giáo viên và Nhân viên (chỉ giữ lại 2 tab Giáo viên & Nhân viên để chuyển đổi qua lại bên trong khu vực Nhân sự).
+  * Giúp giao diện sạch sẽ, chuyên nghiệp, phân tách rạch ròi giữa tệp khách hàng (học viên) và tệp nhân sự nội bộ trung tâm, tránh gây rối mắt cho người dùng.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:15] — Ẩn dòng "Đã thu" thừa khi học phí được đóng đủ (StudentRequests.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentRequests.js`
+- **Mô tả**: Tối ưu hóa giao diện cột Học phí, chỉ hiển thị thêm dòng "Đã thu: ..." phụ khi số tiền thực thu khác biệt so với giá thực tế của khóa học (Ví dụ đóng thiếu hoặc thừa). Nếu học sinh đã đóng đủ 100% học phí, dòng này sẽ tự động ẩn đi để giao diện bảng gọn gàng hơn.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:13] — Việt hóa phương thức thanh toán ở danh sách xử lý yêu cầu (StudentRequests.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/StudentRequests.js`
+- **Mô tả**: Việt hóa hiển thị phương thức thanh toán thô trên bảng Đăng ký đang hoạt động (`tien_mat` thành "Tiền mặt", `chuyen_khoan` thành "Chuyển khoản") giúp giao diện đồng nhất và dễ đọc hơn.
+- **Kết quả**: Thành công
+
+### [25/06/2026 15:09] — Tối ưu giao diện form sửa ca học (ClassManagement.js)
+- **Loại**: Cải tiến giao diện (UI/UX)
+- **File**: `frontend/src/pages/ClassManagement.js`
+- **Mô tả**:
+  * Thu nhỏ padding tổng thể của Modal Chỉnh sửa ca học từ `p-6 space-y-4` xuống `p-4 space-y-2.5`, tăng giới hạn chiều cao tối đa lên `max-h-[92vh]`.
+  * Thu nhỏ nút chọn giờ bắt đầu (`py-1.5`) và khoảng cách gap giữa các ô giờ học để chiếm ít không gian hơn.
+  * Tái cấu trúc phần chân form: Gộp hai dòng **Thời lượng buổi học** và **Giờ kết thúc** thành Grid 2 cột giúp giảm 3 hàng thông tin dọc, giúp form hiển thị trọn vẹn trong một màn hình, không cần cuộn để ấn nút "Cập nhật lịch".
+- **Kết quả**: Thành công
+
 ### [25/06/2026 14:58] — Việt hóa phương thức thanh toán và tối ưu chiều cao tab Gói học
 - **Loại**: Cải tiến giao diện (UI/UX)
 - **File**: `frontend/src/pages/StudentsList.js`

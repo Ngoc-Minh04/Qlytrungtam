@@ -654,7 +654,7 @@ export async function renderClassManagement(container) {
 
     // Render form sửa đổi
     editModal.innerHTML = `
-      <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl p-6 space-y-4 animate-in fade-in duration-150 text-xs max-h-[85vh] overflow-y-auto">
+      <div class="bg-white rounded-3xl max-w-md w-full border border-[#e2e2e4] shadow-2xl p-4 space-y-2.5 animate-in fade-in duration-150 text-xs max-h-[92vh] overflow-y-auto">
         <div class="flex justify-between items-center pb-2 border-b border-apple-divider/40">
           <h3 class="font-bold text-apple-ink text-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-apple-blue text-[18px]">edit_calendar</span>
@@ -665,14 +665,14 @@ export async function renderClassManagement(container) {
           </button>
         </div>
         
-        <form id="edit-session-form" class="space-y-4">
-          <p class="text-[10px] text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50 font-semibold leading-relaxed">
+        <form id="edit-session-form" class="space-y-3">
+          <p class="text-[10px] text-amber-600 bg-amber-50 p-2 rounded-xl border border-amber-200/50 font-semibold leading-relaxed">
             * Lưu ý: Hệ thống sẽ áp dụng giờ học, thời lượng và giáo viên giảng dạy mới cho toàn bộ các ca học <strong>chưa diễn ra (chờ học)</strong> của chuỗi lớp học này.
           </p>
 
           <!-- Ngày học (Mốc bắt đầu đổi hoặc ngày đơn lẻ) -->
           <div class="${(item.type === 'nhom' || item.type === 'ca_nhan') ? 'hidden' : ''}">
-            <label class="block font-semibold text-slate-600 mb-1">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
+            <label class="block font-semibold text-slate-600 mb-0.5">Ngày dạy học <span class="text-rose-500 font-bold">*</span></label>
             <div id="edit-class-date-container" class="relative">
               <input type="date" id="edit-class-date" required min="${todayStr}" value="${itemNgayStr}">
             </div>
@@ -680,41 +680,42 @@ export async function renderClassManagement(container) {
 
           <!-- Chọn Giáo viên giảng dạy -->
           <div>
-            <label class="block font-semibold text-slate-600 mb-1">Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
-            <select id="edit-class-teacher" required class="w-full border border-apple-divider rounded-full px-4 py-2 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
+            <label class="block font-semibold text-slate-600 mb-0.5">Giáo viên giảng dạy <span class="text-rose-500 font-bold">*</span></label>
+            <select id="edit-class-teacher" required class="w-full border border-apple-divider rounded-full px-3 py-1.5 outline-none focus:border-apple-blue transition bg-white cursor-pointer">
               <option value="">Đang tải danh sách giáo viên...</option>
             </select>
           </div>
 
           <!-- Giờ bắt đầu -->
           <div>
-            <label class="block font-semibold text-slate-600 mb-1">Giờ bắt đầu <span class="text-rose-500 font-bold">*</span></label>
-            <div id="edit-time-grid" class="grid grid-cols-4 gap-1.5">
+            <label class="block font-semibold text-slate-600 mb-0.5">Giờ bắt đầu <span class="text-rose-500 font-bold">*</span></label>
+            <div id="edit-time-grid" class="grid grid-cols-4 gap-1">
               <!-- Rendered by JS -->
             </div>
             <input type="hidden" id="edit-class-start" value="${item.gio_bat_dau.slice(0, 5)}" required>
           </div>
 
-          <!-- Thời lượng -->
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Thời lượng buổi học <span class="text-rose-500 font-bold">*</span></label>
-            <div class="grid grid-cols-3 gap-2">
-              <button type="button" class="edit-duration-btn px-3 py-2 rounded-xl border-2 transition font-bold" data-duration="60">1 tiếng</button>
-              <button type="button" class="edit-duration-btn px-3 py-2 rounded-xl border-2 transition font-bold" data-duration="90">1.5 tiếng</button>
-              <button type="button" class="edit-duration-btn px-3 py-2 rounded-xl border-2 transition font-bold" data-duration="120">2 tiếng</button>
+          <!-- Thời lượng & Giờ kết thúc tự tính (Gộp Grid 2 cột) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-0.5">Thời lượng buổi học <span class="text-rose-500 font-bold">*</span></label>
+              <div class="grid grid-cols-3 gap-1">
+                <button type="button" class="edit-duration-btn px-1 py-1.5 rounded-lg border-2 transition font-bold text-[10px] text-center" data-duration="60">1 tiếng</button>
+                <button type="button" class="edit-duration-btn px-1 py-1.5 rounded-lg border-2 transition font-bold text-[10px] text-center" data-duration="90">1.5 tiếng</button>
+                <button type="button" class="edit-duration-btn px-1 py-1.5 rounded-lg border-2 transition font-bold text-[10px] text-center" data-duration="120">2 tiếng</button>
+              </div>
+              <input type="hidden" id="edit-class-duration" value="${oldDuration}">
             </div>
-            <input type="hidden" id="edit-class-duration" value="${oldDuration}">
-          </div>
 
-          <!-- Giờ kết thúc tự tính -->
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Giờ kết thúc (tự tính)</label>
-            <div class="bg-slate-50 border border-apple-divider rounded-full px-4 py-2 font-bold text-apple-blue" id="edit-class-end-label">--:--</div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-0.5">Giờ kết thúc (tự tính)</label>
+              <div class="bg-slate-50 border border-apple-divider rounded-full px-3 py-1.5 font-bold text-apple-blue text-center text-xs h-[30px] flex items-center justify-center" id="edit-class-end-label">--:--</div>
+            </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-2 border-t border-apple-divider/40">
-            <button type="button" id="btn-cancel-edit-session" class="px-4 py-2 border border-[#e2e2e4] rounded-full hover:bg-slate-50 font-semibold active:scale-95 transition">Hủy bỏ</button>
-            <button type="submit" class="px-5 py-2 bg-apple-blue text-white rounded-full hover:opacity-90 font-semibold active:scale-95 transition shadow-sm">Cập nhật lịch</button>
+            <button type="button" id="btn-cancel-edit-session" class="px-4 py-1.5 border border-[#e2e2e4] rounded-full hover:bg-slate-50 font-semibold active:scale-95 transition">Hủy bỏ</button>
+            <button type="submit" class="px-5 py-1.5 bg-apple-blue text-white rounded-full hover:opacity-90 font-semibold active:scale-95 transition shadow-sm">Cập nhật lịch</button>
           </div>
         </form>
       </div>
@@ -753,9 +754,9 @@ export async function renderClassManagement(container) {
       editModal.querySelectorAll('.edit-duration-btn').forEach(btn => {
         const d = parseInt(btn.getAttribute('data-duration'));
         if (d === currentSelDuration) {
-          btn.className = 'edit-duration-btn px-3 py-2 rounded-xl border-2 border-apple-blue bg-blue-50 text-apple-blue font-bold transition';
+          btn.className = 'edit-duration-btn px-1 py-1 rounded-lg border-2 border-apple-blue bg-blue-50 text-apple-blue font-bold transition text-[10px] text-center';
         } else {
-          btn.className = 'edit-duration-btn px-3 py-2 rounded-xl border-2 border-apple-divider bg-white text-slate-600 hover:border-apple-blue hover:bg-blue-50 transition';
+          btn.className = 'edit-duration-btn px-1 py-1 rounded-lg border-2 border-apple-divider bg-white text-slate-600 hover:border-apple-blue hover:bg-blue-50 transition text-[10px] text-center';
         }
       });
     };

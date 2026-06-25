@@ -108,9 +108,13 @@ async function loadCancellationsTab(container) {
             <td class="px-5 py-3.5 text-slate-600">${tuNgay} → ${denNgay}</td>
             <td class="px-5 py-3.5">
               <div class="text-apple-ink font-semibold">${soTien}</div>
-              <div class="text-[10px] text-slate-400">Đã thu: ${thucThu}</div>
+              ${parseInt(r.so_tien_da_thu) !== parseInt(r.gia_thuc_te) ? `<div class="text-[10px] text-slate-400">Đã thu: ${thucThu}</div>` : ''}
             </td>
-            <td class="px-5 py-3.5 text-slate-500">${r.phuong_thuc_tt || '—'}</td>
+            <td class="px-5 py-3.5 text-slate-550 font-medium">
+              ${r.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt' : 
+                r.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : 
+                (r.phuong_thuc_tt || '—')}
+            </td>
             <td class="px-5 py-3.5">
               <span class="px-2.5 py-1 rounded-full text-[10px] font-bold
                 ${r.trang_thai === 'dang_hoat_dong' ? 'bg-emerald-100 text-emerald-700' :

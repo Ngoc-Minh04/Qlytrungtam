@@ -71,12 +71,11 @@ export async function renderStudentsList(container, role) {
             <div class="text-[10px] text-slate-400 mt-0.5 font-medium">${sv.ten_phu_huynh || 'Chưa cập nhật'}</div>
           </td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full ${
-              sv.trang_thai_mau === 'con_han' ? 'bg-emerald-50/55 border border-emerald-100/70' :
-              sv.trang_thai_mau === 'sap_het_han' ? 'bg-amber-50/55 border border-amber-100/70' :
-              sv.trang_thai_mau === 'het_han' ? 'bg-rose-50/55 border border-rose-100/70' :
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full ${sv.trang_thai_mau === 'con_han' ? 'bg-emerald-50/55 border border-emerald-100/70' :
+          sv.trang_thai_mau === 'sap_het_han' ? 'bg-amber-50/55 border border-amber-100/70' :
+            sv.trang_thai_mau === 'het_han' ? 'bg-rose-50/55 border border-rose-100/70' :
               'bg-slate-50 border border-slate-200/60'
-            }">
+        }">
               ${statusBadges[sv.trang_thai_mau] || statusBadges['chua_dang_ky']}
             </span>
           </td>
@@ -91,18 +90,11 @@ export async function renderStudentsList(container, role) {
 
     container.innerHTML = `
       <div class="space-y-4">
-        <!-- Tab 3 nút: Học viên / Giáo viên / Nhân viên -->
+        <!-- Tiêu đề / Badge quản lý -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div class="inline-flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
-            <button id="tab-students" class="px-5 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/30 text-xs font-bold text-slate-800 transition active:scale-95">
-              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
-            </button>
-            <button id="tab-teachers" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
-              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
-            </button>
-            <button id="tab-staff" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
-              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">manage_accounts</span>Nhân viên</span>
-            </button>
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-100/80 rounded-full border border-slate-200/50 text-slate-800 text-xs font-bold select-none backdrop-blur-sm">
+            <span class="material-symbols-outlined text-[15px] text-apple-blue">school</span>
+            Quản lý Học viên
           </div>
           <div class="flex items-center gap-2">
             <button id="btn-refresh-students" class="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-full transition-all active:scale-95 shadow-sm h-[32px]">
@@ -281,7 +273,7 @@ export async function renderStudentsList(container, role) {
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modal-account-fields">
                   <div>
-                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập (mặc định lấy số điện thoại)</label>
+                    <label class="block font-semibold text-slate-500 mb-1">Tên đăng nhập</label>
                     <input type="text" id="modal-add-username" placeholder="Tên đăng nhập..." readonly class="w-full border border-[#e2e2e4] rounded-xl px-4 py-2 outline-none bg-slate-100 cursor-not-allowed text-xs">
                   </div>
                   <div>
@@ -447,13 +439,6 @@ export async function renderStudentsList(container, role) {
       }
     }
 
-    // Tab điều hướng
-    document.getElementById('tab-teachers')?.addEventListener('click', () => {
-      window._navigatePage && window._navigatePage('teachers-list');
-    });
-    document.getElementById('tab-staff')?.addEventListener('click', () => {
-      window._navigatePage && window._navigatePage('staff-list');
-    });
 
     // Sự kiện refresh học viên
     document.getElementById('btn-refresh-students')?.addEventListener('click', () => {
@@ -465,7 +450,7 @@ export async function renderStudentsList(container, role) {
     document.getElementById('btn-add-student-modal')?.addEventListener('click', () => {
       addModal.classList.remove('hidden');
       document.getElementById('add-student-modal-form').reset();
-      
+
       const phoneInput = document.getElementById('modal-add-phone');
       const usernameInput = document.getElementById('modal-add-username');
       const passwordInput = document.getElementById('modal-add-password');
@@ -475,7 +460,7 @@ export async function renderStudentsList(container, role) {
         avatarPreview.classList.add('hidden');
         avatarPreview.src = '';
       }
-      
+
       if (autoAccCheckbox && autoAccCheckbox.checked) {
         usernameInput.value = phoneInput.value;
         passwordInput.value = '123456';
@@ -488,7 +473,7 @@ export async function renderStudentsList(container, role) {
       if (dobInput) {
         dobInput.value = todayLocal;
       }
-      
+
       setupCustomDatePicker(
         document.getElementById('modal-add-dob'),
         document.getElementById('modal-add-dob-container')
@@ -579,8 +564,8 @@ export async function renderStudentsList(container, role) {
       if (dobVal) {
         const birthday = new Date(dobVal);
         const today = new Date();
-        birthday.setHours(0,0,0,0);
-        today.setHours(0,0,0,0);
+        birthday.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
         if (birthday > today) {
           showToast('Ngày sinh không được vượt quá ngày hiện tại', 'error');
           return;
@@ -1274,7 +1259,7 @@ export function showStudentDetailModal(sv) {
               showToast('Cập nhật gói học thành công!', 'success');
               const contentDiv = document.getElementById('dashboard-content');
               await renderStudentsList(contentDiv, localStorage.getItem('userRole'));
-              
+
               if (window.showStudentDetailModal && window.currentStudent) {
                 window.showStudentDetailModal(window.currentStudent);
                 setTimeout(() => {
@@ -1337,8 +1322,8 @@ export function showStudentDetailModal(sv) {
         if (dobVal) {
           const birthday = new Date(dobVal);
           const today = new Date();
-          birthday.setHours(0,0,0,0);
-          today.setHours(0,0,0,0);
+          birthday.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
           if (birthday > today) {
             showToast('Ngày sinh không được vượt quá ngày hiện tại', 'error');
             return;
@@ -1443,7 +1428,7 @@ export function showStudentDetailModal(sv) {
           allPkgsKem = kemRes.data || [];
           allTeachers = gvRes.data || [];
           updatePkgOptions();
-        } catch {}
+        } catch { }
       }
 
       function updatePkgOptions() {
@@ -1685,7 +1670,7 @@ export function showStudentDetailModal(sv) {
               // Tải lại danh sách ngầm
               const contentDiv = document.getElementById('dashboard-content');
               await renderStudentsList(contentDiv, localStorage.getItem('userRole'));
-              
+
               // Mở lại modal chi tiết và nhảy vào Tab Gói học & Đăng ký
               if (window.showStudentDetailModal && window.currentStudent) {
                 await window.showStudentDetailModal(window.currentStudent);
@@ -1787,7 +1772,7 @@ export function showStudentDetailModal(sv) {
             // Tải lại danh sách ngầm
             const contentDiv = document.getElementById('dashboard-content');
             await renderStudentsList(contentDiv, localStorage.getItem('userRole'));
-            
+
             // Mở lại modal chi tiết và nhảy vào Tab Gói học & Đăng ký
             if (window.showStudentDetailModal && window.currentStudent) {
               await window.showStudentDetailModal(window.currentStudent);

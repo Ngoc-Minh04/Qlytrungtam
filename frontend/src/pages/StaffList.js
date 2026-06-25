@@ -65,9 +65,6 @@ export async function renderStaffList(container, role) {
         <!-- Tab 3 nút -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="inline-flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 select-none backdrop-blur-sm">
-            <button id="tab-students" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
-              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">school</span>Học viên</span>
-            </button>
             <button id="tab-teachers" class="px-5 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-slate-700 transition active:scale-95">
               <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">badge</span>Giáo viên</span>
             </button>
@@ -334,9 +331,6 @@ export async function renderStaffList(container, role) {
     updateTableInfinity(allStaff);
 
     // Tab điều hướng
-    document.getElementById('tab-students')?.addEventListener('click', () => {
-      window._navigatePage && window._navigatePage('students-list');
-    });
     document.getElementById('tab-teachers')?.addEventListener('click', () => {
       window._navigatePage && window._navigatePage('teachers-list');
     });
